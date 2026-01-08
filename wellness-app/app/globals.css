@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Define your custom theme variables here */
+  --color-primary: #667eea;
+  --color-primary-light: #764ba2;
+  --color-secondary: #8b5cf6;
+  --color-accent: #ec4899;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-muted: #94a3b8;
+  --color-primary-dark: #818cf8;
+  --color-primary-light-dark: #a78bfa;
+  --color-secondary-dark: #c084fc;
+  --color-accent-dark: #f472b6;
+  --color-success-dark: #34d399;
+  --color-warning-dark: #fbbf24;
+  --color-error-dark: #f87171;
+  --color-muted-dark: #94a3b8;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --radius: 0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --primary: var(--color-primary);
+  --primary-light: var(--color-primary-light);
+  --secondary: var(--color-secondary);
+  --accent: var(--color-accent);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --error: var(--color-error);
+  --muted: var(--color-muted);
+  --gradient-start: var(--color-primary);
+  --gradient-end: var(--color-primary-light);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --primary: var(--color-primary-dark, #818cf8);
+    --primary-light: var(--color-primary-light-dark, #a78bfa);
+    --secondary: var(--color-secondary-dark, #c084fc);
+    --accent: var(--color-accent-dark, #f472b6);
+    --success: var(--color-success-dark, #34d399);
+    --warning: var(--color-warning-dark, #fbbf24);
+    --error: var(--color-error-dark, #f87171);
+    --muted: var(--color-muted-dark, #94a3b8);
+    --gradient-start: var(--color-primary-dark, #818cf8);
+    --gradient-end: var(--color-primary-light-dark, #a78bfa);
   }
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
