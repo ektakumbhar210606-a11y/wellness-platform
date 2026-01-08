@@ -9,12 +9,12 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { email, password, role } = body;
 
-    // Validate required fields
-    if (!name || !email || !password || !role) {
+    // Validate required fields for all roles
+    if (!email || !password || !role) {
       return NextResponse.json(
-        { error: 'Name, email, password, and role are required' },
+        { error: 'Email, password, and role are required' },
         { status: 400 }
       );
     }
@@ -36,13 +36,41 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate role strictly (only 'Customer', 'Business', 'Therapist' allowed)
+    // Validate role strictly (must be exactly 'Customer', 'Business', or 'Therapist' - case-sensitive)
     const validRoles = ['Customer', 'Business', 'Therapist'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { error: 'Invalid role. Valid roles are: Customer, Business, Therapist' },
         { status: 400 }
       );
+    }
+    
+    // Implement role-specific field validation
+    let nameForUser = '';
+    if (role === 'Customer') {
+      if (!body.full_name) {
+        return NextResponse.json(
+          { error: 'full_name is required for Customer role' },
+          { status: 400 }
+        );
+      }
+      nameForUser = body.full_name;
+    } else if (role === 'Business') {
+      if (!body.business_name || !body.owner_full_name) {
+        return NextResponse.json(
+          { error: 'business_name and owner_full_name are required for Business role' },
+          { status: 400 }
+        );
+      }
+      nameForUser = body.business_name; // Use business name as the user's name field
+    } else if (role === 'Therapist') {
+      if (!body.full_name || !body.professional_title) {
+        return NextResponse.json(
+          { error: 'full_name and professional_title are required for Therapist role' },
+          { status: 400 }
+        );
+      }
+      nameForUser = body.full_name;
     }
 
     // Check if user already exists
@@ -63,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Create new user
     const newUser = new User({
-      name,
+      name: nameForUser,
       email,
       password: hashedPassword,
       role,
