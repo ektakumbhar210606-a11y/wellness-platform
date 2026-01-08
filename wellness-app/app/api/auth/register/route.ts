@@ -9,12 +9,12 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, email, password } = body;
+    const { name, email, password, role } = body;
 
     // Validate required fields
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !role) {
       return NextResponse.json(
-        { error: 'Name, email, and password are required' },
+        { error: 'Name, email, password, and role are required' },
         { status: 400 }
       );
     }
@@ -32,6 +32,15 @@ export async function POST(request: NextRequest) {
     if (password.length < 6) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters long' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate role strictly (only 'Customer', 'Business', 'Therapist' allowed)
+    const validRoles = ['Customer', 'Business', 'Therapist'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid role. Valid roles are: Customer, Business, Therapist' },
         { status: 400 }
       );
     }
@@ -57,6 +66,7 @@ export async function POST(request: NextRequest) {
       name,
       email,
       password: hashedPassword,
+      role,
     });
 
     // Save user to database

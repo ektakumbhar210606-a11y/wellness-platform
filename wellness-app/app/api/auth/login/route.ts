@@ -1,21 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '../../../../lib/db';
-import User from '../../../../models/User';
-
-// Simple JWT-like token generation (for demo purposes)
-// In production, use a proper JWT library like 'jsonwebtoken'
-function generateToken(payload: any, secret: string, expiresIn: string): string {
-  // Encode payload as base64
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64');
-  
-  // For demo purposes, return a simple token
-  // In production, use a proper JWT library
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
-  const fakeSignature = Buffer.from('fake_signature_for_demo').toString('base64');
-  
-  return `${header}.${encodedPayload}.${fakeSignature}`;
-}
+import User, { IUser } from '../../../../models/User';
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,16 +50,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate token (using our simple implementation)
-    // In production, use a proper JWT library
-    const token = generateToken(
+    // Generate JWT token with user ID, role and 7-day expiration
+    const token = jwt.sign(
       { 
-        userId: user._id, 
-        email: user.email,
+        userId: user._id.toString(), 
         role: user.role 
       },
-      process.env.JWT_SECRET || 'fallback_secret_key',
-      process.env.JWT_EXPIRES_IN || '7d'
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
     );
 
     // Return success response with user role and token
