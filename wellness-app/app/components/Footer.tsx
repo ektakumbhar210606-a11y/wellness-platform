@@ -11,30 +11,31 @@ import {
   PhoneOutlined,
   EnvironmentOutlined,
 } from '@ant-design/icons';
+import Link from 'next/link';
 
-const { Title, Paragraph, Link } = Typography;
+const { Title, Paragraph } = Typography;
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
     company: [
-      { label: 'About Us', href: '#' },
-      { label: 'Careers', href: '#' },
-      { label: 'Press', href: '#' },
-      { label: 'Blog', href: '#' },
+      { label: 'About Us', href: '/about-us' },
+      { label: 'Careers', href: '/careers' },
+      { label: 'Press', href: '/press' },
+      { label: 'Blog', href: '/blog' },
     ],
     services: [
-      { label: 'Massage Therapy', href: '#' },
-      { label: 'Spa Services', href: '#' },
-      { label: 'Wellness Programs', href: '#' },
-      { label: 'Corporate Wellness', href: '#' },
+      { label: 'Massage Therapy', href: '/massage-therapy' },
+      { label: 'Spa Services', href: '/spa-services' },
+      { label: 'Wellness Programs', href: '/wellness-programs' },
+      { label: 'Corporate Wellness', href: '/corporate-wellness' },
     ],
     support: [
-      { label: 'Help Center', href: '#' },
-      { label: 'Safety', href: '#' },
-      { label: 'Terms of Service', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
+      { label: 'Help Center', href: '/help-center' },
+      { label: 'Safety', href: '/safety' },
+      { label: 'Terms of Service', href: '/terms-of-service' },
+      { label: 'Privacy Policy', href: '/privacy-policy' },
     ],
   };
 
@@ -94,13 +95,13 @@ const Footer: React.FC = () => {
             </Title>
             <Space orientation="vertical" size="small" style={{ width: '100%' }}>
               {footerLinks.company.map((link, index) => (
-                <Link
+                <a
                   key={index}
                   href={link.href}
-                  style={{ color: 'rgba(255,255,255,0.85)', display: 'block' }}
+                  style={{ color: 'rgba(255,255,255,0.85)', display: 'block', textDecoration: 'none' }}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
             </Space>
           </Col>
@@ -112,13 +113,13 @@ const Footer: React.FC = () => {
             </Title>
             <Space orientation="vertical" size="small" style={{ width: '100%' }}>
               {footerLinks.services.map((link, index) => (
-                <Link
+                <a
                   key={index}
                   href={link.href}
-                  style={{ color: 'rgba(255,255,255,0.85)', display: 'block' }}
+                  style={{ color: 'rgba(255,255,255,0.85)', display: 'block', textDecoration: 'none' }}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
             </Space>
           </Col>
@@ -130,13 +131,13 @@ const Footer: React.FC = () => {
             </Title>
             <Space orientation="vertical" size="small" style={{ width: '100%' }}>
               {footerLinks.support.map((link, index) => (
-                <Link
+                <a
                   key={index}
                   href={link.href}
-                  style={{ color: 'rgba(255,255,255,0.85)', display: 'block' }}
+                  style={{ color: 'rgba(255,255,255,0.85)', display: 'block', textDecoration: 'none' }}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
             </Space>
           </Col>
