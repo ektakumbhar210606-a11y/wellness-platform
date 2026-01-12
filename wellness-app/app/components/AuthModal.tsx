@@ -88,7 +88,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       // Show success message
       message.success('Login successful!');
       
-      // Check if the user is a therapist and needs onboarding
+      // Handle role-specific redirects after login
       if (userData.role?.toLowerCase() === 'therapist') {
         try {
           // Check if therapist profile exists
@@ -120,20 +120,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         }
         
         // Don't call onSuccess or close modal for therapists, as redirect will happen
-      } else {
-        // For non-therapists, call the success callback
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Close the modal after successful login
-        onCancel();
-      }
-<<<<<<< HEAD
-=======
-      
-      // Check if user is a provider and needs onboarding
-      if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
+      } else if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
         // Check if provider already has a business profile
         try {
           // Fetch business profile to see if onboarding is already completed
@@ -164,10 +151,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 500); // Small delay to allow modal to close and message to show
         }
       } else {
-        // For customers and therapists, close modal and stay on current page
+        // For customers, call the success callback and close modal
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        // Close the modal after successful login
         onCancel();
       }
->>>>>>> 8c68faee3c531fb0b8d4d0fd0ffcd405ee674813
     } catch (error: any) {
       // Handle different types of errors
       if (error.status === 400) {
