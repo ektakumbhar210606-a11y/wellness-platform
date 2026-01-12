@@ -74,24 +74,59 @@ const AuthModal: React.FC<AuthModalProps> = ({
       localStorage.setItem('token', token);
       
       // Update auth state with user data from the API
-      login({
+      const userData = {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
         phone: user.phone
-      });
+      };
+      login(userData);
       
       // Show success message
       message.success('Login successful!');
       
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess();
+      // Check if the user is a therapist and needs onboarding
+      if (userData.role?.toLowerCase() === 'therapist') {
+        try {
+          // Check if therapist profile exists
+          const profileResponse = await fetch('/api/therapist/me', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`, // Use the token from response directly
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.success && profileData.data) {
+              // Therapist profile exists, redirect to dashboard
+              window.location.href = '/dashboard/therapist';
+            } else {
+              // Therapist profile doesn't exist, redirect to onboarding
+              window.location.href = '/onboarding/therapist';
+            }
+          } else {
+            // Therapist profile doesn't exist, redirect to onboarding
+            window.location.href = '/onboarding/therapist';
+          }
+        } catch (error) {
+          console.error('Error checking therapist profile:', error);
+          // Fallback to onboarding if there's an error
+          window.location.href = '/onboarding/therapist';
+        }
+        
+        // Don't call onSuccess or close modal for therapists, as redirect will happen
+      } else {
+        // For non-therapists, call the success callback
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        // Close the modal after successful login
+        onCancel();
       }
-      
-      // Close the modal after successful login
-      onCancel();
     } catch (error: any) {
       // Handle different types of errors
       if (error.status === 400) {

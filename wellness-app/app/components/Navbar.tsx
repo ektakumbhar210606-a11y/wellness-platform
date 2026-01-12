@@ -214,7 +214,7 @@ const Navbar: React.FC = () => {
               )}
             </div>
           )}
-
+      
           {/* Mobile Menu Button */}
           {isMobile && (
             <Button
@@ -228,7 +228,7 @@ const Navbar: React.FC = () => {
           )}
         </div>
       </div>
-
+      
       {/* Mobile Drawer */}
       <Drawer
         title="Menu"
