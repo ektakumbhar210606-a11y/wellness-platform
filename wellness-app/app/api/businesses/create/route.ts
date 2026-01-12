@@ -50,13 +50,10 @@ export async function POST(request: NextRequest) {
     const userId = decoded.userId;
     const userRole = decoded.role;
 
-    // Check if the user has the 'Business' role
-    if (userRole !== 'Business') {
-      return NextResponse.json(
-        { error: 'Access denied. Only business owners can create businesses.' },
-        { status: 403 }
-      );
-    }
+    // For onboarding purposes, allow users to create a business regardless of initial role
+    // The user role will be updated after successful business creation
+    // Check if the user already has a business to prevent duplicates
+    // This also serves as a way to identify if onboarding is already complete
 
     // Connect to database
     const dbModule = await import('@/lib/db');
@@ -64,20 +61,20 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { business_name, address, opening_time, closing_time } = body;
+    const { business_name, description, address, opening_time, closing_time, businessHours, status } = body;
 
     // Validate required fields
-    if (!business_name || !address || !opening_time || !closing_time) {
+    if (!business_name || !address) {
       return NextResponse.json(
-        { error: 'Missing required fields: business_name, address, opening_time, closing_time are required' },
+        { error: 'Missing required fields: business_name and address are required' },
         { status: 400 }
       );
     }
 
     // Validate data types
-    if (typeof business_name !== 'string' || typeof opening_time !== 'string' || typeof closing_time !== 'string') {
+    if (typeof business_name !== 'string') {
       return NextResponse.json(
-        { error: 'Invalid data types: business_name, opening_time, and closing_time must be strings' },
+        { error: 'Invalid data type: business_name must be a string' },
         { status: 400 }
       );
     }
@@ -101,13 +98,20 @@ export async function POST(request: NextRequest) {
     const newBusiness = new Business({
       owner: userId,
       name: business_name.trim(),
+      description: description || '', // Use description if provided
       address: address, // Assuming address is an object with street, city, state, zipCode, country
-      openingTime: opening_time,
-      closingTime: closing_time,
-      status: 'active' // Default to active status
+      openingTime: opening_time || '09:00',
+      closingTime: closing_time || '17:00',
+      businessHours: businessHours || [], // Store the detailed business hours
+      status: status || 'active' // Default to active status
     });
 
     const savedBusiness = await newBusiness.save();
+    
+    // Update user role to Business after successful business creation
+    const userModule = await import('@/models/User');
+    const User = userModule.default;
+    await User.findByIdAndUpdate(userId, { role: 'Business' });
 
     // Return the created business document (excluding sensitive information)
     return NextResponse.json(

@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
 import { postApi } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -43,6 +44,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
   initialView = 'login'
 }) => {
+  const router = useRouter();
   const [currentView, setCurrentView] = useState<'login' | 'register' | 'roleSelection'>(initialView);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [loginForm] = Form.useForm();
@@ -90,8 +92,41 @@ const AuthModal: React.FC<AuthModalProps> = ({
         onSuccess();
       }
       
-      // Close the modal after successful login
-      onCancel();
+      // Check if user is a provider and needs onboarding
+      if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
+        // Check if provider already has a business profile
+        try {
+          // Fetch business profile to see if onboarding is already completed
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/my-business`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (response.ok) {
+            // Provider already has a business profile, redirect to dashboard
+            setTimeout(() => {
+              router.push('/dashboard/provider');
+            }, 500); // Small delay to allow modal to close and message to show
+          } else {
+            // Provider doesn't have a business profile, redirect to onboarding
+            setTimeout(() => {
+              router.push('/onboarding/provider');
+            }, 500); // Small delay to allow modal to close and message to show
+          }
+        } catch (error) {
+          // If there's an error checking business profile, redirect to onboarding
+          setTimeout(() => {
+            router.push('/onboarding/provider');
+          }, 500); // Small delay to allow modal to close and message to show
+        }
+      } else {
+        // For customers and therapists, close modal and stay on current page
+        onCancel();
+      }
     } catch (error: any) {
       // Handle different types of errors
       if (error.status === 400) {
@@ -160,8 +195,41 @@ const AuthModal: React.FC<AuthModalProps> = ({
         onSuccess();
       }
       
-      // Close the modal after successful registration
-      onCancel();
+      // Check if user is a provider and needs onboarding
+      if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
+        // Check if provider already has a business profile
+        try {
+          // Fetch business profile to see if onboarding is already completed
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/my-business`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (response.ok) {
+            // Provider already has a business profile, redirect to dashboard
+            setTimeout(() => {
+              router.push('/dashboard/provider');
+            }, 500); // Small delay to allow modal to close and message to show
+          } else {
+            // Provider doesn't have a business profile, redirect to onboarding
+            setTimeout(() => {
+              router.push('/onboarding/provider');
+            }, 500); // Small delay to allow modal to close and message to show
+          }
+        } catch (error) {
+          // If there's an error checking business profile, redirect to onboarding
+          setTimeout(() => {
+            router.push('/onboarding/provider');
+          }, 500); // Small delay to allow modal to close and message to show
+        }
+      } else {
+        // For customers and therapists, close modal and stay on current page
+        onCancel();
+      }
     } catch (error: any) {
       // Handle different types of errors
       if (error.status === 400) {

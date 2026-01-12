@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Button, Drawer, Grid } from 'antd';
 import { MenuOutlined, UserOutlined, TeamOutlined, ShopOutlined } from '@ant-design/icons';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { MenuProps } from 'antd';
 import AuthModal from './AuthModal';
 import { useAuth } from '@/app/context/AuthContext';
@@ -16,9 +18,46 @@ const Navbar: React.FC = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user, login } = useAuth();
+  const router = useRouter();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+
+  // Check if provider has businessId and fetch if missing
+  React.useEffect(() => {
+    const checkAndFetchBusinessId = async () => {
+      if (isAuthenticated && user && 
+          (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business') && 
+          !user.businessId) {
+        try {
+          // Fetch business profile to get the business ID
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/my-business`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (response.ok) {
+            const businessData = await response.json();
+            // Update user with businessId
+            const updatedUser = {
+              ...user,
+              businessId: businessData.id
+            };
+            // Update context and localStorage
+            login(updatedUser);
+          }
+        } catch (error) {
+          console.error('Error fetching business ID:', error);
+        }
+      }
+    };
+    
+    checkAndFetchBusinessId();
+  }, [isAuthenticated, user, login]);
 
   // Effect to handle custom events from other components
   React.useEffect(() => {
@@ -52,6 +91,10 @@ const Navbar: React.FC = () => {
     }
   };
 
+  const isProvider = user && (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business');
+  const hasBusiness = user && user.businessId;
+  const showProviderDashboard = isProvider && hasBusiness;
+
   const scrollToHowItWorks = () => {
     const howItWorksSection = document.getElementById('how-it-works-section');
     if (howItWorksSection) {
@@ -65,13 +108,11 @@ const Navbar: React.FC = () => {
   const menuItems: MenuItem[] = [
     {
       key: 'home',
-      label: 'Home',
-      onClick: scrollToTop,
+      label: <Link href="/">Home</Link>,
     },
     {
       key: 'services',
-      label: 'Services',
-      onClick: scrollToServices,
+      label: <Link href="/">Services</Link>,
     },
     {
       key: 'how-it-works',
@@ -212,6 +253,18 @@ const Navbar: React.FC = () => {
                   Logout
                 </Button>
               )}
+              {showProviderDashboard && (
+                <Button 
+                  type="primary" 
+                  icon={<ShopOutlined />}
+                  style={{
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={() => router.push('/dashboard/provider')}
+                >
+                  Dashboard
+                </Button>
+              )}
             </div>
           )}
 
@@ -244,36 +297,7 @@ const Navbar: React.FC = () => {
       >
         <Menu
           mode="vertical"
-          items={menuItems.map(item => {
-            if (item && item.key === 'home') {
-              return {
-                ...item,
-                onClick: () => {
-                  scrollToTop();
-                  closeDrawer();
-                }
-              };
-            }
-            if (item && item.key === 'services') {
-              return {
-                ...item,
-                onClick: () => {
-                  scrollToServices();
-                  closeDrawer();
-                }
-              };
-            }
-            if (item && item.key === 'how-it-works') {
-              return {
-                ...item,
-                onClick: () => {
-                  scrollToHowItWorks();
-                  closeDrawer();
-                }
-              };
-            }
-            return item;
-          })}
+          items={menuItems}
           style={{ 
             border: 'none',
             marginBottom: '16px',
@@ -308,6 +332,17 @@ const Navbar: React.FC = () => {
               onClick={logout}
             >
               Logout
+            </Button>
+          )}
+          {showProviderDashboard && (
+            <Button 
+              type="primary" 
+              icon={<ShopOutlined />} 
+              block
+              size="large"
+              onClick={() => router.push('/dashboard/provider')}
+            >
+              Dashboard
             </Button>
           )}
         </div>
