@@ -729,14 +729,22 @@ const AuthModal: React.FC<AuthModalProps> = ({
     );
   };
 
+  const handleModalCancel = () => {
+    // Reset currentView to initialView when modal is closed
+    setCurrentView(initialView);
+    // Also reset selectedRole when modal closes
+    setSelectedRole(null);
+    onCancel();
+  };
+
   return (
     <Modal
       open={open}
-      onCancel={onCancel}
+      onCancel={handleModalCancel}
       footer={null}
       closable={true}
       width={520}
-      destroyOnHidden={true}
+      destroyOnHidden
       maskClosable={false}
       style={{
         top: 20,
