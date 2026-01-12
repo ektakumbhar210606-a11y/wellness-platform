@@ -23,6 +23,7 @@ import {
   Space
 } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
+import { postApi } from '@/lib/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -54,17 +55,35 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const handleLogin = async (values: any) => {
     setLoginLoading(true);
     try {
-      // Simulate login API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      message.success('Login successful!');
-      console.log('Login values:', values);
+      // Prepare login payload - the API expects an email field
+      // Since the form field is labeled 'Email or Username', we'll send whatever the user entered
+      const payload = {
+        email: values.username, // Backend will handle both email and username formats
+        password: values.password
+      };
       
-      // Update auth state
-      login({
-        id: 1,
-        username: values.username,
-        email: values.username.includes('@') ? values.username : undefined
+      // Call the backend API
+      const response = await postApi('/api/auth/login', {
+        body: payload
       });
+      
+      // Extract token and user data from response
+      const { token, user } = response;
+      
+      // Store the JWT token in localStorage with the key 'token'
+      localStorage.setItem('token', token);
+      
+      // Update auth state with user data from the API
+      login({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        phone: user.phone
+      });
+      
+      // Show success message
+      message.success('Login successful!');
       
       // Call success callback if provided
       if (onSuccess) {
@@ -73,8 +92,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
       
       // Close the modal after successful login
       onCancel();
-    } catch (error) {
-      message.error('Login failed. Please check your credentials.');
+    } catch (error: any) {
+      // Handle different types of errors
+      if (error.status === 400) {
+        message.error('Invalid input: ' + (error.message || 'Email and password are required'));
+      } else if (error.status === 401) {
+        message.error('Authentication failed: ' + (error.message || 'Invalid email or password'));
+      } else if (error.status === 500) {
+        message.error('Server error: ' + (error.message || 'Internal server error'));
+      } else {
+        message.error('Login failed: ' + (error.message || 'Please check your credentials'));
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -88,18 +116,44 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     setRegisterLoading(true);
     try {
-      // Simulate registration API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      message.success('Registration successful! Please check your email to verify your account.');
-      console.log('Registration values:', { ...values, role: selectedRole });
-      
-      // Update auth state
-      login({
-        id: 1,
-        username: values.email || values.name,
+      // Prepare registration payload based on selected role
+      let payload: any = {
         email: values.email,
-        role: selectedRole
+        password: values.password,
+        role: selectedRole === 'customer' ? 'Customer' : 
+              selectedRole === 'provider' ? 'Business' : 'Therapist'
+      };
+      
+      // Add role-specific fields
+      if (selectedRole === 'customer') {
+        payload.full_name = values.name;
+      } else if (selectedRole === 'provider') {
+        payload.business_name = values.businessName;
+        payload.owner_full_name = values.name;
+      } else if (selectedRole === 'therapist') {
+        payload.full_name = values.name;
+        payload.professional_title = values.professionalTitle;
+      }
+      
+      // Call the backend API
+      const response = await postApi('/api/auth/register', {
+        body: payload
       });
+      
+      // Extract user data from response
+      const { user } = response;
+      
+      // Update auth state with user data from the API
+      login({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        phone: user.phone
+      });
+      
+      // Show success message
+      message.success('Registration successful! Welcome to our wellness platform.');
       
       // Call success callback if provided
       if (onSuccess) {
@@ -108,8 +162,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
       
       // Close the modal after successful registration
       onCancel();
-    } catch (error) {
-      message.error('Registration failed. Please try again.');
+    } catch (error: any) {
+      // Handle different types of errors
+      if (error.status === 400) {
+        message.error('Invalid input: ' + (error.message || 'Please check your registration details'));
+      } else if (error.status === 409) {
+        message.error('Registration failed: ' + (error.message || 'A user with this email already exists'));
+      } else if (error.status === 500) {
+        message.error('Server error: ' + (error.message || 'Internal server error'));
+      } else {
+        message.error('Registration failed: ' + (error.message || 'Please try again'));
+      }
     } finally {
       setRegisterLoading(false);
     }
