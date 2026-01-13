@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Layout, Menu, Button, Drawer, Grid } from 'antd';
 import { MenuOutlined, UserOutlined, TeamOutlined, ShopOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { MenuProps } from 'antd';
 import AuthModal from './AuthModal';
 import { useAuth } from '@/app/context/AuthContext';
@@ -20,7 +20,6 @@ const Navbar: React.FC = () => {
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
   const { isAuthenticated, logout, user, login } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
@@ -82,59 +81,14 @@ const Navbar: React.FC = () => {
     });
   };
 
-  const scrollToSection = (sectionId: string) => {
-    // Check if we're already on the home page
-    if (pathname === '/') {
-      // Directly scroll to the section
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }
-    } else {
-      // Navigate to home page first, then scroll after a delay
-      // Store the target section in a temporary location
-      sessionStorage.setItem('scrollToSection', sectionId);
-      router.push('/');
-      
-      // In case the useEffect on the home page doesn't catch it, also try with a timeout
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-          });
-        }
-      }, 100); // Small delay to ensure page has loaded
-    }
-  };
-
-  // Effect to handle scrolling when landing on the home page
-  React.useEffect(() => {
-    if (pathname === '/') {
-      const sectionToScroll = sessionStorage.getItem('scrollToSection');
-      if (sectionToScroll) {
-        // Clear the stored value
-        sessionStorage.removeItem('scrollToSection');
-        // Wait a bit for the page to render, then scroll
-        setTimeout(() => {
-          const element = document.getElementById(sectionToScroll);
-          if (element) {
-            element.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            });
-          }
-        }, 50);
-      }
-    }
-  }, [pathname]);
-
   const scrollToServices = () => {
-    scrollToSection('services-section');
+    const servicesSection = document.getElementById('services-section');
+    if (servicesSection) {
+      servicesSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
   };
 
   const isProvider = user && (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business');
@@ -145,46 +99,32 @@ const Navbar: React.FC = () => {
   const showTherapistDashboard = isTherapist;
 
   const scrollToHowItWorks = () => {
-    scrollToSection('how-it-works-section');
+    const howItWorksSection = document.getElementById('how-it-works-section');
+    if (howItWorksSection) {
+      howItWorksSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
   };
 
   const menuItems: MenuItem[] = [
     {
       key: 'home',
-      label: <Link href="/" onClick={(e) => {
-        if (pathname === '/') {
-          e.preventDefault();
-          scrollToSection('hero-section');
-        }
-      }}>Home</Link>,
-    },
-    {
-      key: 'features',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('features-section');
-      }}>Features</Link>,
+      label: <Link href="/">Home</Link>,
     },
     {
       key: 'services',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('services-section');
-      }}>Services</Link>,
+      label: <Link href="/">Services</Link>,
     },
     {
       key: 'how-it-works',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('how-it-works-section');
-      }}>How It Works</Link>,
+      label: 'How It Works',
+      onClick: scrollToHowItWorks,
     },
     {
       key: 'about',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('footer-section');
-      }}>About Us</Link>,
+      label: 'About Us',
     },
   ];
 
@@ -377,10 +317,7 @@ const Navbar: React.FC = () => {
             border: 'none',
             marginBottom: '16px',
           }}
-          onClick={(info) => {
-            // Close drawer after a small delay to allow the scroll action to occur
-            setTimeout(closeDrawer, 100);
-          }}
+          onClick={closeDrawer}
         />
         <div 
           style={{ 

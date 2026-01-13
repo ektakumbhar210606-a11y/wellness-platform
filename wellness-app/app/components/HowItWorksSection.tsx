@@ -11,9 +11,9 @@ import {
   ProfileOutlined,
   RocketOutlined,
   DollarCircleOutlined,
-  UserOutlined,
-  HeartOutlined,
-  ClockCircleOutlined,
+  IdcardOutlined,
+  ScheduleOutlined,
+  CheckCircleOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 
@@ -76,23 +76,23 @@ const HowItWorksSection: React.FC = () => {
   const therapistSteps: Step[] = [
     {
       title: 'Create Account',
-      description: 'Sign up and verify your professional credentials and certifications.',
-      icon: <UserOutlined style={{ fontSize: '32px', color: '#ff6b6b' }} />,
+      description: 'Sign up as a therapist and start your wellness journey with us.',
+      icon: <IdcardOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
     },
     {
       title: 'Set Up Profile',
-      description: 'Complete your therapist profile with services, specialties, and availability.',
-      icon: <HeartOutlined style={{ fontSize: '32px', color: '#ff6b6b' }} />,
+      description: 'Add your certifications, specialties, services, and professional details.',
+      icon: <ProfileOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
     },
     {
       title: 'Start Accepting Bookings',
-      description: 'Configure your schedule and start receiving appointment requests.',
-      icon: <ClockCircleOutlined style={{ fontSize: '32px', color: '#ff6b6b' }} />,
+      description: 'Configure your availability and start receiving appointment requests.',
+      icon: <ScheduleOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
     },
     {
-      title: 'Manage Clients',
-      description: 'Track appointments, manage bookings, and grow your wellness practice.',
-      icon: <TeamOutlined style={{ fontSize: '32px', color: '#ff6b6b' }} />,
+      title: 'Manage Business',
+      description: 'Track appointments, manage clients, and grow your practice.',
+      icon: <TeamOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
     },
   ];
 
@@ -203,10 +203,10 @@ const HowItWorksSection: React.FC = () => {
               key: 'therapist',
               label: (
                 <span style={{ fontSize: '16px', fontWeight: 500 }}>
-                  <UserOutlined /> For Therapists
+                  <IdcardOutlined /> For Therapists
                 </span>
               ),
-              children: renderSteps(therapistSteps, '#ff6b6b'),
+              children: renderSteps(therapistSteps, '#f093fb'),
             },
           ]}
         />
