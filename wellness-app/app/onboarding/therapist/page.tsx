@@ -67,21 +67,20 @@ const TherapistOnboardingPage = () => {
       const profileData = {
         ...profileValues,
         email: user?.email || profileValues.email, // Use user email if available
-        userId: user?.id,
       };
 
       // Call API to create therapist profile
       await therapistApi.createProfile(profileData);
       
       notification.success({
-        message: 'Success',
+        title: 'Success',
         description: 'Therapist profile created successfully!',
       });
       
       setCurrentStep(1);
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Failed to create profile',
       });
     } finally {
@@ -101,14 +100,14 @@ const TherapistOnboardingPage = () => {
       });
       
       notification.success({
-        message: 'Success',
+        title: 'Success',
         description: 'Availability updated successfully!',
       });
       
       setCurrentStep(2);
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Failed to update availability',
       });
     } finally {
@@ -142,6 +141,7 @@ const TherapistOnboardingPage = () => {
           initialValues={{
             email: user?.email || '',
             fullName: user?.name || '',
+            certifications: [],
           }}
         >
           <Form.Item
@@ -226,16 +226,14 @@ const TherapistOnboardingPage = () => {
           </Form.Item>
 
           <Form.Item name="certifications" label="Certifications">
-            <Upload
-              multiple
-              beforeUpload={(file) => {
-                // Prevent automatic upload, just store the file
-                return false;
-              }}
-              fileList={[]} // Add empty fileList to avoid warning
+            <Select
+              key="certifications-select"
+              mode="tags"
+              style={{ width: '100%' }}
+              placeholder="Add your certifications (press Enter to add)"
+              tokenSeparators={[',']}
             >
-              <Button icon={<UploadOutlined />}>Click to Upload Certifications</Button>
-            </Upload>
+            </Select>
           </Form.Item>
 
           <Form.Item

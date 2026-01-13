@@ -68,9 +68,17 @@ export async function PUT(req: NextRequest) {
     // Validate weeklyAvailability if provided
     if (updateData.weeklyAvailability && Array.isArray(updateData.weeklyAvailability)) {
       for (const availability of updateData.weeklyAvailability) {
-        if (!availability.day || !availability.startTime || !availability.endTime) {
+        if (!availability.day) {
           return Response.json(
-            { success: false, error: 'Each availability item must have day, startTime, and endTime' },
+            { success: false, error: 'Each availability item must have a day' },
+            { status: 400 }
+          );
+        }
+
+        // Only validate startTime and endTime if the day is marked as available
+        if (availability.available !== false && (!availability.startTime || !availability.endTime)) {
+          return Response.json(
+            { success: false, error: 'Each available day must have startTime and endTime' },
             { status: 400 }
           );
         }

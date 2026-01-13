@@ -1,3 +1,6 @@
+// Use Node.js runtime instead of Edge runtime to support jsonwebtoken
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import User from '../../../../models/User';
@@ -82,8 +85,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Import bcrypt dynamically since it might not be available in edge runtime
+    // Import bcrypt and jwt dynamically since it might not be available in edge runtime
     const bcrypt = await import('bcryptjs');
+    const jwt = await import('jsonwebtoken');
     
     // Hash the password
     const saltRounds = 12;
@@ -100,6 +104,17 @@ export async function POST(request: NextRequest) {
     // Save user to database
     const savedUser = await newUser.save();
 
+    // Generate JWT token with user ID, email and role
+    const token = jwt.sign(
+      { 
+        id: savedUser._id.toString(), 
+        email: savedUser.email,
+        role: savedUser.role 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
     // Return success response without password
     const userResponse = {
       id: savedUser._id,
@@ -114,7 +129,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         message: 'User registered successfully',
-        user: userResponse 
+        user: userResponse,
+        token: token
       },
       { status: 201 }
     );

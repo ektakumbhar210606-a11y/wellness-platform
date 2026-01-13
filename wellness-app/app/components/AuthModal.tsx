@@ -104,23 +104,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
             const profileData = await profileResponse.json();
             if (profileData.success && profileData.data) {
               // Therapist profile exists, redirect to dashboard
-              window.location.href = '/dashboard/therapist';
+              setTimeout(() => {
+                router.push('/dashboard/therapist');
+              }, 500); // Small delay to allow modal to close and message to show
             } else {
               // Therapist profile doesn't exist, redirect to onboarding
-              window.location.href = '/onboarding/therapist';
+              setTimeout(() => {
+                router.push('/onboarding/therapist');
+              }, 500); // Small delay to allow modal to close and message to show
             }
           } else {
             // Therapist profile doesn't exist, redirect to onboarding
-            window.location.href = '/onboarding/therapist';
+            setTimeout(() => {
+              router.push('/onboarding/therapist');
+            }, 500); // Small delay to allow modal to close and message to show
           }
         } catch (error) {
           console.error('Error checking therapist profile:', error);
           // Fallback to onboarding if there's an error
-          window.location.href = '/onboarding/therapist';
+          setTimeout(() => {
+            router.push('/onboarding/therapist');
+          }, 500); // Small delay to allow modal to close and message to show
         }
         
         // Don't call onSuccess or close modal for therapists, as redirect will happen
-      } else if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
+      } else if (userData.role && (userData.role.toLowerCase() === 'provider' || userData.role.toLowerCase() === 'business')) {
         // Check if provider already has a business profile
         try {
           // Fetch business profile to see if onboarding is already completed
@@ -207,8 +215,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
         body: payload
       });
       
-      // Extract user data from response
-      const { user } = response;
+      // Extract user data and token from response
+      const { user, token } = response;
       
       // Update auth state with user data from the API
       login({
@@ -219,6 +227,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
         phone: user.phone
       });
       
+      // Store the token in localStorage
+      if (token) {
+        localStorage.setItem('token', token);
+      }
+      
       // Show success message
       message.success('Registration successful! Welcome to our wellness platform.');
       
@@ -227,8 +240,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
         onSuccess();
       }
       
-      // Check if user is a provider and needs onboarding
-      if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
+      // Handle role-specific redirects after registration
+      if (user.role && user.role.toLowerCase() === 'therapist') {
+        // Therapists should go to onboarding after registration
+        setTimeout(() => {
+          router.push('/onboarding/therapist');
+        }, 500); // Small delay to allow modal to close and message to show
+      } else if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
         // Check if provider already has a business profile
         try {
           // Fetch business profile to see if onboarding is already completed
@@ -259,7 +277,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 500); // Small delay to allow modal to close and message to show
         }
       } else {
-        // For customers and therapists, close modal and stay on current page
+        // For customers, call the success callback and close modal
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        // Close the modal after successful registration
         onCancel();
       }
     } catch (error: any) {

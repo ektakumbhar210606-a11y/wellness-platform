@@ -48,7 +48,9 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      onChange(updatedAvailability);
+      // Only send days that are available to match backend expectations
+      const availableDays = updatedAvailability.filter(day => day.available && day.startTime && day.endTime);
+      onChange(availableDays);
     }
   };
 
@@ -65,7 +67,9 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      onChange(updatedAvailability);
+      // Only send days that are available to match backend expectations
+      const availableDays = updatedAvailability.filter(day => day.available && day.startTime && day.endTime);
+      onChange(availableDays);
     }
   };
 
@@ -90,7 +94,7 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
             }
           >
             {dayAvail.available && (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space vertical style={{ width: '100%' }}>
                 <Form.Item label="Working Hours">
                   <RangePicker
                     format="HH:mm"

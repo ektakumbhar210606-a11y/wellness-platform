@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract user information from the decoded token
-    const userId = decoded.userId;
+    const userId = decoded.id;
     const userRole = decoded.role;
 
     // Check if the user has the 'Therapist' role

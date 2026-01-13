@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract user information from the decoded token
-    const userId = decoded.userId;
+    const userId = decoded.id;
 
     // Connect to database
     const dbModule = await import('@/lib/db');

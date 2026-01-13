@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     // Generate JWT token with user ID, role and 7-day expiration
     const token = jwt.sign(
       { 
-        userId: user._id.toString(), 
+        id: user._id.toString(), 
+        email: user.email,
         role: user.role 
       },
       process.env.JWT_SECRET!,

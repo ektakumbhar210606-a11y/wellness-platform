@@ -174,7 +174,7 @@ const TherapistDashboardPage = () => {
               </Col>
               <Col xs={24} md={8}>
                 <Card title="Quick Actions">
-                  <Space direction="vertical" style={{ width: '100%' }}>
+                  <Space vertical style={{ width: '100%' }}>
                     <Button 
                       type="primary" 
                       block

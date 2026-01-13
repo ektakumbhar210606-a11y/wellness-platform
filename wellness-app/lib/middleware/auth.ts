@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken';
 
 // Define the structure of the decoded JWT payload
 interface JwtPayload {
-  userId: string;
+  id: string;
+  email: string;
   role: string;
   iat: number;
   exp: number;
@@ -12,7 +13,8 @@ interface JwtPayload {
 // Extend the NextRequest type to include user information
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
-    userId: string;
+    id: string;
+    email: string;
     role: string;
   };
 }
@@ -65,7 +67,8 @@ export function authenticate(req: AuthenticatedRequest): NextResponse | null {
 
     // Attach the decoded user information to the request object
     req.user = {
-      userId: decoded.userId,
+      id: decoded.id,
+      email: decoded.email,
       role: decoded.role
     };
 

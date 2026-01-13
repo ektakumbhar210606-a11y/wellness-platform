@@ -10,7 +10,6 @@ import WeeklyAvailability from '../../../components/Availability/WeeklyAvailabil
 import type { UploadFile } from 'antd/es/upload/interface';
 
 const { TextArea } = Input;
-const { TabPane } = Tabs;
 
 const TherapistProfilePage = () => {
   const router = useRouter();
@@ -42,7 +41,7 @@ const TherapistProfilePage = () => {
             experience: response.data.experience,
             location: response.data.location,
             skills: response.data.skills,
-            certifications: response.data.certifications,
+            certifications: Array.isArray(response.data.certifications) ? response.data.certifications : [],
             licenseNumber: response.data.licenseNumber,
           });
         } else {
@@ -52,7 +51,7 @@ const TherapistProfilePage = () => {
       } catch (error) {
         console.error('Error fetching therapist profile:', error);
         notification.error({
-          message: 'Error',
+          title: 'Error',
           description: 'Failed to load profile data',
         });
         // If profile doesn't exist, redirect to onboarding
@@ -72,7 +71,6 @@ const TherapistProfilePage = () => {
       // Prepare profile data
       const profileData = {
         ...values,
-        userId: user?.id,
       };
 
       // Call API to update therapist profile
@@ -80,13 +78,13 @@ const TherapistProfilePage = () => {
       
       if (response.success) {
         notification.success({
-          message: 'Success',
+          title: 'Success',
           description: 'Therapist profile updated successfully!',
         });
       }
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Failed to update profile',
       });
     } finally {
@@ -105,13 +103,13 @@ const TherapistProfilePage = () => {
       
       if (response.success) {
         notification.success({
-          message: 'Success',
+          title: 'Success',
           description: 'Availability updated successfully!',
         });
       }
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Failed to update availability',
       });
     } finally {
@@ -139,158 +137,163 @@ const TherapistProfilePage = () => {
           <span>Therapist Profile Management</span>
         </div>
       }>
-        <Tabs defaultActiveKey="1" size="large">
-          <TabPane tab="Profile Information" key="1">
-            <Form
-              form={profileForm}
-              layout="vertical"
-              onFinish={handleProfileSubmit}
-              initialValues={{
-                email: user?.email || '',
-              }}
-            >
-              <Form.Item
-                name="fullName"
-                label="Full Name"
-                rules={[{ required: true, message: 'Please enter your full name' }]}
-              >
-                <Input placeholder="Enter your full name" />
-              </Form.Item>
-
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: 'Please enter your email' },
-                  { type: 'email', message: 'Please enter a valid email' },
-                ]}
-              >
-                <Input placeholder="Enter your email" disabled />
-              </Form.Item>
-
-              <Form.Item
-                name="phoneNumber"
-                label="Phone Number"
-                rules={[{ required: true, message: 'Please enter your phone number' }]}
-              >
-                <Input placeholder="Enter your phone number" />
-              </Form.Item>
-
-              <Form.Item
-                name="professionalTitle"
-                label="Professional Title"
-                rules={[{ required: true, message: 'Please enter your professional title' }]}
-              >
-                <Input placeholder="e.g., Licensed Massage Therapist" />
-              </Form.Item>
-
-              <Form.Item name="bio" label="Bio">
-                <TextArea rows={4} placeholder="Tell us about your background and expertise" />
-              </Form.Item>
-
-              <Form.Item
-                name="experience"
-                label="Years of Experience"
-                rules={[
-                  { required: true, message: 'Please enter your years of experience' },
-                  { type: 'number', min: 0, message: 'Experience must be a positive number' },
-                ]}
-              >
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="Years of experience" />
-              </Form.Item>
-
-              <Form.Item label="Location">
-                <Form.Item
-                  name={['location', 'city']}
-                  style={{ display: 'inline-block', width: 'calc(33.33% - 8px)' }}
-                >
-                  <Input placeholder="City" />
-                </Form.Item>
-                <Form.Item
-                  name={['location', 'state']}
-                  style={{ display: 'inline-block', width: 'calc(33.33% - 8px)', margin: '0 8px' }}
-                >
-                  <Input placeholder="State" />
-                </Form.Item>
-                <Form.Item
-                  name={['location', 'country']}
-                  style={{ display: 'inline-block', width: 'calc(33.33% - 8px)' }}
-                >
-                  <Input placeholder="Country" />
-                </Form.Item>
-              </Form.Item>
-
-              <Form.Item name="skills" label="Skills">
-                <Select
-                  mode="tags"
-                  style={{ width: '100%' }}
-                  placeholder="Add your skills (press Enter to add)"
-                  tokenSeparators={[',']}
-                >
-                </Select>
-              </Form.Item>
-
-              <Form.Item name="certifications" label="Certifications">
-                <Upload
-                  multiple
-                  fileList={profile?.certifications?.map((cert: string, index: number) => ({
-                    uid: `${index}`,
-                    name: cert,
-                    status: 'done',
-                  })) || []}
-                  beforeUpload={(file) => {
-                    // Prevent automatic upload, just store the file
-                    return false;
+        <Tabs 
+          defaultActiveKey="1" 
+          size="large"
+          items={[
+            {
+              label: 'Profile Information',
+              key: '1',
+              children: (
+                <Form
+                  form={profileForm}
+                  layout="vertical"
+                  onFinish={handleProfileSubmit}
+                  initialValues={{
+                    email: user?.email || '',
                   }}
                 >
-                  <Button icon={<UploadOutlined />}>Click to Upload Certifications</Button>
-                </Upload>
-              </Form.Item>
+                  <Form.Item
+                    name="fullName"
+                    label="Full Name"
+                    rules={[{ required: true, message: 'Please enter your full name' }]}
+                  >
+                    <Input placeholder="Enter your full name" />
+                  </Form.Item>
 
-              <Form.Item
-                name="licenseNumber"
-                label="License Number"
-                rules={[{ required: true, message: 'Please enter your license number' }]}
-              >
-                <Input placeholder="Enter your license number" />
-              </Form.Item>
+                  <Form.Item
+                    name="email"
+                    label="Email"
+                    rules={[
+                      { required: true, message: 'Please enter your email' },
+                      { type: 'email', message: 'Please enter a valid email' },
+                    ]}
+                  >
+                    <Input placeholder="Enter your email" disabled />
+                  </Form.Item>
 
-              <Divider />
+                  <Form.Item
+                    name="phoneNumber"
+                    label="Phone Number"
+                    rules={[{ required: true, message: 'Please enter your phone number' }]}
+                  >
+                    <Input placeholder="Enter your phone number" />
+                  </Form.Item>
 
-              <Form.Item>
-                <Button type="primary" htmlType="submit" loading={saving}>
-                  Save Profile Changes
-                </Button>
-              </Form.Item>
-            </Form>
-          </TabPane>
+                  <Form.Item
+                    name="professionalTitle"
+                    label="Professional Title"
+                    rules={[{ required: true, message: 'Please enter your professional title' }]}
+                  >
+                    <Input placeholder="e.g., Licensed Massage Therapist" />
+                  </Form.Item>
 
-          <TabPane tab="Availability" key="2">
-            <Form
-              form={availabilityForm}
-              layout="vertical"
-              onFinish={handleAvailabilitySubmit}
-            >
-              <Card title="Weekly Availability Settings">
-                <WeeklyAvailability 
-                  initialAvailability={profile?.weeklyAvailability || []} 
-                  onChange={(availability) => {
-                    // Update the form field with the new availability
-                    availabilityForm.setFieldsValue({
-                      weeklyAvailability: availability
-                    });
-                  }}
-                />
-                
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" loading={saving}>
-                    Save Availability
-                  </Button>
-                </Form.Item>
-              </Card>
-            </Form>
-          </TabPane>
-        </Tabs>
+                  <Form.Item name="bio" label="Bio">
+                    <TextArea rows={4} placeholder="Tell us about your background and expertise" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="experience"
+                    label="Years of Experience"
+                    rules={[
+                      { required: true, message: 'Please enter your years of experience' },
+                      { type: 'number', min: 0, message: 'Experience must be a positive number' },
+                    ]}
+                  >
+                    <InputNumber min={0} style={{ width: '100%' }} placeholder="Years of experience" />
+                  </Form.Item>
+
+                  <Form.Item label="Location">
+                    <Form.Item
+                      name={['location', 'city']}
+                      style={{ display: 'inline-block', width: 'calc(33.33% - 8px)' }}
+                    >
+                      <Input placeholder="City" />
+                    </Form.Item>
+                    <Form.Item
+                      name={['location', 'state']}
+                      style={{ display: 'inline-block', width: 'calc(33.33% - 8px)', margin: '0 8px' }}
+                    >
+                      <Input placeholder="State" />
+                    </Form.Item>
+                    <Form.Item
+                      name={['location', 'country']}
+                      style={{ display: 'inline-block', width: 'calc(33.33% - 8px)' }}
+                    >
+                      <Input placeholder="Country" />
+                    </Form.Item>
+                  </Form.Item>
+
+                  <Form.Item name="skills" label="Skills">
+                    <Select
+                      mode="tags"
+                      style={{ width: '100%' }}
+                      placeholder="Add your skills (press Enter to add)"
+                      tokenSeparators={[',']}
+                    >
+                    </Select>
+                  </Form.Item>
+
+                  <Form.Item name="certifications" label="Certifications">
+                    <Select
+                      key="certifications-select"
+                      mode="tags"
+                      style={{ width: '100%' }}
+                      placeholder="Add your certifications (press Enter to add)"
+                      tokenSeparators={[',']}
+                    >
+                    </Select>
+                  </Form.Item>
+
+                  <Form.Item
+                    name="licenseNumber"
+                    label="License Number"
+                    rules={[{ required: true, message: 'Please enter your license number' }]}
+                  >
+                    <Input placeholder="Enter your license number" />
+                  </Form.Item>
+
+                  <Divider />
+
+                  <Form.Item>
+                    <Button type="primary" htmlType="submit" loading={saving}>
+                      Save Profile Changes
+                    </Button>
+                  </Form.Item>
+                </Form>
+              ),
+            },
+            {
+              label: 'Availability',
+              key: '2',
+              children: (
+                <Form
+                  form={availabilityForm}
+                  layout="vertical"
+                  onFinish={handleAvailabilitySubmit}
+                >
+                  <Card title="Weekly Availability Settings">
+                    <WeeklyAvailability 
+                      initialAvailability={profile?.weeklyAvailability || []} 
+                      onChange={(availability) => {
+                        // Update the form field with the new availability
+                        availabilityForm.setFieldsValue({
+                          weeklyAvailability: availability
+                        });
+                      }}
+                    />
+                    
+                    <Form.Item>
+                      <Button type="primary" htmlType="submit" loading={saving}>
+                        Save Availability
+                      </Button>
+                    </Form.Item>
+                  </Card>
+                </Form>
+              ),
+            }
+          ]}
+        />
       </Card>
     </div>
   );

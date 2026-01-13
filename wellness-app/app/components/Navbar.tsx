@@ -94,6 +94,9 @@ const Navbar: React.FC = () => {
   const isProvider = user && (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business');
   const hasBusiness = user && user.businessId;
   const showProviderDashboard = isProvider && hasBusiness;
+  
+  const isTherapist = user && user.role?.toLowerCase() === 'therapist';
+  const showTherapistDashboard = isTherapist;
 
   const scrollToHowItWorks = () => {
     const howItWorksSection = document.getElementById('how-it-works-section');
@@ -262,7 +265,19 @@ const Navbar: React.FC = () => {
                   }}
                   onClick={() => router.push('/dashboard/provider')}
                 >
-                  Dashboard
+                  Provider Dashboard
+                </Button>
+              )}
+              {showTherapistDashboard && (
+                <Button 
+                  type="primary" 
+                  icon={<TeamOutlined />}
+                  style={{
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={() => router.push('/dashboard/therapist')}
+                >
+                  Therapist Dashboard
                 </Button>
               )}
             </div>
@@ -342,7 +357,18 @@ const Navbar: React.FC = () => {
               size="large"
               onClick={() => router.push('/dashboard/provider')}
             >
-              Dashboard
+              Provider Dashboard
+            </Button>
+          )}
+          {showTherapistDashboard && (
+            <Button 
+              type="primary" 
+              icon={<TeamOutlined />} 
+              block
+              size="large"
+              onClick={() => router.push('/dashboard/therapist')}
+            >
+              Therapist Dashboard
             </Button>
           )}
         </div>

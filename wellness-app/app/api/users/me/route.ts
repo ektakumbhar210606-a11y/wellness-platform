@@ -9,7 +9,8 @@ const User = userModule.default;
 
 // Define the structure of the decoded JWT payload
 interface JwtPayload {
-  userId: string;
+  id: string;
+  email: string;
   role: string;
   iat: number;
   exp: number;
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract userId from the decoded token
-    const userId = decoded.userId;
+    const userId = decoded.id;
 
     // Query the database for the user document by userId
     const user = await User.findById(userId).select('-password'); // Exclude password field
