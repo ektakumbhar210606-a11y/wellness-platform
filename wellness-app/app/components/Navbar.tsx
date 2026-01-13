@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Drawer, Grid } from 'antd';
 import { MenuOutlined, UserOutlined, TeamOutlined, ShopOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { MenuProps } from 'antd';
 import AuthModal from './AuthModal';
 import { useAuth } from '@/app/context/AuthContext';
@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
   const { isAuthenticated, logout, user, login } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
@@ -81,15 +82,46 @@ const Navbar: React.FC = () => {
     });
   };
 
-  const scrollToServices = () => {
-    const servicesSection = document.getElementById('services-section');
-    if (servicesSection) {
-      servicesSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
+  const scrollToSection = (sectionId: string) => {
+    // If we're already on the home page, scroll directly
+    if (pathname === '/') {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    } else {
+      // If we're on a different page, navigate to home first, then scroll
+      router.push('/');
+      // Store the target section in sessionStorage so we can scroll after navigation
+      sessionStorage.setItem('scrollToSection', sectionId);
     }
   };
+
+  // Handle scrolling after navigation to home page
+  useEffect(() => {
+    if (pathname === '/') {
+      const targetSection = sessionStorage.getItem('scrollToSection');
+      if (targetSection) {
+        // Wait for the page to fully load
+        const timer = setTimeout(() => {
+          const element = document.getElementById(targetSection);
+          if (element) {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            });
+          }
+          // Clear the stored section after scrolling
+          sessionStorage.removeItem('scrollToSection');
+        }, 100);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [pathname]);
 
   const isProvider = user && (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business');
   const hasBusiness = user && user.businessId;
@@ -98,33 +130,43 @@ const Navbar: React.FC = () => {
   const isTherapist = user && user.role?.toLowerCase() === 'therapist';
   const showTherapistDashboard = isTherapist;
 
-  const scrollToHowItWorks = () => {
-    const howItWorksSection = document.getElementById('how-it-works-section');
-    if (howItWorksSection) {
-      howItWorksSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  };
+
 
   const menuItems: MenuItem[] = [
     {
       key: 'home',
-      label: <Link href="/">Home</Link>,
+      label: <Link href="/" onClick={(e) => {
+        e.preventDefault();
+        scrollToSection('hero-section');
+      }}>Home</Link>,
+    },
+    {
+      key: 'features',
+      label: <Link href="/" onClick={(e) => {
+        e.preventDefault();
+        scrollToSection('features-section');
+      }}>Features</Link>,
     },
     {
       key: 'services',
-      label: <Link href="/">Services</Link>,
+      label: <Link href="/" onClick={(e) => {
+        e.preventDefault();
+        scrollToSection('services-section');
+      }}>Services</Link>,
     },
     {
       key: 'how-it-works',
-      label: 'How It Works',
-      onClick: scrollToHowItWorks,
+      label: <Link href="/" onClick={(e) => {
+        e.preventDefault();
+        scrollToSection('how-it-works-section');
+      }}>How It Works</Link>,
     },
     {
       key: 'about',
-      label: 'About Us',
+      label: <Link href="/" onClick={(e) => {
+        e.preventDefault();
+        scrollToSection('footer-section');
+      }}>About Us</Link>,
     },
   ];
 

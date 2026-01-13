@@ -150,10 +150,10 @@ const ProviderDashboard = () => {
         <Col span={8}>
           <Card title="Quick Actions">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Button type="primary" onClick={() => router.push('/dashboard/provider/calendar')}>View Calendar</Button>
-              <Button onClick={() => router.push('/dashboard/provider/services')}>Manage Services</Button>
-              <Button onClick={() => router.push('/dashboard/provider/profile')}>Update Profile</Button>
-              <Button onClick={() => router.push('/dashboard/provider/earnings')}>View Earnings</Button>
+              <Button type="primary">View Calendar</Button>
+              <Button>Manage Services</Button>
+              <Button>Update Profile</Button>
+              <Button>View Earnings</Button>
             </div>
           </Card>
         </Col>
