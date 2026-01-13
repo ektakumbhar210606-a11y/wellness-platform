@@ -62,6 +62,7 @@ const FeaturesSection: React.FC = () => {
 
   return (
     <div
+      id="features-section"
       style={{
         padding: '80px 0',
         background: '#ffffff',
