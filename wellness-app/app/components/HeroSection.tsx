@@ -9,6 +9,7 @@ const { Title, Paragraph } = Typography;
 const HeroSection: React.FC = () => {
   return (
     <div
+      id="hero-section"
       style={{
         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
         padding: '120px 24px 80px',
