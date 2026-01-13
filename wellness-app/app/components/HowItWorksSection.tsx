@@ -11,6 +11,10 @@ import {
   ProfileOutlined,
   RocketOutlined,
   DollarCircleOutlined,
+  IdcardOutlined,
+  ScheduleOutlined,
+  CheckCircleOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 
 const { Title, Paragraph } = Typography;
@@ -66,6 +70,29 @@ const HowItWorksSection: React.FC = () => {
       title: 'Grow Revenue',
       description: 'Manage bookings, accept payments, and grow your wellness business.',
       icon: <DollarCircleOutlined style={{ fontSize: '32px', color: '#764ba2' }} />,
+    },
+  ];
+
+  const therapistSteps: Step[] = [
+    {
+      title: 'Create Account',
+      description: 'Sign up as a therapist and start your wellness journey with us.',
+      icon: <IdcardOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
+    },
+    {
+      title: 'Set Up Profile',
+      description: 'Add your certifications, specialties, services, and professional details.',
+      icon: <ProfileOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
+    },
+    {
+      title: 'Start Accepting Bookings',
+      description: 'Configure your availability and start receiving appointment requests.',
+      icon: <ScheduleOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
+    },
+    {
+      title: 'Manage Business',
+      description: 'Track appointments, manage clients, and grow your practice.',
+      icon: <TeamOutlined style={{ fontSize: '32px', color: '#f093fb' }} />,
     },
   ];
 
@@ -171,6 +198,15 @@ const HowItWorksSection: React.FC = () => {
                 </span>
               ),
               children: renderSteps(providerSteps, '#764ba2'),
+            },
+            {
+              key: 'therapist',
+              label: (
+                <span style={{ fontSize: '16px', fontWeight: 500 }}>
+                  <IdcardOutlined /> For Therapists
+                </span>
+              ),
+              children: renderSteps(therapistSteps, '#f093fb'),
             },
           ]}
         />
