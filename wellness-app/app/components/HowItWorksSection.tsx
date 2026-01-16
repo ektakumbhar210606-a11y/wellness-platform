@@ -18,7 +18,7 @@ import {
 } from '@ant-design/icons';
 
 const { Title, Paragraph } = Typography;
-const { TabPane } = Tabs;
+
 
 interface Step {
   title: string;

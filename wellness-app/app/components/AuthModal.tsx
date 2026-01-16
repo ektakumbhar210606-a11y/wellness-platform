@@ -159,13 +159,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 500); // Small delay to allow modal to close and message to show
         }
       } else {
-        // For customers, call the success callback and close modal
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Close the modal after successful login
-        onCancel();
+        // For customers, redirect to onboarding after successful login
+        setTimeout(() => {
+          router.push('/onboarding/customer');
+        }, 500); // Small delay to allow modal to close and message to show
       }
     } catch (error: any) {
       // Handle different types of errors
@@ -277,13 +274,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 500); // Small delay to allow modal to close and message to show
         }
       } else {
-        // For customers, call the success callback and close modal
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Close the modal after successful registration
-        onCancel();
+        // For customers, redirect to onboarding after successful registration
+        setTimeout(() => {
+          router.push('/onboarding/customer');
+        }, 500); // Small delay to allow modal to close and message to show
       }
     } catch (error: any) {
       // Handle different types of errors
