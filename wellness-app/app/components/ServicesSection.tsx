@@ -68,7 +68,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         fontSize: '20px', 
         fontWeight: 600,
         color: '#262626',
-        textAlign: 'center',
+        textAlign: 'left',
       }}
     >
       {title}
@@ -79,7 +79,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         margin: '0 0 20px 0', 
         fontSize: '15px',
         color: '#666',
-        textAlign: 'center',
+        textAlign: 'left',
         lineHeight: 1.6,
         flex: 1,
       }}
@@ -104,14 +104,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       <ul 
         style={{ 
           margin: 0, 
-          padding: '0 0 0 20px', 
+          padding: 0, 
           textAlign: 'left',
           color: '#666',
           fontSize: '14px',
         }}
       >
         {features.map((feature, index) => (
-          <li key={index} style={{ marginBottom: index === features.length - 1 ? 0 : '8px' }}>
+          <li key={index} style={{ marginBottom: index === features.length - 1 ? 0 : '8px', marginLeft: 0 }}>
             {feature}
           </li>
         ))}
@@ -208,7 +208,7 @@ const ServicesSection: React.FC = () => {
         {/* Service Cards Grid */}
         <Row 
           gutter={[32, 32]} 
-          justify="center"
+          justify="start"
         >
           {services.map((service, index) => (
             <Col 
@@ -219,7 +219,7 @@ const ServicesSection: React.FC = () => {
               lg={8} 
               style={{
                 display: 'flex',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
               }}
             >
               <ServiceCard
