@@ -381,10 +381,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
         onFinish={handleLogin}
         layout="vertical"
         size="large"
-        style={{
-          maxWidth: '360px',
-          margin: '0 auto',
-        }}
+        // style={{
+        //   maxWidth: '360px',
+        //   margin: '0 auto',
+        // }}
       >
         <Form.Item
           label="Email or Username"
@@ -966,13 +966,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
       footer={null}
       closable={true}
       width={480}
+      centered
       destroyOnHidden
       maskClosable={false}
-      style={{
-      }}
       styles={{
         body: {
-          padding: '16px 20px',
+          // padding: '16px 20px',
+        },
+        container: {
+          maxHeight: '80vh',
+      overflow: 'auto',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
         }
       }}
     >
