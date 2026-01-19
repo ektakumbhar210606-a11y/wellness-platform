@@ -20,25 +20,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Check for stored authentication state on initial load
   useEffect(() => {
-    // In a real app, you would check for tokens in localStorage/cookies
-    // For now, we'll initialize to false
-    const storedAuth = localStorage.getItem('isAuthenticated');
-    if (storedAuth) {
-      setIsAuthenticated(JSON.parse(storedAuth));
-    }
-    
+    // Check for JWT token
+    const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    
+    if (token && storedUser) {
+      try {
+        // Verify token is still valid by attempting to parse it
+        // In a real app, you'd verify the JWT signature
+        const user = JSON.parse(storedUser);
+        setIsAuthenticated(true);
+        setUser(user);
+      } catch (error) {
+        // Invalid token or user data, clear storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAuthenticated');
+      }
+    } else if (token) {
+      // Token exists but no user data, clear the token
+      localStorage.removeItem('token');
     }
   }, []);
 
   const login = (userData: any) => {
     setIsAuthenticated(true);
     setUser(userData);
-    localStorage.setItem('isAuthenticated', JSON.stringify(true));
+    // Token is already stored in LoginModal
     if (userData) {
       localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('isAuthenticated', JSON.stringify(true));
     }
   };
 
@@ -47,6 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
+    localStorage.removeItem('token'); // Clear JWT token
   };
   
   const loginWithRedirect = (userData: any) => {

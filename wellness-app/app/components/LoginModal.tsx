@@ -23,27 +23,49 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
-      // Simulate login API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call actual login API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: values.username,
+          password: values.password
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Login failed');
+      }
+      
+      // Store the JWT token
+      localStorage.setItem('token', result.token);
+      
       message.success('Login successful!');
-      console.log('Login values:', values);
       
       // Call success callback if provided
       if (onSuccess) {
         onSuccess();
       }
       
-      // Update auth state
+      // Update auth state with actual user data
       login({
-        id: 1,
-        username: values.username,
-        email: values.username.includes('@') ? values.username : undefined
+        id: result.user.id,
+        userId: result.user.id, // Add userId for API calls
+        name: result.user.name,
+        username: result.user.name,
+        email: result.user.email,
+        role: result.user.role
       });
       
       // Close the modal after successful login
       onCancel();
-    } catch (error) {
-      message.error('Login failed. Please check your credentials.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      message.error(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
