@@ -23,6 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
+  const [activeSection, setActiveSection] = useState('');
   const { isAuthenticated, logout, user, login } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -116,6 +117,30 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
     }
   };
 
+  // Function to determine which section is currently in view
+  const getCurrentSection = () => {
+    const sections = ['hero-section', 'features-section', 'services-section', 'how-it-works-section', 'footer-section'];
+    const scrollPosition = window.scrollY + 100; // Add offset to account for navbar height
+
+    for (const sectionId of sections) {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const { offsetTop, offsetHeight } = element;
+        if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+          return sectionId;
+        }
+      }
+    }
+    
+    // Check for special case where we're at the very bottom of the page
+    const footerElement = document.getElementById('footer-section');
+    if (footerElement && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 50) {
+      return 'footer-section';
+    }
+    
+    return '';
+  };
+
   // Handle scrolling after navigation to home page
   useEffect(() => {
     if (pathname === '/') {
@@ -139,6 +164,30 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
     }
   }, [pathname]);
 
+  // Set up scroll event listener to track active section
+  useEffect(() => {
+    if (pathname !== '/') {
+      // Only set up scroll listener on homepage
+      return;
+    }
+    
+    const handleScroll = () => {
+      const currentSection = getCurrentSection();
+      if (currentSection !== activeSection) {
+        setActiveSection(currentSection);
+      }
+    };
+    
+    // Initial check in case the page loads scrolled
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [pathname, activeSection]);
+
   const isProvider = user && (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business');
   const hasBusiness = user && user.businessId;
   const showProviderDashboard = isProvider && hasBusiness;
@@ -153,35 +202,35 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
 
   const menuItems: MenuItem[] = [
     {
-      key: 'home',
+      key: 'hero-section',
       label: <Link href="/" onClick={(e) => {
         e.preventDefault();
         scrollToSection('hero-section');
       }}>Home</Link>,
     },
     {
-      key: 'features',
+      key: 'features-section',
       label: <Link href="/" onClick={(e) => {
         e.preventDefault();
         scrollToSection('features-section');
       }}>Features</Link>,
     },
     {
-      key: 'services',
+      key: 'services-section',
       label: <Link href="/" onClick={(e) => {
         e.preventDefault();
         scrollToSection('services-section');
       }}>Services</Link>,
     },
     {
-      key: 'how-it-works',
+      key: 'how-it-works-section',
       label: <Link href="/" onClick={(e) => {
         e.preventDefault();
         scrollToSection('how-it-works-section');
       }}>How It Works</Link>,
     },
     {
-      key: 'about',
+      key: 'footer-section',
       label: <Link href="/" onClick={(e) => {
         e.preventDefault();
         scrollToSection('footer-section');
@@ -275,6 +324,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
               <Menu
                 mode="horizontal"
                 items={menuItems}
+                selectedKeys={[activeSection]}
                 style={{
                   border: 'none',
                   background: 'transparent',
@@ -386,6 +436,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
         <Menu
           mode="vertical"
           items={menuItems}
+          selectedKeys={[activeSection]}
           style={{ 
             border: 'none',
             marginBottom: '16px',

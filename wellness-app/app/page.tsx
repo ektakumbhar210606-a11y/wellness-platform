@@ -26,8 +26,8 @@ export default function Home() {
       <Navbar resetToken={resetToken} />
       <HeroSection />
       <FeaturesSection />
-      <HowItWorksSection />
       <ServicesSection />
+      <HowItWorksSection />
       <Footer />
     </div>
   );

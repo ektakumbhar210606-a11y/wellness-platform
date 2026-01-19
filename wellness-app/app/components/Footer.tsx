@@ -3,10 +3,6 @@
 import React from 'react';
 import { Row, Col, Typography, Space, Divider } from 'antd';
 import {
-  FacebookOutlined,
-  TwitterOutlined,
-  InstagramOutlined,
-  LinkedinOutlined,
   MailOutlined,
   PhoneOutlined,
   EnvironmentOutlined,
@@ -39,12 +35,7 @@ const Footer: React.FC = () => {
     ],
   };
 
-  const socialLinks = [
-    { icon: <FacebookOutlined />, href: '#', label: 'Facebook' },
-    { icon: <TwitterOutlined />, href: '#', label: 'Twitter' },
-    { icon: <InstagramOutlined />, href: '#', label: 'Instagram' },
-    { icon: <LinkedinOutlined />, href: '#', label: 'LinkedIn' },
-  ];
+
 
   return (
     <footer
@@ -147,38 +138,11 @@ const Footer: React.FC = () => {
         <Divider style={{ borderColor: 'rgba(255,255,255,0.2)', margin: '40px 0 24px' }} />
 
         {/* Bottom Section */}
-        <Row gutter={[16, 16]} justify="space-between" align="middle">
-          <Col xs={24} sm={12}>
+        <Row gutter={[16, 16]} justify="center" align="middle">
+          <Col xs={24}>
             <Paragraph style={{ color: 'rgba(255,255,255,0.85)', marginBottom: 0, textAlign: 'center' }}>
               © {currentYear} Serenity. All rights reserved.
             </Paragraph>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Space
-              size="large"
-              style={{
-                justifyContent: 'center',
-                width: '100%',
-                display: 'flex',
-              }}
-            >
-              {socialLinks.map((social, index) => (
-                <a
-                  key={index}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: 'white',
-                    fontSize: '20px',
-                    transition: 'all 0.3s ease',
-                  }}
-                  aria-label={social.label}
-                >
-                  {social.icon}
-                </a>
-              ))}
-            </Space>
           </Col>
         </Row>
       </div>
