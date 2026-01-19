@@ -130,6 +130,9 @@ const Navbar: React.FC = () => {
   const isTherapist = user && user.role?.toLowerCase() === 'therapist';
   const showTherapistDashboard = isTherapist;
 
+  const isCustomer = user && user.role?.toLowerCase() === 'customer';
+  const showCustomerDashboard = isCustomer;
+
 
 
   const menuItems: MenuItem[] = [
@@ -322,6 +325,18 @@ const Navbar: React.FC = () => {
                   Therapist Dashboard
                 </Button>
               )}
+              {showCustomerDashboard && (
+                <Button 
+                  type="primary" 
+                  icon={<UserOutlined />}
+                  style={{
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={() => router.push('/dashboard/customer')}
+                >
+                  Customer Dashboard
+                </Button>
+              )}
             </div>
           )}
       
@@ -411,6 +426,17 @@ const Navbar: React.FC = () => {
               onClick={() => router.push('/dashboard/therapist')}
             >
               Therapist Dashboard
+            </Button>
+          )}
+          {showCustomerDashboard && (
+            <Button 
+              type="primary" 
+              icon={<UserOutlined />} 
+              block
+              size="large"
+              onClick={() => router.push('/dashboard/customer')}
+            >
+              Customer Dashboard
             </Button>
           )}
         </div>

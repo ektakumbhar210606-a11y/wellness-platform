@@ -39,6 +39,27 @@ export const makeAuthenticatedRequest = async (
   return response.json();
 };
 
+// Helper function specifically for customer API calls
+export const customerApi = {
+  // Get customer profile
+  getProfile: async () => {
+    return makeAuthenticatedRequest('/api/users/me');
+  },
+
+  // Check if customer has completed onboarding
+  hasCompletedOnboarding: async () => {
+    try {
+      const response = await makeAuthenticatedRequest('/api/users/me');
+      // For now, we'll consider onboarding complete if they have basic profile info
+      // In a real implementation, you might have a dedicated endpoint or field
+      return response && response.name && response.email;
+    } catch (error) {
+      console.error('Error checking customer onboarding status:', error);
+      return false;
+    }
+  },
+};
+
 // Helper function specifically for therapist API calls
 export const therapistApi = {
   // Get therapist profile

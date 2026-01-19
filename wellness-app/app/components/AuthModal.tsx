@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
 import { postApi } from '@/lib/api';
+import { customerApi } from '@/app/utils/apiUtils';
 import { useRouter } from 'next/navigation';
 
 const { Title, Text, Paragraph } = Typography;
@@ -159,10 +160,28 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 500); // Small delay to allow modal to close and message to show
         }
       } else {
-        // For customers, redirect to onboarding after successful login
-        setTimeout(() => {
-          router.push('/onboarding/customer');
-        }, 500); // Small delay to allow modal to close and message to show
+        // For customers, check if onboarding is already completed
+        try {
+          const hasOnboarded = await customerApi.hasCompletedOnboarding();
+          
+          if (hasOnboarded) {
+            // Customer has completed onboarding, redirect to dashboard
+            setTimeout(() => {
+              router.push('/dashboard/customer');
+            }, 500); // Small delay to allow modal to close and message to show
+          } else {
+            // Customer hasn't completed onboarding, redirect to onboarding
+            setTimeout(() => {
+              router.push('/onboarding/customer');
+            }, 500); // Small delay to allow modal to close and message to show
+          }
+        } catch (error) {
+          console.error('Error checking customer onboarding status:', error);
+          // If there's an error checking onboarding status, redirect to onboarding
+          setTimeout(() => {
+            router.push('/onboarding/customer');
+          }, 500); // Small delay to allow modal to close and message to show
+        }
       }
     } catch (error: any) {
       // Handle different types of errors
@@ -274,7 +293,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 500); // Small delay to allow modal to close and message to show
         }
       } else {
-        // For customers, redirect to onboarding after successful registration
+        // For customers, after registration they need to complete onboarding
         setTimeout(() => {
           router.push('/onboarding/customer');
         }, 500); // Small delay to allow modal to close and message to show
