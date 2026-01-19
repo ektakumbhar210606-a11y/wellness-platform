@@ -83,7 +83,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
       onCancel={onCancel}
       footer={null}
       closable={true}
-      width={420}
+      width={400}
       destroyOnHidden={true}
       maskClosable={false}
       style={{
@@ -91,11 +91,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
       }}
       styles={{
         body: {
-          padding: '40px 32px',
+          padding: '16px 20px',
         }
       }}
     >
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <div 
           style={{
             fontSize: '40px',
@@ -109,7 +109,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
         >
           🧘‍♀️ Serenity
         </div>
-        <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600 }}>
+        <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 600 }}>
           Welcome Back
         </Title>
         <Text type="secondary" style={{ fontSize: '14px' }}>
@@ -125,7 +125,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
         layout="vertical"
         size="large"
         style={{
-          maxWidth: '400px',
+          maxWidth: '360px',
           margin: '0 auto',
         }}
       >
@@ -171,7 +171,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
           />
         </Form.Item>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', marginTop: '4px' }}>
           <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox style={{ fontSize: '14px', color: '#666' }}>
               Remember me
@@ -208,7 +208,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
         </Form.Item>
       </Form>
 
-      <div style={{ marginTop: '24px', textAlign: 'center' }}>
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <Text type="secondary" style={{ fontSize: '14px' }}>
           Don't have an account?{' '}
           <Link href="/register" style={{ color: '#667eea', fontWeight: 500 }}>

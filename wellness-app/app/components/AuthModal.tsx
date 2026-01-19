@@ -352,7 +352,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   const renderLoginView = () => (
     <>
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
         <div 
           style={{
             fontSize: '40px',
@@ -366,7 +366,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         >
           🧘‍♀️ Serenity
         </div>
-        <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600 }}>
+        <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 600 }}>
           Welcome Back
         </Title>
         <Text type="secondary" style={{ fontSize: '14px' }}>
@@ -382,7 +382,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         layout="vertical"
         size="large"
         style={{
-          maxWidth: '400px',
+          maxWidth: '360px',
           margin: '0 auto',
         }}
       >
@@ -428,7 +428,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           />
         </Form.Item>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', marginTop: '4px' }}>
           <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox style={{ fontSize: '14px', color: '#666' }}>
               Remember me
@@ -465,7 +465,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </Form.Item>
       </Form>
 
-      <div style={{ marginTop: '24px', textAlign: 'center' }}>
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <Text type="secondary" style={{ fontSize: '14px' }}>
           Don't have an account?{' '}
           <a 
@@ -503,9 +503,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     return (
       <>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <div 
-            style={{
+            style={ {
               fontSize: '40px',
               fontWeight: 'bold',
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -520,8 +520,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <Title 
             level={2} 
             style={{ 
-              margin: '0 0 16px 0', 
-              fontSize: '28px', 
+              margin: '0 0 8px 0', 
+              fontSize: '24px', 
               fontWeight: 600,
             }}
           >
@@ -529,7 +529,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </Title>
           <Text 
             style={{ 
-              fontSize: '16px',
+              fontSize: '14px',
               color: '#666',
             }}
           >
@@ -538,9 +538,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         <Row 
-          gutter={[24, 24]} 
+          gutter={[16, 16]} 
           justify="center"
-          style={{ marginBottom: '24px', maxWidth: '500px', margin: '0 auto 24px' }}
+          style={{ marginBottom: '16px', maxWidth: '500px', margin: '0 auto 16px' }}
         >
           {roleOptions.map((role) => (
             <Col 
@@ -556,7 +556,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 style={{
                   width: '100%',
                   maxWidth: '380px',
-                  height: '200px',
+                  height: '180px',
                   borderRadius: '16px',
                   border: '2px solid transparent',
                   background: 'rgba(255, 255, 255, 0.95)',
@@ -652,7 +652,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     return (
       <>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <div 
             style={{
               fontSize: '40px',
@@ -666,7 +666,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           >
             🧘‍♀️ Serenity
           </div>
-          <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600 }}>
+          <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 600 }}>
             {`Register as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`}
           </Title>
           <Text type="secondary" style={{ fontSize: '14px' }}>
@@ -681,7 +681,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           layout="vertical"
           size="large"
           style={{
-            maxWidth: '400px',
+            maxWidth: '360px',
             margin: '0 auto',
           }}
         >
@@ -965,7 +965,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       onCancel={handleModalCancel}
       footer={null}
       closable={true}
-      width={520}
+      width={480}
       destroyOnHidden
       maskClosable={false}
       style={{
@@ -973,7 +973,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       }}
       styles={{
         body: {
-          padding: '40px 32px',
+          padding: '16px 20px',
         }
       }}
     >

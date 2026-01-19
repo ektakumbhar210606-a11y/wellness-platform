@@ -68,11 +68,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       }}
       styles={{
         body: {
-          padding: '40px 32px',
+          padding: '16px 20px',
         }
       }}
     >
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
         <div 
           style={{
             fontSize: '40px',
@@ -86,7 +86,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         >
           🧘‍♀️ Serenity
         </div>
-        <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 600 }}>
+        <Title level={2} style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 600 }}>
           Forgot Password
         </Title>
         <Text type="secondary" style={{ fontSize: '14px' }}>
@@ -101,7 +101,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         layout="vertical"
         size="large"
         style={{
-          maxWidth: '400px',
+          maxWidth: '360px',
           margin: '0 auto',
         }}
       >
@@ -123,7 +123,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           />
         </Form.Item>
 
-        <Form.Item style={{ marginBottom: '0', marginTop: '24px' }}>
+        <Form.Item style={{ marginBottom: '0', marginTop: '16px' }}>
           <Button
             type="primary"
             htmlType="submit"
@@ -143,7 +143,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         </Form.Item>
       </Form>
 
-      <div style={{ marginTop: '24px', textAlign: 'center' }}>
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <Text type="secondary" style={{ fontSize: '14px' }}>
           Remember your password?{' '}
           <a 
