@@ -87,7 +87,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
       destroyOnHidden={true}
       maskClosable={false}
       style={{
-        top: 20,
       }}
       styles={{
         body: {

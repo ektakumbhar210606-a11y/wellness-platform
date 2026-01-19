@@ -969,7 +969,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
       destroyOnHidden
       maskClosable={false}
       style={{
-        top: 20,
       }}
       styles={{
         body: {

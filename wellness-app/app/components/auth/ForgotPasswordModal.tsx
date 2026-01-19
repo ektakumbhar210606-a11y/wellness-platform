@@ -64,7 +64,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       destroyOnHidden={true}
       maskClosable={false}
       style={{
-        top: 20,
       }}
       styles={{
         body: {
