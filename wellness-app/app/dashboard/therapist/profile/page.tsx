@@ -81,6 +81,11 @@ const TherapistProfilePage = () => {
           title: 'Success',
           description: 'Therapist profile updated successfully!',
         });
+        
+        // Navigate back to the therapist dashboard after a short delay to allow the user to see the success message
+        setTimeout(() => {
+          router.push('/dashboard/therapist');
+        }, 1500);
       }
     } catch (error: any) {
       notification.error({
@@ -106,6 +111,11 @@ const TherapistProfilePage = () => {
           title: 'Success',
           description: 'Availability updated successfully!',
         });
+        
+        // Navigate back to the therapist dashboard after a short delay to allow the user to see the success message
+        setTimeout(() => {
+          router.push('/dashboard/therapist');
+        }, 1500);
       }
     } catch (error: any) {
       notification.error({

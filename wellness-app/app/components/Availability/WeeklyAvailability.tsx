@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Select, Switch, TimePicker, Card, Space, Divider, Button, InputNumber } from 'antd';
+import { Select, Switch, TimePicker, Card, Space, Divider, Button, InputNumber } from 'antd';
 import { ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -95,7 +95,8 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
           >
             {dayAvail.available && (
               <Space vertical style={{ width: '100%' }}>
-                <Form.Item label="Working Hours">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: 8 }}>Working Hours</label>
                   <RangePicker
                     format="HH:mm"
                     minuteStep={15}
@@ -106,11 +107,12 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
                     onChange={handleTimeRangeChange.bind(null, index)}
                     placeholder={['Start time', 'End time']}
                   />
-                </Form.Item>
+                </div>
                 
-                <Form.Item label="Break Duration (minutes)">
+                <div style={{ display: 'flex', flexDirection: 'column', marginTop: 8 }}>
+                  <label style={{ marginBottom: 8 }}>Break Duration (minutes)</label>
                   <InputNumber min={0} max={120} placeholder="Break minutes" />
-                </Form.Item>
+                </div>
               </Space>
             )}
           </Card>
