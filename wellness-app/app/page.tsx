@@ -11,8 +11,8 @@ export default function Home() {
       <Navbar />
       <HeroSection />
       <FeaturesSection />
-      <HowItWorksSection />
       <ServicesSection />
+      <HowItWorksSection />
       <Footer />
     </div>
   );

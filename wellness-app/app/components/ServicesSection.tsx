@@ -26,7 +26,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   color 
 }) => (
   <Card
-    hoverable
     style={{
       borderRadius: '16px',
       border: '1px solid #e8e8e8',
@@ -34,7 +33,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      transition: 'all 0.3s ease',
       boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
     }}
     styles={{
@@ -44,14 +42,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         flexDirection: 'column',
         height: '100%',
       }
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)';
-      e.currentTarget.style.transform = 'translateY(-5px)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-      e.currentTarget.style.transform = 'translateY(0)';
     }}
   >
     <div 
