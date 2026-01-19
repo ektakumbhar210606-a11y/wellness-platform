@@ -26,6 +26,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { postApi } from '@/lib/api';
 import { customerApi } from '@/app/utils/apiUtils';
 import { useRouter } from 'next/navigation';
+import ForgotPasswordModal from './auth/ForgotPasswordModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -34,6 +35,7 @@ interface AuthModalProps {
   onCancel: () => void;
   onSuccess?: () => void;
   initialView?: 'login' | 'register' | 'roleSelection';
+  resetToken?: string | null;
 }
 
 // Define user role types
@@ -46,14 +48,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
   initialView = 'login'
 }) => {
   const router = useRouter();
-  const [currentView, setCurrentView] = useState<'login' | 'register' | 'roleSelection'>(initialView);
+  const [currentView, setCurrentView] = useState<'login' | 'register' | 'roleSelection' | 'reset'>(initialView);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [loginForm] = Form.useForm();
   const [registerForm] = Form.useForm();
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
+  
+  const getFieldValue = registerForm.getFieldValue;
 
   const handleLogin = async (values: any) => {
     setLoginLoading(true);
@@ -208,22 +213,25 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setRegisterLoading(true);
     try {
       // Prepare registration payload based on selected role
+      // Omit confirmPassword field from the payload
+      const { confirmPassword, ...filteredValues } = values;
+      
       let payload: any = {
-        email: values.email,
-        password: values.password,
+        email: filteredValues.email,
+        password: filteredValues.password,
         role: selectedRole === 'customer' ? 'Customer' : 
               selectedRole === 'provider' ? 'Business' : 'Therapist'
       };
       
       // Add role-specific fields
       if (selectedRole === 'customer') {
-        payload.full_name = values.name;
+        payload.full_name = filteredValues.name;
       } else if (selectedRole === 'provider') {
-        payload.business_name = values.businessName;
-        payload.owner_full_name = values.name;
+        payload.business_name = filteredValues.businessName;
+        payload.owner_full_name = filteredValues.name;
       } else if (selectedRole === 'therapist') {
-        payload.full_name = values.name;
-        payload.professional_title = values.professionalTitle;
+        payload.full_name = filteredValues.name;
+        payload.professional_title = filteredValues.professionalTitle;
       }
       
       // Call the backend API
@@ -429,7 +437,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
           <a 
             onClick={() => {
-              message.info('Password recovery functionality coming soon!');
+              setShowForgotPasswordModal(true);
             }}
             style={{ fontSize: '14px', color: '#667eea', cursor: 'pointer' }}
           >
@@ -709,11 +717,37 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <Form.Item
                 label="Password"
                 name="password"
-                rules={[{ required: true, message: 'Please input your password!' }]}
+                rules={[{ required: true, message: 'Please input your password!' }, {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, 
+                  message: 'Password must be at least 8 characters with uppercase, lowercase, and number!',
+                }]}
               >
                 <Input.Password
                   prefix={<LockOutlined style={{ color: '#667eea' }} />}
                   placeholder="Enter your password"
+                  style={{ borderRadius: '8px', height: '48px' }}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                label="Confirm Password"
+                name="confirmPassword"
+                dependencies={['password']}
+                rules={[{ required: true, message: 'Please confirm your password!' }, {
+                  validator(_, value) {
+                    if (!value || getFieldValue('password') === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('The two passwords do not match!'));
+                  },
+                }, {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, 
+                  message: 'Password must be at least 8 characters with uppercase, lowercase, and number!',
+                }]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#667eea' }} />}
+                  placeholder="Confirm your password"
                   style={{ borderRadius: '8px', height: '48px' }}
                 />
               </Form.Item>
@@ -764,11 +798,37 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <Form.Item
                 label="Password"
                 name="password"
-                rules={[{ required: true, message: 'Please input your password!' }]}
+                rules={[{ required: true, message: 'Please input your password!' }, {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, 
+                  message: 'Password must be at least 8 characters with uppercase, lowercase, and number!',
+                }]}
               >
                 <Input.Password
                   prefix={<LockOutlined style={{ color: '#667eea' }} />}
                   placeholder="Enter your password"
+                  style={{ borderRadius: '8px', height: '48px' }}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                label="Confirm Password"
+                name="confirmPassword"
+                dependencies={['password']}
+                rules={[{ required: true, message: 'Please confirm your password!' }, {
+                  validator(_, value) {
+                    if (!value || getFieldValue('password') === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('The two passwords do not match!'));
+                  },
+                }, {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, 
+                  message: 'Password must be at least 8 characters with uppercase, lowercase, and number!',
+                }]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#667eea' }} />}
+                  placeholder="Confirm your password"
                   style={{ borderRadius: '8px', height: '48px' }}
                 />
               </Form.Item>
@@ -819,11 +879,37 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <Form.Item
                 label="Password"
                 name="password"
-                rules={[{ required: true, message: 'Please input your password!' }]}
+                rules={[{ required: true, message: 'Please input your password!' }, {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, 
+                  message: 'Password must be at least 8 characters with uppercase, lowercase, and number!',
+                }]}
               >
                 <Input.Password
                   prefix={<LockOutlined style={{ color: '#667eea' }} />}
                   placeholder="Enter your password"
+                  style={{ borderRadius: '8px', height: '48px' }}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                label="Confirm Password"
+                name="confirmPassword"
+                dependencies={['password']}
+                rules={[{ required: true, message: 'Please confirm your password!' }, {
+                  validator(_, value) {
+                    if (!value || getFieldValue('password') === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('The two passwords do not match!'));
+                  },
+                }, {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, 
+                  message: 'Password must be at least 8 characters with uppercase, lowercase, and number!',
+                }]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#667eea' }} />}
+                  placeholder="Confirm your password"
                   style={{ borderRadius: '8px', height: '48px' }}
                 />
               </Form.Item>
@@ -894,6 +980,20 @@ const AuthModal: React.FC<AuthModalProps> = ({
       {currentView === 'login' && renderLoginView()}
       {currentView === 'roleSelection' && renderRoleSelectionView()}
       {currentView === 'register' && renderRegisterView()}
+      {currentView === 'reset' && (
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <Text type="secondary" style={{ fontSize: '16px' }}>
+            Opening password reset...
+          </Text>
+        </div>
+      )}
+      <ForgotPasswordModal
+        open={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+        onBackToLogin={() => {
+          setShowForgotPasswordModal(false);
+        }}
+      />
     </Modal>
   );
 };

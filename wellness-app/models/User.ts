@@ -14,6 +14,8 @@ export interface IUser extends Document {
   password: string;
   role: UserRole;
   phone?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +67,13 @@ const UserSchema: Schema<IUser> = new Schema({
       validator: (value: string) => !value || phoneRegex.test(value),
       message: 'Please provide a valid phone number'
     }
+  },
+  resetPasswordToken: {
+    type: String,
+    select: false // Don't return this field by default
+  },
+  resetPasswordExpires: {
+    type: Date
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

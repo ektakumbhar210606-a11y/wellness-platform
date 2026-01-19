@@ -5,6 +5,7 @@ import { LockOutlined, UserOutlined, EyeOutlined, EyeInvisibleOutlined } from '@
 import { Button, Form, Input, Typography, message, Divider, Space, Modal, Checkbox } from 'antd';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
+import ForgotPasswordModal from './auth/ForgotPasswordModal';
 
 const { Title, Text } = Typography;
 
@@ -18,6 +19,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const { login } = useAuth();
 
   const onFinish = async (values: any) => {
@@ -154,9 +156,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
             </Checkbox>
           </Form.Item>
 
-          <Link href="/forgot-password" style={{ fontSize: '14px', color: '#667eea' }}>
+          <a 
+            onClick={() => {
+              setShowForgotPasswordModal(true);
+            }}
+            style={{ fontSize: '14px', color: '#667eea', cursor: 'pointer' }}
+          >
             Forgot password?
-          </Link>
+          </a>
         </div>
 
         <Form.Item style={{ marginBottom: '0' }}>
@@ -187,6 +194,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
           </Link>
         </Text>
       </div>
+      <ForgotPasswordModal
+        open={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+        onBackToLogin={() => {
+          setShowForgotPasswordModal(false);
+        }}
+      />
     </Modal>
   );
 };

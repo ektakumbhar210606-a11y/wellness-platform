@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import type { MenuProps } from 'antd';
 import AuthModal from './AuthModal';
+import ResetPasswordModal from './auth/ResetPasswordModal';
 import { useAuth } from '@/app/context/AuthContext';
 
 const { Header } = Layout;
@@ -14,7 +15,11 @@ const { useBreakpoint } = Grid;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  resetToken?: string | null;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
@@ -74,6 +79,17 @@ const Navbar: React.FC = () => {
       window.removeEventListener('openAuthModal', handleOpenAuthModal);
     };
   }, []);
+
+  // State for reset password modal
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+
+  // Effect to handle reset token from query parameters
+  React.useEffect(() => {
+    if (resetToken) {
+      // Open reset password modal
+      setResetModalOpen(true);
+    }
+  }, [resetToken]);
 
   const scrollToTop = () => {
     window.scrollTo({
