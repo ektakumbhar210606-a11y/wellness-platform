@@ -181,7 +181,7 @@ const ProviderDashboard = () => {
     <>
       <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '30px' }}>
-          <Title level={2}>Provider Dashboard</Title>
+          <Title level={2}>Dashboard</Title>
           <Text>Welcome back! Here's what's happening with your business today.</Text>
         </div>
         

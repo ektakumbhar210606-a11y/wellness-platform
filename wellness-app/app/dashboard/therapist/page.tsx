@@ -110,7 +110,7 @@ const TherapistDashboardPage = () => {
     <Layout style={{ minHeight: '100vh' }}>
       <Header className="header" style={{ background: '#fff', padding: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <div style={{ float: 'left', padding: '0 24px', fontSize: '20px', fontWeight: 'bold', lineHeight: '64px' }}>
-          Therapist Dashboard
+          Dashboard
         </div>
         <div style={{ float: 'right', padding: '0 24px', lineHeight: '64px' }}>
           <Space>

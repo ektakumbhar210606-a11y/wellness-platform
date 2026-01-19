@@ -300,7 +300,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                     className={`${styles.authButton} ${styles.primaryButton}`}
                     onClick={() => handleDashboardClick('/dashboard/provider')}
                   >
-                    Provider Dashboard
+                    Dashboard
                   </button>
                 )}
                 {showTherapistDashboard && (
@@ -308,7 +308,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                     className={`${styles.authButton} ${styles.primaryButton}`}
                     onClick={() => handleDashboardClick('/dashboard/therapist')}
                   >
-                    Therapist Dashboard
+                    Dashboard
                   </button>
                 )}
                 {showCustomerDashboard && (
@@ -316,7 +316,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                     className={`${styles.authButton} ${styles.primaryButton}`}
                     onClick={() => handleDashboardClick('/dashboard/customer')}
                   >
-                    Customer Dashboard
+                    Dashboard
                   </button>
                 )}
               </>
@@ -418,7 +418,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                       className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
                       onClick={() => handleDashboardClick('/dashboard/provider')}
                     >
-                      Provider Dashboard
+                      Dashboard
                     </button>
                   </li>
                 )}
@@ -428,7 +428,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                       className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
                       onClick={() => handleDashboardClick('/dashboard/therapist')}
                     >
-                      Therapist Dashboard
+                      Dashboard
                     </button>
                   </li>
                 )}
@@ -438,7 +438,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                       className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
                       onClick={() => handleDashboardClick('/dashboard/customer')}
                     >
-                      Customer Dashboard
+                      Dashboard
                     </button>
                   </li>
                 )}
