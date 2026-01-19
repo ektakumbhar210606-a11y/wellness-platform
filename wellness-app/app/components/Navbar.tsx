@@ -1,34 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Drawer, Grid } from 'antd';
-import { MenuOutlined, UserOutlined, TeamOutlined, ShopOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import type { MenuProps } from 'antd';
 import AuthModal from './AuthModal';
 import ResetPasswordModal from './auth/ResetPasswordModal';
 import { useAuth } from '@/app/context/AuthContext';
-
-const { Header } = Layout;
-const { useBreakpoint } = Grid;
-
-type MenuItem = Required<MenuProps>['items'][number];
+import styles from './Navbar.module.css';
 
 interface NavbarProps {
   resetToken?: string | null;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
   const [activeSection, setActiveSection] = useState('');
   const { isAuthenticated, logout, user, login } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const screens = useBreakpoint();
-  const isMobile = !screens.md;
 
   // Check if provider has businessId and fetch if missing
   React.useEffect(() => {
@@ -198,52 +189,23 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   const isCustomer = user && user.role?.toLowerCase() === 'customer';
   const showCustomerDashboard = isCustomer;
 
-
-
-  const menuItems: MenuItem[] = [
-    {
-      key: 'hero-section',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('hero-section');
-      }}>Home</Link>,
-    },
-    {
-      key: 'features-section',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('features-section');
-      }}>Features</Link>,
-    },
-    {
-      key: 'services-section',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('services-section');
-      }}>Services</Link>,
-    },
-    {
-      key: 'how-it-works-section',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('how-it-works-section');
-      }}>How It Works</Link>,
-    },
-    {
-      key: 'footer-section',
-      label: <Link href="/" onClick={(e) => {
-        e.preventDefault();
-        scrollToSection('footer-section');
-      }}>About Us</Link>,
-    },
+  const navItems = [
+    { key: 'hero-section', label: 'Home', section: 'hero-section' },
+    { key: 'features-section', label: 'Features', section: 'features-section' },
+    { key: 'services-section', label: 'Services', section: 'services-section' },
+    { key: 'how-it-works-section', label: 'How It Works', section: 'how-it-works-section' },
+  ];
+  
+  const staticPages = [
+    { key: 'about-us', label: 'About Us', href: '/about-us' },
   ];
 
-  const showDrawer = () => {
-    setDrawerVisible(true);
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const closeDrawer = () => {
-    setDrawerVisible(false);
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
   };
 
   const openAuthModal = (view: 'login' | 'register' | 'roleSelection' = 'login') => {
@@ -256,264 +218,247 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   };
 
   const handleAuthSuccess = () => {
-    // Handle any post-authentication actions here
     closeAuthModal();
+  };
+
+  const handleNavClick = (sectionId: string) => {
+    scrollToSection(sectionId);
+    closeMobileMenu();
+  };
+
+  const handleLogout = () => {
+    logout();
+    closeMobileMenu();
+  };
+
+  const handleDashboardClick = (dashboardPath: string) => {
+    router.push(dashboardPath);
+    closeMobileMenu();
   };
 
   return (
     <>
-      <Header
-        style={{
-          position: 'fixed',
-          top: 0,
-          zIndex: 1000,
-          width: '100vw',
-          height: '64px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0',
-          background: '#ffffff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          left: 0,
-          right: 0,
-        }}
-      >
-      {/* Container for content with proper padding */}
-      <div style={{ width: '100%', paddingLeft: isMobile ? '16px' : '20px', paddingRight: isMobile ? '16px' : '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
+      <header className={styles.navbar}>
+        <div className={styles.container}>
           {/* Logo */}
-          <div 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              flexShrink: 0,
-              minWidth: 'fit-content',
-            }}
-          >
-            <div
-              style={{
-                fontSize: isMobile ? '18px' : '24px',
-                fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              🧘‍♀️ Serenity
-            </div>
+          <div className={styles.logo}>
+            🧘‍♀️ Serenity
           </div>
 
-          {/* Desktop Menu */}
-          {!isMobile && (
-            <div 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                flex: '0 1 auto',
-                justifyContent: 'center', 
-                marginLeft: '12px', 
-                marginRight: '12px',
-                minWidth: 0,
-                maxWidth: '600px',
-              }}
-            >
-              <Menu
-                mode="horizontal"
-                items={menuItems}
-                selectedKeys={[activeSection]}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  lineHeight: '64px',
-                }}
-              />
-            </div>
-          )}
+          {/* Desktop Navigation */}
+          <nav className={styles.DesktopNav}>
+            <ul className={styles.navList}>
+              {navItems.map((item) => (
+                <li key={item.key} className={styles.navItem}>
+                  <Link 
+                    href="/" 
+                    className={`${styles.navLink} ${activeSection === item.section ? styles.active : ''}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick(item.section);
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+              {staticPages.map((page) => (
+                <li key={page.key} className={styles.navItem}>
+                  <Link 
+                    href={page.href}
+                    className={styles.navLink}
+                    onClick={() => {
+                      router.push(page.href);
+                    }}
+                  >
+                    {page.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
           {/* Desktop Action Buttons */}
-          {!isMobile && (
-            <div 
-              style={{ 
-                display: 'flex', 
-                gap: '8px', 
-                flexShrink: 0,
-                minWidth: 'fit-content',
-              }}
-            >
-              {!isAuthenticated ? (
-                <Button 
-                  type="default" 
-                  icon={<UserOutlined />}
-                  style={{
-                    whiteSpace: 'nowrap',
-                  }}
+          <div className={styles.desktopActions}>
+            {!isAuthenticated ? (
+              <button 
+                className={styles.authButton}
+                onClick={() => openAuthModal('login')}
+              >
+                Sign In
+              </button>
+            ) : (
+              <>
+                <button 
+                  className={styles.authButton}
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+                {showProviderDashboard && (
+                  <button 
+                    className={`${styles.authButton} ${styles.primaryButton}`}
+                    onClick={() => handleDashboardClick('/dashboard/provider')}
+                  >
+                    Provider Dashboard
+                  </button>
+                )}
+                {showTherapistDashboard && (
+                  <button 
+                    className={`${styles.authButton} ${styles.primaryButton}`}
+                    onClick={() => handleDashboardClick('/dashboard/therapist')}
+                  >
+                    Therapist Dashboard
+                  </button>
+                )}
+                {showCustomerDashboard && (
+                  <button 
+                    className={`${styles.authButton} ${styles.primaryButton}`}
+                    onClick={() => handleDashboardClick('/dashboard/customer')}
+                  >
+                    Customer Dashboard
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className={styles.mobileMenuButton}
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <div className={`${styles.hamburger} ${mobileMenuOpen ? styles.open : ''}`}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay */}
+      <div 
+        className={`${styles.mobileMenuOverlay} ${mobileMenuOpen ? styles.open : ''}`}
+        onClick={closeMobileMenu}
+      ></div>
+
+      {/* Mobile Menu */}
+      <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.open : ''}`}>
+        <div className={styles.mobileMenuHeader}>
+          <div className={styles.logo}>
+            🧘‍♀️ Serenity
+          </div>
+          <button 
+            className={styles.closeButton}
+            onClick={closeMobileMenu}
+            aria-label="Close menu"
+          >
+            ×
+          </button>
+        </div>
+
+        <ul className={styles.mobileNavList}>
+          {navItems.map((item) => (
+            <li key={item.key} className={styles.mobileNavItem}>
+              <Link 
+                href="/" 
+                className={`${styles.mobileNavLink} ${activeSection === item.section ? styles.active : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick(item.section);
+                }}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ))}
+          {staticPages.map((page) => (
+            <li key={page.key} className={styles.mobileNavItem}>
+              <Link 
+                href={page.href}
+                className={styles.mobileNavLink}
+                onClick={() => {
+                  router.push(page.href);
+                  closeMobileMenu();
+                }}
+              >
+                {page.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <div className={styles.mobileActions}>
+          <ul className={styles.mobileActionsList}>
+            {!isAuthenticated ? (
+              <li>
+                <button 
+                  className={styles.mobileActionButton}
                   onClick={() => openAuthModal('login')}
                 >
                   Sign In
-                </Button>
-              ) : (
-                <Button 
-                  type="default" 
-                  icon={<UserOutlined />}
-                  style={{
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={logout}
-                >
-                  Logout
-                </Button>
-              )}
-              {showProviderDashboard && (
-                <Button 
-                  type="primary" 
-                  icon={<ShopOutlined />}
-                  style={{
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={() => router.push('/dashboard/provider')}
-                >
-                  Provider Dashboard
-                </Button>
-              )}
-              {showTherapistDashboard && (
-                <Button 
-                  type="primary" 
-                  icon={<TeamOutlined />}
-                  style={{
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={() => router.push('/dashboard/therapist')}
-                >
-                  Therapist Dashboard
-                </Button>
-              )}
-              {showCustomerDashboard && (
-                <Button 
-                  type="primary" 
-                  icon={<UserOutlined />}
-                  style={{
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={() => router.push('/dashboard/customer')}
-                >
-                  Customer Dashboard
-                </Button>
-              )}
-            </div>
-          )}
-      
-          {/* Mobile Menu Button */}
-          {isMobile && (
-            <Button
-              type="text"
-              icon={<MenuOutlined style={{ fontSize: '20px' }} />}
-              onClick={showDrawer}
-              style={{
-                flexShrink: 0,
-              }}
-            />
-          )}
+                </button>
+              </li>
+            ) : (
+              <>
+                <li>
+                  <button 
+                    className={styles.mobileActionButton}
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </li>
+                {showProviderDashboard && (
+                  <li>
+                    <button 
+                      className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
+                      onClick={() => handleDashboardClick('/dashboard/provider')}
+                    >
+                      Provider Dashboard
+                    </button>
+                  </li>
+                )}
+                {showTherapistDashboard && (
+                  <li>
+                    <button 
+                      className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
+                      onClick={() => handleDashboardClick('/dashboard/therapist')}
+                    >
+                      Therapist Dashboard
+                    </button>
+                  </li>
+                )}
+                {showCustomerDashboard && (
+                  <li>
+                    <button 
+                      className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
+                      onClick={() => handleDashboardClick('/dashboard/customer')}
+                    >
+                      Customer Dashboard
+                    </button>
+                  </li>
+                )}
+              </>
+            )}
+          </ul>
         </div>
       </div>
-      
-      {/* Mobile Drawer */}
-      <Drawer
-        title="Menu"
-        placement="right"
-        onClose={closeDrawer}
-        open={drawerVisible}
-        size="default"
-        styles={{
-          body: {
-            padding: '16px',
-          },
-        }}
-      >
-        <Menu
-          mode="vertical"
-          items={menuItems}
-          selectedKeys={[activeSection]}
-          style={{ 
-            border: 'none',
-            marginBottom: '16px',
-          }}
-          onClick={closeDrawer}
-        />
-        <div 
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '12px',
-            paddingTop: '16px',
-            borderTop: '1px solid #f0f0f0',
-          }}
-        >
-          {!isAuthenticated ? (
-            <Button 
-              type="default" 
-              icon={<UserOutlined />} 
-              block
-              size="large"
-              onClick={() => openAuthModal('login')}
-            >
-              Sign In
-            </Button>
-          ) : (
-            <Button 
-              type="default" 
-              icon={<UserOutlined />} 
-              block
-              size="large"
-              onClick={logout}
-            >
-              Logout
-            </Button>
-          )}
-          {showProviderDashboard && (
-            <Button 
-              type="primary" 
-              icon={<ShopOutlined />} 
-              block
-              size="large"
-              onClick={() => router.push('/dashboard/provider')}
-            >
-              Provider Dashboard
-            </Button>
-          )}
-          {showTherapistDashboard && (
-            <Button 
-              type="primary" 
-              icon={<TeamOutlined />} 
-              block
-              size="large"
-              onClick={() => router.push('/dashboard/therapist')}
-            >
-              Therapist Dashboard
-            </Button>
-          )}
-          {showCustomerDashboard && (
-            <Button 
-              type="primary" 
-              icon={<UserOutlined />} 
-              block
-              size="large"
-              onClick={() => router.push('/dashboard/customer')}
-            >
-              Customer Dashboard
-            </Button>
-          )}
-        </div>
-      </Drawer>
-    </Header>
+
       <AuthModal 
         open={authModalOpen}
         onCancel={closeAuthModal}
         onSuccess={handleAuthSuccess}
         initialView={authModalView}
+      />
+      <ResetPasswordModal 
+        open={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        token={resetToken || ''}
+        onResetSuccess={() => setResetModalOpen(false)}
       />
     </>
   );

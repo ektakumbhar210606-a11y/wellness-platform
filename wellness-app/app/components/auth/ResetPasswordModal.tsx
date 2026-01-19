@@ -74,7 +74,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       footer={null}
       closable={true}
       width={480}
-      destroyOnClose
+      destroyOnHidden
       maskClosable={false}
       style={{
         top: 20,
