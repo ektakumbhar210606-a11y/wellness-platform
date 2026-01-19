@@ -16,8 +16,6 @@ const TherapistProfilePage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profileForm] = Form.useForm();
-  const [availabilityForm] = Form.useForm();
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -31,19 +29,6 @@ const TherapistProfilePage = () => {
         const response = await therapistApi.getProfile();
         if (response.success && response.data) {
           setProfile(response.data);
-          // Set form values
-          profileForm.setFieldsValue({
-            fullName: response.data.fullName,
-            email: response.data.email,
-            phoneNumber: response.data.phoneNumber,
-            professionalTitle: response.data.professionalTitle,
-            bio: response.data.bio,
-            experience: response.data.experience,
-            location: response.data.location,
-            skills: response.data.skills,
-            certifications: Array.isArray(response.data.certifications) ? response.data.certifications : [],
-            licenseNumber: response.data.licenseNumber,
-          });
         } else {
           // If profile doesn't exist, redirect to onboarding
           router.push('/onboarding/therapist');
@@ -62,7 +47,44 @@ const TherapistProfilePage = () => {
     };
 
     checkAccess();
-  }, [user, router, profileForm]);
+  }, [user, router]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return null; // Already redirected in useEffect
+  }
+
+  // Render the form content only after profile is loaded to avoid form connection warnings
+  return <TherapistProfileFormContent profile={profile} user={user} router={router} saving={saving} setSaving={setSaving} />;
+};
+
+// Child component to ensure forms are only created when they will be used
+const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving }: { profile: any; user: any; router: any; saving: boolean; setSaving: React.Dispatch<React.SetStateAction<boolean>> }) => {
+  const [profileForm] = Form.useForm();
+  const [availabilityForm] = Form.useForm();
+
+  // Set initial form values after forms are created
+  useEffect(() => {
+    profileForm.setFieldsValue({
+      fullName: profile.fullName,
+      email: profile.email,
+      phoneNumber: profile.phoneNumber,
+      professionalTitle: profile.professionalTitle,
+      bio: profile.bio,
+      experience: profile.experience,
+      location: profile.location,
+      skills: profile.skills,
+      certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
+      licenseNumber: profile.licenseNumber,
+    });
+  }, [profile]);
 
   const handleProfileSubmit = async (values: any) => {
     try {
@@ -126,18 +148,6 @@ const TherapistProfilePage = () => {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return null; // Already redirected in useEffect
-  }
 
   return (
     <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
@@ -307,6 +317,6 @@ const TherapistProfilePage = () => {
       </Card>
     </div>
   );
-};
+}
 
 export default TherapistProfilePage;

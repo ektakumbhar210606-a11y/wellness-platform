@@ -67,6 +67,11 @@ export const therapistApi = {
     return makeAuthenticatedRequest('/api/therapist/me');
   },
 
+  // Get therapist dashboard data
+  getDashboardData: async () => {
+    return makeAuthenticatedRequest('/api/therapist/dashboard');
+  },
+
   // Create therapist profile
   createProfile: async (profileData: any) => {
     return makeAuthenticatedRequest('/api/therapist/create', {

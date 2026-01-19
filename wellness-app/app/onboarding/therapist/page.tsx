@@ -251,16 +251,14 @@ const TherapistOnboardingPage = () => {
     <div key="availability-step">
       <Card title="Weekly Availability" style={{ maxWidth: 800, margin: '0 auto' }}>
         <Form form={availabilityForm} layout="vertical">
-          <Form.Item name="weeklyAvailability" label="Set your weekly availability">
-            <WeeklyAvailability 
-              onChange={(availability) => {
-                // Update the form field with the new availability
-                availabilityForm.setFieldsValue({
-                  weeklyAvailability: availability
-                });
-              }}
-            />
-          </Form.Item>
+          <WeeklyAvailability 
+            onChange={(availability) => {
+              // Update the form field with the new availability
+              availabilityForm.setFieldsValue({
+                weeklyAvailability: availability
+              });
+            }}
+          />
         </Form>
       </Card>
     </div>,
