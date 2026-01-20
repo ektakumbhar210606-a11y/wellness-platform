@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Validate phone number if provided
+    if (body.phone && !/^[+]?[1-9]\d{1,14}$/.test(body.phone)) {
+      return NextResponse.json(
+        { error: 'Please provide a valid phone number' },
+        { status: 400 }
+      );
+    }
+    
     // Validate role strictly (must be exactly 'Customer', 'Business', or 'Therapist' - case-sensitive)
     const validRoles = ['Customer', 'Business', 'Therapist'];
     if (!validRoles.includes(role)) {
@@ -99,6 +107,7 @@ export async function POST(request: NextRequest) {
       email,
       password: hashedPassword,
       role,
+      phone: body.phone || null,
     });
 
     // Save user to database

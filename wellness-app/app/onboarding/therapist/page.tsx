@@ -141,6 +141,7 @@ const TherapistOnboardingPage = () => {
           initialValues={{
             email: user?.email || '',
             fullName: user?.name || '',
+            phoneNumber: '',
             certifications: [],
           }}
         >
