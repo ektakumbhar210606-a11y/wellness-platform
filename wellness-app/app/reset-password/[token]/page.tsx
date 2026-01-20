@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import { 
   Button, 
   Form, 
@@ -17,16 +17,15 @@ import { postApi } from '@/lib/api';
 const { Title, Text } = Typography;
 
 interface PasswordResetPageProps {
-  params: {
-    token: string;
-  };
+  params: Promise<{ token: string }>; // Changed to Promise
 }
 
 const PasswordResetPage: React.FC<PasswordResetPageProps> = ({ params }) => {
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const token = params.token;
+  const resolvedParams = use(params); // Use React.use() to unwrap the params
+  const token = resolvedParams.token;
 
   const getFieldValue = form.getFieldValue;
 
@@ -89,8 +88,10 @@ const PasswordResetPage: React.FC<PasswordResetPageProps> = ({ params }) => {
               boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
               overflow: 'hidden'
             }}
-            bodyStyle={{
-              padding: '40px',
+            styles={{
+              body: {
+                padding: '40px',
+              }
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: '32px' }}>

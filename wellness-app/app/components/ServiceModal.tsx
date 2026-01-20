@@ -33,7 +33,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
     duration: editingService ? editingService.duration : undefined,
     description: editingService ? editingService.description : '',
     images: editingService ? editingService.images || [] : [],
-    teamMembers: editingService ? editingService.teamMembers || [] : []
+    teamMembers: editingService ? editingService.teamMembers || [] : [],
+    isEditing: !!editingService
   });
   
   // Reset form data when modal opens/closes or when editing service changes
@@ -45,7 +46,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
         duration: editingService ? editingService.duration : undefined,
         description: editingService ? editingService.description : '',
         images: editingService ? editingService.images || [] : [],
-        teamMembers: editingService ? editingService.teamMembers || [] : []
+        teamMembers: editingService ? editingService.teamMembers || [] : [],
+        isEditing: !!editingService
       });
       setCurrent(0); // Reset to first step
     }
@@ -141,7 +143,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               loading={loading}
               disabled={!isStepValid()}
             >
-              Create Service
+              {editingService ? "Update Service" : "Create Service"}
             </Button>
           )}
         </Space>

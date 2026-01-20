@@ -299,7 +299,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
-    // Update the service if it belongs to the user's business
+// Update the service if it belongs to the user's business
     const updatedService = await ServiceModel.findOneAndUpdate(
       { _id: serviceId, business: business._id },
       { 
