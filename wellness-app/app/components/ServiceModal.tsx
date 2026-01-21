@@ -34,6 +34,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
     description: editingService ? editingService.description : '',
     images: editingService ? editingService.images || [] : [],
     teamMembers: editingService ? editingService.teamMembers || [] : [],
+    therapists: editingService ? editingService.therapists || [] : [],
     isEditing: !!editingService
   });
   
@@ -47,6 +48,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
         description: editingService ? editingService.description : '',
         images: editingService ? editingService.images || [] : [],
         teamMembers: editingService ? editingService.teamMembers || [] : [],
+        therapists: editingService ? editingService.therapists || [] : [],
         isEditing: !!editingService
       });
       setCurrent(0); // Reset to first step

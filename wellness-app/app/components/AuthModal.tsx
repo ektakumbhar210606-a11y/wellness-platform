@@ -58,6 +58,25 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   
+  // Reset internal state when modal closes to ensure fresh state on reopen
+  React.useEffect(() => {
+    if (!open) {
+      // Reset to initial view and clear selected role when modal closes
+      setCurrentView(initialView);
+      setSelectedRole(null);
+      // Reset forms
+      loginForm.resetFields();
+      registerForm.resetFields();
+    }
+  }, [open, initialView, loginForm, registerForm]);
+  
+  // Update currentView when initialView changes (when modal is open)
+  React.useEffect(() => {
+    if (open) {
+      setCurrentView(initialView);
+    }
+  }, [initialView, open]);
+  
   const getFieldValue = registerForm.getFieldValue;
 
   const handleLogin = async (values: any) => {
@@ -952,10 +971,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleModalCancel = () => {
-    // Reset currentView to initialView when modal is closed
+    // Reset internal state to ensure clean state on next open
     setCurrentView(initialView);
-    // Also reset selectedRole when modal closes
     setSelectedRole(null);
+    // Reset forms to clear any entered data
+    loginForm.resetFields();
+    registerForm.resetFields();
+    // Call the parent's cancel handler
     onCancel();
   };
 

@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { name, price, duration, description, category, images, teamMembers } = body;
+    const { name, price, duration, description, category, images, teamMembers, therapists } = body;
 
     // Validate required fields
     if (!name || !price || !duration || !description) {
@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
       duration,
       description,
       category: category || undefined, // Optional field
+      therapists: therapists || [], // Assign therapists if provided
     });
 
     const createdService = await newService.save();
