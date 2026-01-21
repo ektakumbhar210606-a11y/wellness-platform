@@ -151,6 +151,7 @@ const CustomerOnboardingPage = () => {
           initialValues={{
             email: user?.email || '',
             fullName: user?.name || '',
+            phoneNumber: '',
           }}
         >
           <Form.Item

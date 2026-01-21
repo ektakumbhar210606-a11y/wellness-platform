@@ -3,10 +3,22 @@
 import React from 'react';
 import { Row, Col, Button, Typography, Space } from 'antd';
 import { UserAddOutlined, ShopOutlined, TeamOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { useAuth } from '@/app/context/AuthContext';
 
 const { Title, Paragraph } = Typography;
 
 const HeroSection: React.FC = () => {
+  const { openAuthModal } = useAuth();
+  
+  const handleFindServicesClick = () => {
+    openAuthModal('login');
+  };
+  
+  const handleJoinAsProviderClick = () => {
+    openAuthModal('roleSelection');
+  };
+
+  
   return (
     <div
       id="hero-section"
@@ -63,11 +75,7 @@ const HeroSection: React.FC = () => {
                     fontSize: '16px',
                     fontWeight: 600,
                   }}
-                  onClick={() => {
-                    // This will trigger the auth modal from the Navbar context
-                    const event = new CustomEvent('openAuthModal', { detail: { view: 'roleSelection' } });
-                    window.dispatchEvent(event);
-                  }}
+                  onClick={handleFindServicesClick}
                 >
                   Find Services
                 </Button>
@@ -81,11 +89,7 @@ const HeroSection: React.FC = () => {
                     fontWeight: 600,
                     borderWidth: '2px',
                   }}
-                  onClick={() => {
-                    // This will trigger the auth modal from the Navbar context
-                    const event = new CustomEvent('openAuthModal', { detail: { view: 'roleSelection' } });
-                    window.dispatchEvent(event);
-                  }}
+                  onClick={handleJoinAsProviderClick}
                 >
                   Join as Provider
                 </Button>

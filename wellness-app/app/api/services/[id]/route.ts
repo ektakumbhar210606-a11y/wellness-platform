@@ -307,8 +307,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
 // Update the service if it belongs to the user's business
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (price !== undefined) updateData.price = price;
+    if (duration !== undefined) updateData.duration = duration;
+    if (description !== undefined) updateData.description = description;
+    if (category !== undefined) updateData.category = category;
+    if (therapists !== undefined) updateData.therapists = therapists;
+    
     const updatedService = await ServiceModel.findOneAndUpdate(
       { _id: serviceId, business: business._id },
+<<<<<<< HEAD
       { 
         ...(name !== undefined && { name }),
         ...(price !== undefined && { price }),
@@ -317,6 +326,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         ...(category !== undefined && { category }),
         ...(therapists !== undefined && { therapists }),
       },
+=======
+      updateData,
+>>>>>>> 6f4583a58e916cd58870586ef9a22dc9a9e57a53
       { new: true } // Return the updated document
     );
 

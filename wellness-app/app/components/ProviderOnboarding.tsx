@@ -43,6 +43,7 @@ interface FormData {
   fullName: string;
   email: string;
   password: string;
+  phoneNumber: string;
   businessName: string;
   businessDescription: string;
   address: string;
@@ -70,6 +71,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
     fullName: '',
     email: '',
     password: '',
+    phoneNumber: '',
     businessName: '',
     businessDescription: '',
     address: '',
@@ -116,6 +118,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
             fullName: values.fullName,
             email: values.email,
             password: values.password,
+            phoneNumber: values.phoneNumber,
           }));
           setCurrentStep(prev => prev + 1);
         }).catch(() => {
@@ -213,6 +216,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
       const businessData = {
         business_name: formData.businessName,
         description: formData.businessDescription,
+        phone_number: formData.phoneNumber,
         address: {
           street: formData.address,
           city: 'Default City', // Provide a default city value
@@ -366,6 +370,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
               fullName: formData.fullName,
               email: formData.email,
               password: formData.password,
+              phoneNumber: formData.phoneNumber,
             }}
           >
             <Form.Item
@@ -383,7 +388,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                 size="large"
               />
             </Form.Item>
-            
+                    
             <Form.Item
               label="Email"
               name="email"
@@ -398,7 +403,21 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                 size="large"
               />
             </Form.Item>
-            
+                    
+            <Form.Item
+              label="Phone Number"
+              name="phoneNumber"
+              rules={[
+                { required: true, message: 'Please enter your phone number' },
+                { pattern: /^\+?[1-9]\d{1,14}$/, message: 'Please enter a valid phone number' }
+              ]}
+            >
+              <Input 
+                placeholder="Enter your phone number" 
+                size="large"
+              />
+            </Form.Item>
+                    
             <Form.Item
               label="Password"
               name="password"

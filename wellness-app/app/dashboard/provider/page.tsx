@@ -560,6 +560,7 @@ const ProviderDashboard = () => {
         }}
         onSubmit={handleSubmitService}
         loading={submitting}
+        editingService={editingService}
       />
     </>
   );

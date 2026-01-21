@@ -14,12 +14,14 @@ interface ServiceCardProps {
     description: string;
     image?: string;
     teamMembers?: any[];
+    therapists?: any[];
   };
   onEdit: (service: any) => void;
   onDelete: (id: string) => void;
+  deletingServiceId?: string | null;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, deletingServiceId }) => {
   const handleEdit = () => {
     onEdit(service);
   };
@@ -27,6 +29,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete }) 
   const handleDelete = () => {
     onDelete(service.id);
   };
+
+  const isDeleting = deletingServiceId === service.id;
 
   return (
     <Card
@@ -67,8 +71,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete }) 
           onConfirm={handleDelete}
           okText="Yes"
           cancelText="No"
+          disabled={isDeleting}
         >
-          <Button type="text" danger icon={<DeleteOutlined />}>
+          <Button 
+            type="text" 
+            danger 
+            icon={<DeleteOutlined />}
+            loading={isDeleting}
+          >
             Delete
           </Button>
         </Popconfirm>
@@ -100,13 +110,22 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete }) 
           }
         />
         
-        {service.teamMembers && service.teamMembers.length > 0 && (
-          <div className="mt-3 pt-3 border-t">
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              Team: {service.teamMembers.length} member{service.teamMembers.length !== 1 ? 's' : ''}
-            </Text>
-          </div>
-        )}
+        <div className="mt-3 pt-3 border-t">
+          {service.teamMembers && service.teamMembers.length > 0 && (
+            <div>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Team: {service.teamMembers.length} member{service.teamMembers.length !== 1 ? 's' : ''}
+              </Text>
+            </div>
+          )}
+          {service.therapists && service.therapists.length > 0 && (
+            <div className="mt-1">
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Therapists: {service.therapists.length} assigned
+              </Text>
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );

@@ -14,10 +14,8 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('login');
   const [activeSection, setActiveSection] = useState('');
-  const { isAuthenticated, logout, user, login } = useAuth();
+  const { isAuthenticated, logout, user, login, authModalOpen, authModalView, openAuthModal, closeAuthModal } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -57,20 +55,8 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
     checkAndFetchBusinessId();
   }, [isAuthenticated, user, login]);
 
-  // Effect to handle custom events from other components
-  React.useEffect(() => {
-    const handleOpenAuthModal = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const view = customEvent.detail?.view || 'roleSelection';
-      openAuthModal(view);
-    };
-
-    window.addEventListener('openAuthModal', handleOpenAuthModal);
-    
-    return () => {
-      window.removeEventListener('openAuthModal', handleOpenAuthModal);
-    };
-  }, []);
+  // Remove the custom event listener effect since we're using context now
+  // The openAuthModal function from context will handle opening the modal
 
   // State for reset password modal
   const [resetModalOpen, setResetModalOpen] = useState(false);
@@ -208,14 +194,8 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
     setMobileMenuOpen(false);
   };
 
-  const openAuthModal = (view: 'login' | 'register' | 'roleSelection' = 'login') => {
-    setAuthModalView(view);
-    setAuthModalOpen(true);
-  };
-
-  const closeAuthModal = () => {
-    setAuthModalOpen(false);
-  };
+  // Note: openAuthModal and closeAuthModal are now provided by the AuthContext
+  // We don't need local implementations anymore
 
   const handleAuthSuccess = () => {
     closeAuthModal();

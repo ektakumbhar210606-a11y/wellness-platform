@@ -10,6 +10,11 @@ interface AuthContextType {
   user: any;
   isOnboardingComplete: boolean;
   checkOnboardingStatus: () => boolean;
+  // Modal state management
+  authModalOpen: boolean;
+  authModalView: 'login' | 'register' | 'roleSelection';
+  openAuthModal: (view?: 'login' | 'register' | 'roleSelection') => void;
+  closeAuthModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +22,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('roleSelection');
 
   // Check for stored authentication state on initial load
   useEffect(() => {
@@ -103,6 +110,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return true; // Non-providers don't need onboarding
   };
 
+  // Modal state management functions
+  const openAuthModal = (view: 'login' | 'register' | 'roleSelection' = 'login') => {
+    setAuthModalView(view);
+    setAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+    // Reset to default/clean state when closing
+    setAuthModalView('roleSelection'); // Default to role selection for fresh start
+  };
+
   return (
     <AuthContext.Provider value={{ 
       isAuthenticated, 
@@ -111,7 +130,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       logout, 
       user,
       isOnboardingComplete: checkOnboardingStatus(),
-      checkOnboardingStatus
+      checkOnboardingStatus,
+      // Modal state
+      authModalOpen,
+      authModalView,
+      openAuthModal,
+      closeAuthModal
     }}>
       {children}
     </AuthContext.Provider>
