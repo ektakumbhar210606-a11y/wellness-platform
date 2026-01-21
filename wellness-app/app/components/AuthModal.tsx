@@ -989,7 +989,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       closable={true}
       width={480}
       centered
-      destroyOnHidden
+      destroyOnClose
       maskClosable={false}
       styles={{
         body: {

@@ -17,6 +17,7 @@ const HeroSection: React.FC = () => {
   const handleJoinAsProviderClick = () => {
     openAuthModal('roleSelection');
   };
+
   
   return (
     <div
