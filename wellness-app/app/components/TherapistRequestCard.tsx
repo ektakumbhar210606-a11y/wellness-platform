@@ -56,7 +56,7 @@ const TherapistRequestCard: React.FC<TherapistRequestCardProps> = ({
                 icon={<CheckOutlined />}
                 disabled={isActionDisabled}
                 loading={loading}
-                onClick={() => onApprove(request.therapistId)}
+                onClick={() => onApprove(request.id)}
                 style={{ borderColor: '#52c41a' }}
               >
                 Approve
@@ -66,7 +66,7 @@ const TherapistRequestCard: React.FC<TherapistRequestCardProps> = ({
                 icon={<CloseOutlined />}
                 disabled={isActionDisabled}
                 loading={loading}
-                onClick={() => onReject(request.therapistId)}
+                onClick={() => onReject(request.id)}
               >
                 Reject
               </Button>

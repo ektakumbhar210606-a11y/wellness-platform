@@ -11,6 +11,7 @@ export interface IService extends Document {
   description?: string; // Optional service description
   category?: string; // Optional service category
   therapists?: ITherapist['_id'][] | ITherapist[]; // Array of therapist references
+  teamMembers?: ITherapist['_id'][] | ITherapist[]; // Array of team member references
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +52,10 @@ const ServiceSchema: Schema<IService> = new Schema({
   therapists: [{
     type: Schema.Types.ObjectId,
     ref: 'Therapist'
+  }],
+  teamMembers: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Therapist'
   }]
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
@@ -63,6 +68,7 @@ ServiceSchema.index({ price: 1 }); // Index on price for sorting/filtering
 ServiceSchema.index({ duration: 1 }); // Index on duration for sorting/filtering
 ServiceSchema.index({ category: 1 }); // Index on category for filtering
 ServiceSchema.index({ therapists: 1 }); // Index on therapists for marketplace queries
+ServiceSchema.index({ teamMembers: 1 }); // Index on team members for marketplace queries
 
 // Create and export the Service model
 const ServiceModel = mongoose.models.Service || mongoose.model<IService>('Service', ServiceSchema);

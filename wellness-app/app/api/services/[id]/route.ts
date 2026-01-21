@@ -317,18 +317,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     
     const updatedService = await ServiceModel.findOneAndUpdate(
       { _id: serviceId, business: business._id },
-<<<<<<< HEAD
-      { 
-        ...(name !== undefined && { name }),
-        ...(price !== undefined && { price }),
-        ...(duration !== undefined && { duration }),
-        ...(description !== undefined && { description }),
-        ...(category !== undefined && { category }),
-        ...(therapists !== undefined && { therapists }),
-      },
-=======
       updateData,
->>>>>>> 6f4583a58e916cd58870586ef9a22dc9a9e57a53
       { new: true } // Return the updated document
     );
 

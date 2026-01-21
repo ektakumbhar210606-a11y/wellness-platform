@@ -35,10 +35,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
     duration: editingService ? editingService.duration : undefined,
     description: editingService ? editingService.description : '',
     images: editingService ? editingService.images || [] : [],
-<<<<<<< HEAD
-=======
     teamMembers: editingService ? editingService.teamMembers || [] : [],
->>>>>>> 6f4583a58e916cd58870586ef9a22dc9a9e57a53
     therapists: editingService ? editingService.therapists || [] : [],
     isEditing: !!editingService
   });
@@ -53,10 +50,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
         duration: editingService ? editingService.duration : undefined,
         description: editingService ? editingService.description : '',
         images: editingService ? editingService.images || [] : [],
-<<<<<<< HEAD
-=======
         teamMembers: editingService ? editingService.teamMembers || [] : [],
->>>>>>> 6f4583a58e916cd58870586ef9a22dc9a9e57a53
         therapists: editingService ? editingService.therapists || [] : [],
         isEditing: !!editingService
       });
