@@ -20,7 +20,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
-  const { login } = useAuth();
+  const { login: authLogin, loginWithRedirect } = useAuth();
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -54,7 +54,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onCancel, onSuccess }) =>
       }
       
       // Update auth state with actual user data
-      login({
+      loginWithRedirect({
         id: result.user.id,
         userId: result.user.id, // Add userId for API calls
         name: result.user.name,

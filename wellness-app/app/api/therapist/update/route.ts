@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
-import { TherapistProfile } from '../../../../models/TherapistProfile';
+import TherapistModel from '../../../../models/Therapist';
 import { requireTherapistAuth } from '../../../../lib/middleware/authMiddleware';
 
 export async function PUT(req: NextRequest) {
@@ -41,21 +41,24 @@ export async function PUT(req: NextRequest) {
       status
     } = body;
 
-    // Build update object with only provided fields
+    // Build update object with only provided fields that exist in the Therapist schema
     const updateData: any = {};
     
-    if (fullName) updateData.fullName = fullName;
-    if (email) updateData.email = email;
-    if (phoneNumber) updateData.phoneNumber = phoneNumber;
-    if (professionalTitle) updateData.professionalTitle = professionalTitle;
-    if (bio !== undefined) updateData.bio = bio;
+    // Therapist-specific fields
     if (experience !== undefined) updateData.experience = experience;
-    if (location) updateData.location = location;
-    if (skills) updateData.skills = skills;
-    if (certifications) updateData.certifications = certifications;
-    if (licenseNumber) updateData.licenseNumber = licenseNumber;
-    if (weeklyAvailability) updateData.weeklyAvailability = weeklyAvailability;
-    if (status) updateData.status = status;
+    if (skills) updateData.expertise = skills;
+    if (status) updateData.availabilityStatus = status;
+    
+    // Profile information fields
+    if (fullName !== undefined) updateData.fullName = fullName;
+    if (email !== undefined) updateData.email = email;
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+    if (professionalTitle !== undefined) updateData.professionalTitle = professionalTitle;
+    if (bio !== undefined) updateData.bio = bio;
+    if (location !== undefined) updateData.location = location;
+    if (certifications !== undefined) updateData.certifications = certifications;
+    if (licenseNumber !== undefined) updateData.licenseNumber = licenseNumber;
+    if (weeklyAvailability !== undefined) updateData.weeklyAvailability = weeklyAvailability;
 
     // Validate required fields if they are being updated
     if (updateData.experience !== undefined && (updateData.experience === null || updateData.experience < 0)) {
@@ -95,8 +98,8 @@ export async function PUT(req: NextRequest) {
     }
 
     // Update therapist profile
-    const updatedProfile = await TherapistProfile.findOneAndUpdate(
-      { userId: decoded.id },
+    const updatedProfile = await TherapistModel.findOneAndUpdate(
+      { user: decoded.id },
       { $set: updateData },
       { new: true, runValidators: true } // Return updated document and run schema validations
     );

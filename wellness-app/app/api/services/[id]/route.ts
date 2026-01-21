@@ -62,7 +62,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     // Check if the user has the 'provider' or 'business' role
-    if (user.role !== 'Business' && user.role !== 'Provider') {
+    if (user.role.toLowerCase() !== 'business' && user.role.toLowerCase() !== 'provider') {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient permissions' },
         { status: 403 }
@@ -147,7 +147,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Check if the user has the 'provider' or 'business' role
-    if (user.role !== 'Business' && user.role !== 'Provider') {
+    if (user.role.toLowerCase() !== 'business' && user.role.toLowerCase() !== 'provider') {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient permissions' },
         { status: 403 }
@@ -240,7 +240,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Check if the user has the 'provider' or 'business' role
-    if (user.role !== 'Business' && user.role !== 'Provider') {
+    if (user.role.toLowerCase() !== 'business' && user.role.toLowerCase() !== 'provider') {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient permissions' },
         { status: 403 }
@@ -251,7 +251,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Parse request body
     const body = await req.json();
-    const { name, price, duration, description, category } = body;
+    const { name, price, duration, description, category, therapists } = body;
 
     // Find the business associated with the user
     const business = await BusinessModel.findOne({ owner: user._id });
@@ -299,6 +299,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
+    if (therapists !== undefined && !Array.isArray(therapists)) {
+      return NextResponse.json(
+        { error: 'Therapists must be an array' },
+        { status: 400 }
+      );
+    }
+
 // Update the service if it belongs to the user's business
     const updatedService = await ServiceModel.findOneAndUpdate(
       { _id: serviceId, business: business._id },
@@ -308,6 +315,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         ...(duration !== undefined && { duration }),
         ...(description !== undefined && { description }),
         ...(category !== undefined && { category }),
+        ...(therapists !== undefined && { therapists }),
       },
       { new: true } // Return the updated document
     );
@@ -329,6 +337,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           duration: updatedService.duration,
           description: updatedService.description,
           category: updatedService.category,
+          therapists: updatedService.therapists || [],
           createdAt: updatedService.createdAt,
         }
       },

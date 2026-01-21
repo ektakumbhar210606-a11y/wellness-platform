@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if the user has the 'Provider' or 'Business' role
-    if (user.role !== 'Business' && user.role !== 'Provider') {
+    if (user.role.toLowerCase() !== 'business' && user.role.toLowerCase() !== 'provider') {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient permissions' },
         { status: 403 }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { name, price, duration, description, category, images, teamMembers } = body;
+    const { name, price, duration, description, category, images, therapists } = body;
 
     // Validate required fields
     if (!name || !price || !duration || !description) {
@@ -84,9 +84,10 @@ export async function POST(req: NextRequest) {
     // Validate data types
     if (typeof name !== 'string' || typeof description !== 'string' || 
         typeof price !== 'number' || typeof duration !== 'number' ||
-        (category && typeof category !== 'string')) {
+        (category && typeof category !== 'string') ||
+        (therapists && !Array.isArray(therapists))) {
       return NextResponse.json(
-        { error: 'Invalid data types: name, description, and category must be strings; price and duration must be numbers' },
+        { error: 'Invalid data types: name, description, and category must be strings; price and duration must be numbers; therapists must be an array' },
         { status: 400 }
       );
     }
@@ -117,6 +118,7 @@ export async function POST(req: NextRequest) {
       duration,
       description,
       category: category || undefined, // Optional field
+      therapists: therapists || [] // Optional field
     });
 
     const createdService = await newService.save();
@@ -131,6 +133,7 @@ export async function POST(req: NextRequest) {
           duration: createdService.duration,
           description: createdService.description,
           category: createdService.category,
+          therapists: createdService.therapists || [],
           createdAt: createdService.createdAt,
         }
       },

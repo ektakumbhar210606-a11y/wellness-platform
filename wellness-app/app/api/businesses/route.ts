@@ -1,22 +1,20 @@
 import { NextRequest } from 'next/server';
-import { connectToDatabase } from '../db';
-import jwt from 'jsonwebtoken';
-import UserModel from '../../models/User';
+import { connectToDatabase } from '../../../lib/db';
+import BusinessModel from '../../../models/Business';
+import UserModel from '../../../models/User';
+import * as jwt from 'jsonwebtoken';
+import { Types } from 'mongoose';
 
-export interface JwtPayload {
+interface JwtPayload {
   id: string;
   email: string;
   role: string;
 }
 
-export interface AuthenticatedRequest extends NextRequest {
-  user?: JwtPayload;
-}
-
 /**
  * Middleware to authenticate and authorize therapist users
  */
-export async function requireTherapistAuth(request: NextRequest) {
+async function requireTherapistAuth(request: NextRequest) {
   try {
     await connectToDatabase();
 
@@ -72,5 +70,51 @@ export async function requireTherapistAuth(request: NextRequest) {
       error: error.message || 'Internal server error',
       status: 500
     };
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    // Authenticate and authorize therapist
+    const authResult = await requireTherapistAuth(req);
+    if (!authResult.authenticated) {
+      return Response.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+    
+    const decoded = authResult.user;
+    if (!decoded) {
+      return Response.json(
+        { success: false, error: 'Authentication failed' },
+        { status: 401 }
+      );
+    }
+
+    await connectToDatabase();
+
+    // Fetch ALL businesses from database (no filtering by therapist association)
+    const businesses = await BusinessModel.find({}, {
+      _id: 1,
+      name: 1,
+      address: 1,
+      openingTime: 1,
+      closingTime: 1,
+      status: 1
+    });
+
+    return Response.json({
+      success: true,
+      message: 'Businesses retrieved successfully',
+      data: businesses
+    });
+
+  } catch (error: any) {
+    console.error('Error fetching businesses:', error);
+    return Response.json(
+      { success: false, error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

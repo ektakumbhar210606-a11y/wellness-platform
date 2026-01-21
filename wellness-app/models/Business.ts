@@ -8,6 +8,19 @@ export enum BusinessStatus {
   Suspended = 'suspended'
 }
 
+// Define the possible therapist association status values
+export enum TherapistAssociationStatus {
+  Pending = 'pending',
+  Approved = 'approved'
+}
+
+// Define the interface for therapist association
+export interface ITherapistAssociation {
+  therapistId: mongoose.Types.ObjectId;
+  status: TherapistAssociationStatus;
+  joinedAt?: Date;
+}
+
 // Define the interface for the Address subdocument
 export interface IAddress {
   street: string;
@@ -25,6 +38,7 @@ export interface IBusiness extends Document {
   openingTime: string; // In HH:MM format
   closingTime: string; // In HH:MM format
   status: BusinessStatus;
+  therapists?: ITherapistAssociation[]; // Array of therapist associations
   createdAt: Date;
   updatedAt: Date;
 }
@@ -108,7 +122,25 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
       message: 'Status must be either active, inactive, or suspended'
     },
     default: BusinessStatus.Active
-  }
+  },
+  therapists: [{
+    therapistId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Therapist',
+      required: true
+    },
+    status: {
+      type: String,
+      enum: {
+        values: Object.values(TherapistAssociationStatus),
+        message: 'Therapist association status must be pending or approved'
+      },
+      default: TherapistAssociationStatus.Pending
+    },
+    joinedAt: {
+      type: Date
+    }
+  }]
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });
@@ -118,6 +150,7 @@ BusinessSchema.index({ owner: 1 }); // Index on owner for quick lookups
 BusinessSchema.index({ name: 'text' }); // Text index for business name search
 BusinessSchema.index({ 'address.city': 1 }); // Index on city for location-based queries
 BusinessSchema.index({ status: 1 }); // Index on status for filtering
+BusinessSchema.index({ 'therapists.therapistId': 1 }); // Index on therapist associations for marketplace queries
 
 // Create and export the Business model
 const BusinessModel = mongoose.models.Business || mongoose.model<IBusiness>('Business', BusinessSchema);

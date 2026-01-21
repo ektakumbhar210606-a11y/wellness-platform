@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
-import { TherapistProfile } from '../../../../models/TherapistProfile';
+import TherapistModel from '../../../../models/Therapist';
 import BookingModel, { BookingStatus } from '../../../../models/Booking';
 import { requireTherapistAuth } from '../../../../lib/middleware/authMiddleware';
 
@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
     
     await connectToDatabase();
 
-    // Get therapist profile by userId
-    const therapistProfile = await TherapistProfile.findOne({ userId: decoded.id }).lean();
+    // Get therapist profile by user ID
+    const therapistProfile = await TherapistModel.findOne({ user: decoded.id }).lean();
     if (!therapistProfile) {
       return Response.json(
         { success: false, error: 'Therapist profile not found' },

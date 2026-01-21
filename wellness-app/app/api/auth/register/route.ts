@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import User from '../../../../models/User';
+import TherapistModel from '../../../../models/Therapist';
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,6 +104,43 @@ export async function POST(request: NextRequest) {
 
     // Save user to database
     const savedUser = await newUser.save();
+
+    // Create therapist profile if role is 'Therapist'
+    if (role === 'Therapist') {
+      try {
+        // Check if therapist profile already exists to prevent duplicates
+        const existingTherapist = await TherapistModel.findOne({ user: savedUser._id });
+        
+        if (!existingTherapist) {
+          // Create new therapist profile linked to the user
+          const newTherapist = new TherapistModel({
+            user: savedUser._id,
+            business: null, // Initially no business association
+            experience: 0, // Default experience
+            expertise: [], // No initial expertise
+            rating: 0, // Default rating
+            availabilityStatus: 'available', // Default availability
+                    
+            // Profile information (initially empty)
+            fullName: body.full_name || '',
+            email: savedUser.email,
+            phoneNumber: body.phone || '',
+            professionalTitle: body.professional_title || '',
+            bio: '',
+            location: {},
+            certifications: [],
+            licenseNumber: '',
+            weeklyAvailability: []
+          });
+          
+          await newTherapist.save();
+          console.log(`Therapist profile created for user: ${savedUser._id}`);
+        }
+      } catch (therapistError: any) {
+        // Log the error but don't fail the registration
+        console.error('Error creating therapist profile:', therapistError);
+      }
+    }
 
     // Generate JWT token with user ID, email and role
     const token = jwt.sign(

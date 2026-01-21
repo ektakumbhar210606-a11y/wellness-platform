@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if the user has the 'Business' role
-    if (user.role !== 'Business') {
+    // Check if the user has the 'Business' or 'business' role
+    if (user.role.toLowerCase() !== 'business') {
       return NextResponse.json(
         { error: 'Only users with Business role can create business profiles' },
         { status: 403 }

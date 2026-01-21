@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
-import { TherapistProfile } from '../../../../models/TherapistProfile';
+import TherapistModel from '../../../../models/Therapist';
 import { requireTherapistAuth } from '../../../../lib/middleware/authMiddleware';
 
 export async function POST(req: NextRequest) {
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     // Check if therapist profile already exists for this user
-    const existingProfile = await TherapistProfile.findOne({ userId: decoded.id });
+    const existingProfile = await TherapistModel.findOne({ user: decoded.id });
     if (existingProfile) {
       return Response.json(
         { success: false, error: 'Therapist profile already exists for this user' },
@@ -95,20 +95,27 @@ export async function POST(req: NextRequest) {
     }
 
     // Create therapist profile
-    const therapistProfile = new TherapistProfile({
-      userId: decoded.id,
-      fullName,
-      email,
-      phoneNumber,
-      professionalTitle,
-      bio,
-      experience,
-      location,
-      skills: skills || [],
+    const therapistProfile = new TherapistModel({
+      user: decoded.id,  // Set the user field to userId from JWT
+      business: null,    // Initially no business association
+      experience: experience,
+      expertise: skills || [],  // Map skills to expertise field
+      availabilityStatus: 'available',  // Default availability status
+      
+      // Profile information
+      fullName: fullName,
+      email: email,
+      phoneNumber: phoneNumber,
+      professionalTitle: professionalTitle,
+      bio: bio,
+      location: location,
       certifications: certifications || [],
-      licenseNumber,
+      licenseNumber: licenseNumber,
       weeklyAvailability: weeklyAvailability || []
     });
+
+    // Additional profile information could be stored in User model
+    // or in a separate profile collection if needed
 
     await therapistProfile.save();
 

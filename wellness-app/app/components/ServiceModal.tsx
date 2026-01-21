@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Steps, Button, Space } from 'antd';
+import { Modal, Steps, Button, Space, message } from 'antd';
 
 // Dynamically import step components to avoid circular dependencies during build
 const ServiceStepBasic = React.lazy(() => import('./ServiceStepBasic'));
@@ -25,6 +25,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   editingService
 }) => {
   const [current, setCurrent] = useState(0);
+  const [approvedTherapists, setApprovedTherapists] = useState<any[]>([]);
+  const [loadingTherapists, setLoadingTherapists] = useState(false);
   
   // Initialize form data based on whether we're editing or creating
   const [formData, setFormData] = useState({
@@ -33,25 +35,59 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
     duration: editingService ? editingService.duration : undefined,
     description: editingService ? editingService.description : '',
     images: editingService ? editingService.images || [] : [],
-    teamMembers: editingService ? editingService.teamMembers || [] : [],
+    therapists: editingService ? editingService.therapists || [] : [],
     isEditing: !!editingService
   });
   
-  // Reset form data when modal opens/closes or when editing service changes
+  // Fetch approved therapists when modal opens
   useEffect(() => {
     if (visible) {
+      fetchApprovedTherapists();
       setFormData({
         name: editingService ? editingService.name : '',
         price: editingService ? editingService.price : undefined,
         duration: editingService ? editingService.duration : undefined,
         description: editingService ? editingService.description : '',
         images: editingService ? editingService.images || [] : [],
-        teamMembers: editingService ? editingService.teamMembers || [] : [],
+        therapists: editingService ? editingService.therapists || [] : [],
         isEditing: !!editingService
       });
       setCurrent(0); // Reset to first step
     }
   }, [visible, editingService]);
+
+  const fetchApprovedTherapists = async () => {
+    try {
+      setLoadingTherapists(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/therapists`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch approved therapists');
+      }
+      
+      setApprovedTherapists(result.data?.approvedTherapists || []);
+    } catch (error: any) {
+      console.error('Error fetching approved therapists:', error);
+      message.error(error.message || 'Failed to load approved therapists');
+      setApprovedTherapists([]);
+    } finally {
+      setLoadingTherapists(false);
+    }
+  };
 
   // Dynamically render components to avoid import issues
   const renderStepContent = (stepIndex: number) => {
@@ -61,7 +97,14 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
       case 1:
         return <ServiceStepMedia formData={formData} setFormData={setFormData} />;
       case 2:
-        return <ServiceStepTeam formData={formData} setFormData={setFormData} />;
+        return (
+          <ServiceStepTeam 
+            formData={formData} 
+            setFormData={setFormData}
+            approvedTherapists={approvedTherapists}
+            loadingTherapists={loadingTherapists}
+          />
+        );
       case 3:
         return <ServiceStepReview formData={formData} />;
       default:

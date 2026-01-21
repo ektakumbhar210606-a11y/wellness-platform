@@ -64,17 +64,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginWithRedirect = (userData: any) => {
     login(userData);
     
-    // Check if user is a provider and needs onboarding
-    if (userData.role && (userData.role.toLowerCase() === 'provider' || userData.role.toLowerCase() === 'business')) {
-      // In a real app, you would use the router here
-      // For now, we'll just update the user state
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          // This would be handled by the component that calls this function
-          // window.location.href = '/onboarding/provider';
+    // Handle redirects based on user role after a brief delay
+    setTimeout(() => {
+      if (typeof window !== 'undefined' && userData && userData.role) {
+        const role = userData.role.toLowerCase();
+        
+        if (role === 'therapist') {
+          // For therapists, check if profile exists and redirect accordingly
+          // This would typically involve an API call to check therapist profile
+          // For now, we'll redirect to therapist dashboard
+          window.location.href = '/dashboard/therapist';
+        } else if (role === 'provider' || role === 'business') {
+          // Check if provider/business needs onboarding
+          const hasProfile = userData.providerProfileId || userData.businessId || userData.onboardingComplete === true;
+          if (!hasProfile) {
+            window.location.href = '/onboarding/provider';
+          } else {
+            window.location.href = '/dashboard/provider';
+          }
+        } else if (role === 'customer') {
+          window.location.href = '/dashboard/customer';
+        } else {
+          // Default redirect for other roles
+          window.location.href = '/';
         }
-      }, 100);
-    }
+      }
+    }, 100);
   };
   
   const checkOnboardingStatus = (): boolean => {

@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if the user has the 'Provider' or 'Business' role
-    if (user.role !== 'Business' && user.role !== 'Provider') {
+    if (user.role.toLowerCase() !== 'business' && user.role.toLowerCase() !== 'provider') {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient permissions' },
         { status: 403 }

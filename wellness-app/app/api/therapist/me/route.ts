@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
-import { TherapistProfile } from '../../../../models/TherapistProfile';
+import TherapistModel from '../../../../models/Therapist';
 import { requireTherapistAuth } from '../../../../lib/middleware/authMiddleware';
 
 export async function GET(req: NextRequest) {
@@ -21,13 +21,13 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     await connectToDatabase();
 
-    // Get therapist profile by userId
-    const therapistProfile = await TherapistProfile.findOne({ userId: decoded.id }).lean();
+    // Find therapist by user ID - ensure proper comparison
+    const therapist = await TherapistModel.findOne({ user: decoded.id });
 
-    if (!therapistProfile) {
+    if (!therapist) {
       return Response.json(
         { success: false, error: 'Therapist profile not found' },
         { status: 404 }
@@ -37,10 +37,11 @@ export async function GET(req: NextRequest) {
     return Response.json({
       success: true,
       message: 'Therapist profile retrieved successfully',
-      data: therapistProfile
+      data: therapist
     });
+
   } catch (error: any) {
-    console.error('Error retrieving therapist profile:', error);
+    console.error('Error fetching therapist profile:', error);
     return Response.json(
       { success: false, error: error.message || 'Internal server error' },
       { status: 500 }

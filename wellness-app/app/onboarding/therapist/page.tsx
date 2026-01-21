@@ -69,13 +69,29 @@ const TherapistOnboardingPage = () => {
         email: user?.email || profileValues.email, // Use user email if available
       };
 
-      // Call API to create therapist profile
-      await therapistApi.createProfile(profileData);
-      
-      notification.success({
-        title: 'Success',
-        description: 'Therapist profile created successfully!',
-      });
+      try {
+        // First try to create therapist profile
+        await therapistApi.createProfile(profileData);
+        
+        notification.success({
+          title: 'Success',
+          description: 'Therapist profile created successfully!',
+        });
+      } catch (createError: any) {
+        // If create fails because profile already exists, try updating instead
+        if (createError.message && (createError.message.includes('already exists') || createError.message.includes('409'))) {
+          // Profile already exists, so update it instead
+          await therapistApi.updateProfile(profileData);
+          
+          notification.success({
+            title: 'Success',
+            description: 'Therapist profile updated successfully!',
+          });
+        } else {
+          // Some other error occurred
+          throw createError;
+        }
+      }
       
       setCurrentStep(1);
     } catch (error: any) {

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space } from 'antd';
-import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined } from '@ant-design/icons';
+import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs } from 'antd';
+import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { businessService, BusinessProfile } from '@/app/services/businessService';
 import ServiceModal from '@/app/components/ServiceModal';
 import ServiceCard from '@/app/components/ServiceCard';
+import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 
 const { Title, Text } = Typography;
 
@@ -18,9 +19,137 @@ const ProviderDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<any[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestActionLoading, setRequestActionLoading] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Fetch therapist requests
+  const fetchTherapistRequests = React.useCallback(async () => {
+    try {
+      setRequestsLoading(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/therapists`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch therapist requests');
+      }
+      
+      // Combine pending and approved therapists into one list with status
+      const allRequests = [
+        ...(result.data.pendingTherapists || []).map((therapist: any) => ({
+          ...therapist,
+          status: 'pending'
+        })),
+        ...(result.data.approvedTherapists || []).map((therapist: any) => ({
+          ...therapist,
+          status: 'approved'
+        }))
+      ];
+      
+      setRequests(allRequests);
+    } catch (error: any) {
+      console.error('Error fetching therapist requests:', error);
+      message.error(error.message || 'Failed to load therapist requests');
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, []);
+
+  // Handle approve request
+  const handleApproveRequest = async (therapistId: string) => {
+    try {
+      setRequestActionLoading(therapistId);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/approve-therapist`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          therapistId,
+          action: 'approve'
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to approve therapist');
+      }
+      
+      message.success('Therapist approved successfully!');
+      // Refresh the requests list
+      await fetchTherapistRequests();
+    } catch (error: any) {
+      console.error('Error approving therapist:', error);
+      message.error(error.message || 'Failed to approve therapist');
+    } finally {
+      setRequestActionLoading(null);
+    }
+  };
+
+  // Handle reject request
+  const handleRejectRequest = async (therapistId: string) => {
+    try {
+      setRequestActionLoading(therapistId);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/approve-therapist`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          therapistId,
+          action: 'reject'
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reject therapist');
+      }
+      
+      message.success('Therapist request rejected');
+      // Refresh the requests list
+      await fetchTherapistRequests();
+    } catch (error: any) {
+      console.error('Error rejecting therapist:', error);
+      message.error(error.message || 'Failed to reject therapist');
+    } finally {
+      setRequestActionLoading(null);
+    }
+  };
 
 
   const fetchServices = React.useCallback(async () => {
@@ -81,6 +210,10 @@ const ProviderDashboard = () => {
         setBusiness(profile);
         // Fetch services after getting business profile
         await fetchServices();
+        // Fetch therapist requests if on requests tab
+        if (activeTab === 'requests') {
+          await fetchTherapistRequests();
+        }
       } catch (error: any) {
         console.error('Error fetching business profile:', error);
         message.error(error.message || 'Failed to fetch business profile');
@@ -95,7 +228,7 @@ const ProviderDashboard = () => {
     };
     
     fetchBusinessProfile();
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, activeTab]);
 
   const handleSubmitService = React.useCallback(async (formData: any) => {
     setSubmitting(true);
@@ -182,154 +315,242 @@ const ProviderDashboard = () => {
     <>
       <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '30px' }}>
-          <Title level={2}>Dashboard</Title>
-          <Text>Welcome back! Here's what's happening with your business today.</Text>
+          <Title level={2}>Provider Dashboard</Title>
+          <Text>Welcome back! Manage your business and therapist team here.</Text>
         </div>
         
-        {business && (
-          <div style={{ marginBottom: '30px' }}>
-            <Card title="Business Profile" style={{ marginBottom: '20px' }}>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                    <ShopOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
-                    <div>
-                      <Text strong style={{ fontSize: '16px' }}>{business.business_name}</Text>
-                      <br />
-                      <Text type="secondary">{business.description}</Text>
-                    </div>
+        <Tabs 
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[{
+            key: 'dashboard',
+            label: 'Dashboard Overview',
+            children: (
+              <>
+                {business && (
+                  <div style={{ marginBottom: '30px' }}>
+                    <Card title="Business Profile" style={{ marginBottom: '20px' }}>
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                            <ShopOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
+                            <div>
+                              <Text strong style={{ fontSize: '16px' }}>{business.business_name}</Text>
+                              <br />
+                              <Text type="secondary">{business.description}</Text>
+                            </div>
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <EnvironmentOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
+                            <Text>{business.address.street}, {business.address.city}, {business.address.state} {business.address.zipCode}</Text>
+                          </div>
+                        </Col>
+                      </Row>
+                    </Card>
                   </div>
-                </Col>
-                <Col span={12}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <EnvironmentOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
-                    <Text>{business.address.street}, {business.address.city}, {business.address.state} {business.address.zipCode}</Text>
-                  </div>
-                </Col>
-              </Row>
-            </Card>
-          </div>
-        )}
+                )}
 
-        <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Total Clients"
-                value={24}
-                prefix={<UserOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Upcoming Appointments"
-                value={5}
-                prefix={<CalendarOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Avg. Rating"
-                value={4.8}
-                precision={1}
-                prefix={<StarOutlined />}
-                styles={{ content: { color: '#3f8600' } }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Revenue"
-                value={2450}
-                precision={2}
-                prefix={<DollarOutlined />}
-                suffix="USD"
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        <Row gutter={[16, 16]}>
-          <Col span={16}>
-            <Card title="Recent Bookings" style={{ height: '300px' }}>
-              <Text>No recent bookings. Keep promoting your services!</Text>
-            </Card>
-          </Col>
-          <Col span={8}>
-            <Card title="Quick Actions">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <Button type="primary">View Calendar</Button>
-                <Button onClick={() => setModalVisible(true)} icon={<PlusOutlined />}>Manage Services</Button>
-                <Button>Update Profile</Button>
-                <Button>View Earnings</Button>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Services Section */}
-        <Row gutter={[16, 16]} style={{ marginTop: '30px' }}>
-          <Col span={24}>
-            <Card title={`My Services (${services.length})`}>
-              {servicesLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <Spin size="large" />
-                </div>
-              ) : services.length > 0 ? (
-                <Row gutter={[16, 16]}>
-                  {services.map((service) => (
-                    <Col key={service.id} xs={24} sm={12} md={8} lg={6} xl={6}>
-                      <ServiceCard
-                        service={service}
-                        onEdit={(serviceData) => {
-                          setEditingService(serviceData);
-                          setModalVisible(true);
-                        }}
-                        onDelete={async (id: string) => {
-                          try {
-                            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                            if (!token) {
-                              throw new Error('Authentication token not found');
-                            }
-                            
-                            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/services/${id}`, {
-                              method: 'DELETE',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`,
-                              },
-                            });
-                            
-                            const result = await response.json();
-                            
-                            if (!response.ok) {
-                              throw new Error(result.error || 'Failed to delete service');
-                            }
-                            
-                            message.success('Service deleted successfully!');
-                            await fetchServices(); // Refresh the list
-                          } catch (error: any) {
-                            console.error('Error deleting service:', error);
-                            message.error(error.message || 'An error occurred while deleting the service');
-                          }
-                        }}
+                <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Total Clients"
+                        value={24}
+                        prefix={<UserOutlined />}
                       />
-                    </Col>
-                  ))}
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Upcoming Appointments"
+                        value={5}
+                        prefix={<CalendarOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Avg. Rating"
+                        value={4.8}
+                        precision={1}
+                        prefix={<StarOutlined />}
+                        styles={{ content: { color: '#3f8600' } }}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Revenue"
+                        value={2450}
+                        precision={2}
+                        prefix={<DollarOutlined />}
+                        suffix="USD"
+                      />
+                    </Card>
+                  </Col>
                 </Row>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <Text>You haven't created any services yet. Click "Manage Services" to get started!</Text>
-                </div>
-              )}
-            </Card>
-          </Col>
-        </Row>
+
+                <Row gutter={[16, 16]}>
+                  <Col span={16}>
+                    <Card title="Recent Bookings" style={{ height: '300px' }}>
+                      <Text>No recent bookings. Keep promoting your services!</Text>
+                    </Card>
+                  </Col>
+                  <Col span={8}>
+                    <Card title="Quick Actions">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <Button type="primary">View Calendar</Button>
+                        <Button onClick={() => setModalVisible(true)} icon={<PlusOutlined />}>Manage Services</Button>
+                        <Button>Update Profile</Button>
+                        <Button>View Earnings</Button>
+                      </div>
+                    </Card>
+                  </Col>
+                </Row>
+
+                {/* Services Section */}
+                <Row gutter={[16, 16]} style={{ marginTop: '30px' }}>
+                  <Col span={24}>
+                    <Card title={`My Services (${services.length})`}>
+                      {servicesLoading ? (
+                        <div style={{ textAlign: 'center', padding: '40px' }}>
+                          <Spin size="large" />
+                        </div>
+                      ) : services.length > 0 ? (
+                        <Row gutter={[16, 16]}>
+                          {services.map((service) => (
+                            <Col key={service.id} xs={24} sm={12} md={8} lg={6} xl={6}>
+                              <ServiceCard
+                                service={service}
+                                onEdit={(serviceData) => {
+                                  setEditingService(serviceData);
+                                  setModalVisible(true);
+                                }}
+                                onDelete={async (id: string) => {
+                                  try {
+                                    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                                    if (!token) {
+                                      throw new Error('Authentication token not found');
+                                    }
+                                    
+                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/services/${id}`, {
+                                      method: 'DELETE',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${token}`,
+                                      },
+                                    });
+                                    
+                                    const result = await response.json();
+                                    
+                                    if (!response.ok) {
+                                      throw new Error(result.error || 'Failed to delete service');
+                                    }
+                                    
+                                    message.success('Service deleted successfully!');
+                                    await fetchServices(); // Refresh the list
+                                  } catch (error: any) {
+                                    console.error('Error deleting service:', error);
+                                    message.error(error.message || 'An error occurred while deleting the service');
+                                  }
+                                }}
+                              />
+                            </Col>
+                          ))}
+                        </Row>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '40px' }}>
+                          <Text>You haven't created any services yet. Click "Manage Services" to get started!</Text>
+                        </div>
+                      )}
+                    </Card>
+                  </Col>
+                </Row>
+              </>
+            ),
+          }, {
+            key: 'requests',
+            label: (
+              <span>
+                <TeamOutlined />
+                Therapist Requests
+                {requests.filter(r => r.status === 'pending').length > 0 && (
+                  <span style={{ 
+                    marginLeft: 8, 
+                    backgroundColor: '#ff4d4f', 
+                    color: 'white', 
+                    borderRadius: '50%', 
+                    padding: '2px 6px', 
+                    fontSize: '12px' 
+                  }}>
+                    {requests.filter(r => r.status === 'pending').length}
+                  </span>
+                )}
+              </span>
+            ),
+            children: (
+              <div style={{ marginTop: 16 }}>
+                <Row gutter={[16, 16]}>
+                  <Col span={24}>
+                    <Title level={3}>Therapist Applications</Title>
+                    <Text type="secondary">
+                      Review and manage therapist requests to join your business
+                    </Text>
+                  </Col>
+                  
+                  <Col span={24}>
+                    {requestsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <Spin size="large" />
+                        <div style={{ marginTop: 16 }}>
+                          <Text>Loading therapist requests...</Text>
+                        </div>
+                      </div>
+                    ) : requests.length > 0 ? (
+                      <div>
+                        <div style={{ marginBottom: 16 }}>
+                          <Text strong>
+                            Showing {requests.length} request{requests.length !== 1 ? 's' : ''} 
+                            ({requests.filter(r => r.status === 'pending').length} pending, 
+                            {requests.filter(r => r.status === 'approved').length} approved)
+                          </Text>
+                        </div>
+                        <Row gutter={[16, 16]}>
+                          {requests.map((request) => (
+                            <Col xs={24} sm={24} md={12} lg={8} xl={6} key={request.id}>
+                              <TherapistRequestCard 
+                                request={request}
+                                onApprove={handleApproveRequest}
+                                onReject={handleRejectRequest}
+                                loading={requestActionLoading === request.therapistId}
+                              />
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    ) : (
+                      <Card>
+                        <div style={{ textAlign: 'center', padding: '40px' }}>
+                          <TeamOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
+                          <Title level={4}>No Therapist Requests</Title>
+                          <Text type="secondary">
+                            There are currently no therapist requests.
+                            Therapists will appear here when they request to join your business.
+                          </Text>
+                        </div>
+                      </Card>
+                    )}
+                  </Col>
+                </Row>
+              </div>
+            ),
+          }]}
+        />
       </div>
       <ServiceModal 
         visible={modalVisible}
