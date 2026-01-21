@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  role: string | null;
+  loading: boolean;
   login: (userData: any) => void;
   loginWithRedirect: (userData: any) => void;
   logout: () => void;
@@ -21,82 +23,91 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('roleSelection');
 
   // Check for stored authentication state on initial load
   useEffect(() => {
-    // Check for JWT token
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (token && storedUser) {
+    const initializeAuth = () => {
+      setLoading(true);
       try {
-        // Verify token is still valid by attempting to parse it
-        // In a real app, you'd verify the JWT signature
-        const user = JSON.parse(storedUser);
-        setIsAuthenticated(true);
-        setUser(user);
+        // Check for JWT token
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (token && storedUser) {
+          // Verify token is still valid by attempting to parse it
+          // In a real app, you'd verify the JWT signature
+          const user = JSON.parse(storedUser);
+          setIsAuthenticated(true);
+          setUser(user);
+          setRole(user.role || null);
+        } else if (token) {
+          // Token exists but no user data, clear the token
+          localStorage.removeItem('token');
+        }
       } catch (error) {
         // Invalid token or user data, clear storage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('isAuthenticated');
+      } finally {
+        setLoading(false);
       }
-    } else if (token) {
-      // Token exists but no user data, clear the token
-      localStorage.removeItem('token');
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = (userData: any) => {
     setIsAuthenticated(true);
     setUser(userData);
-    // Token is already stored in LoginModal
+    setRole(userData?.role || null);
+    // Token should already be stored in LoginModal
     if (userData) {
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('isAuthenticated', JSON.stringify(true));
+      // Store role separately for easy access
+      if (userData.role) {
+        localStorage.setItem('role', userData.role);
+      }
     }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
+    setRole(null);
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
     localStorage.removeItem('token'); // Clear JWT token
+    localStorage.removeItem('role'); // Clear role
   };
   
   const loginWithRedirect = (userData: any) => {
+    // Set auth state immediately for direct dashboard access
     login(userData);
     
-    // Handle redirects based on user role after a brief delay
-    setTimeout(() => {
-      if (typeof window !== 'undefined' && userData && userData.role) {
-        const role = userData.role.toLowerCase();
-        
-        if (role === 'therapist') {
-          // For therapists, check if profile exists and redirect accordingly
-          // This would typically involve an API call to check therapist profile
-          // For now, we'll redirect to therapist dashboard
-          window.location.href = '/dashboard/therapist';
-        } else if (role === 'provider' || role === 'business') {
-          // Check if provider/business needs onboarding
-          const hasProfile = userData.providerProfileId || userData.businessId || userData.onboardingComplete === true;
-          if (!hasProfile) {
-            window.location.href = '/onboarding/provider';
-          } else {
-            window.location.href = '/dashboard/provider';
-          }
-        } else if (role === 'customer') {
-          window.location.href = '/dashboard/customer';
-        } else {
-          // Default redirect for other roles
-          window.location.href = '/';
-        }
+    // Handle redirects based on user role immediately (no delays)
+    if (typeof window !== 'undefined' && userData && userData.role) {
+      const role = userData.role.toLowerCase();
+      
+      if (role === 'therapist') {
+        // Direct redirect to therapist dashboard without profile checks
+        window.location.href = '/dashboard/therapist';
+      } else if (role === 'provider' || role === 'business') {
+        // Direct redirect to provider dashboard without profile API calls
+        window.location.href = '/dashboard/provider';
+      } else if (role === 'customer') {
+        window.location.href = '/dashboard/customer';
+      } else {
+        // Default redirect for other roles
+        window.location.href = '/';
       }
-    }, 100);
+    }
   };
   
   const checkOnboardingStatus = (): boolean => {
@@ -112,6 +123,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Modal state management functions
   const openAuthModal = (view: 'login' | 'register' | 'roleSelection' = 'login') => {
+    // Prevent opening auth modal if user is already authenticated
+    if (isAuthenticated && !loading) {
+      return;
+    }
     setAuthModalView(view);
     setAuthModalOpen(true);
   };
@@ -125,6 +140,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <AuthContext.Provider value={{ 
       isAuthenticated, 
+      role,
+      loading,
       login, 
       loginWithRedirect,
       logout, 

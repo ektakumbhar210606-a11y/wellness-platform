@@ -113,100 +113,26 @@ const AuthModal: React.FC<AuthModalProps> = ({
       // Show success message
       message.success('Login successful!');
       
-      // Handle role-specific redirects after login
+      // Handle role-specific redirects immediately without profile API calls
       if (userData.role?.toLowerCase() === 'therapist') {
-        try {
-          // Check if therapist profile exists
-          const profileResponse = await fetch('/api/therapist/me', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`, // Use the token from response directly
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
-            if (profileData.success && profileData.data) {
-              // Therapist profile exists, redirect to dashboard
-              setTimeout(() => {
-                router.push('/dashboard/therapist');
-              }, 500); // Small delay to allow modal to close and message to show
-            } else {
-              // Therapist profile doesn't exist, redirect to onboarding
-              setTimeout(() => {
-                router.push('/onboarding/therapist');
-              }, 500); // Small delay to allow modal to close and message to show
-            }
-          } else {
-            // Therapist profile doesn't exist, redirect to onboarding
-            setTimeout(() => {
-              router.push('/onboarding/therapist');
-            }, 500); // Small delay to allow modal to close and message to show
-          }
-        } catch (error) {
-          console.error('Error checking therapist profile:', error);
-          // Fallback to onboarding if there's an error
-          setTimeout(() => {
-            router.push('/onboarding/therapist');
-          }, 500); // Small delay to allow modal to close and message to show
-        }
-        
-        // Don't call onSuccess or close modal for therapists, as redirect will happen
+        // Direct redirect to therapist dashboard
+        router.push('/dashboard/therapist');
       } else if (userData.role && (userData.role.toLowerCase() === 'provider' || userData.role.toLowerCase() === 'business')) {
-        // Check if provider already has a business profile
-        try {
-          // Fetch business profile to see if onboarding is already completed
-          const token = localStorage.getItem('token');
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/my-business`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          if (response.ok) {
-            // Provider already has a business profile, redirect to dashboard
-            setTimeout(() => {
-              router.push('/dashboard/provider');
-            }, 500); // Small delay to allow modal to close and message to show
-          } else {
-            // Provider doesn't have a business profile, redirect to onboarding
-            setTimeout(() => {
-              router.push('/onboarding/provider');
-            }, 500); // Small delay to allow modal to close and message to show
-          }
-        } catch (error) {
-          // If there's an error checking business profile, redirect to onboarding
-          setTimeout(() => {
-            router.push('/onboarding/provider');
-          }, 500); // Small delay to allow modal to close and message to show
-        }
+        // Direct redirect to provider dashboard
+        router.push('/dashboard/provider');
+      } else if (userData.role?.toLowerCase() === 'customer') {
+        // Direct redirect to customer dashboard
+        router.push('/dashboard/customer');
       } else {
-        // For customers, check if onboarding is already completed
-        try {
-          const hasOnboarded = await customerApi.hasCompletedOnboarding();
-          
-          if (hasOnboarded) {
-            // Customer has completed onboarding, redirect to dashboard
-            setTimeout(() => {
-              router.push('/dashboard/customer');
-            }, 500); // Small delay to allow modal to close and message to show
-          } else {
-            // Customer hasn't completed onboarding, redirect to onboarding
-            setTimeout(() => {
-              router.push('/onboarding/customer');
-            }, 500); // Small delay to allow modal to close and message to show
-          }
-        } catch (error) {
-          console.error('Error checking customer onboarding status:', error);
-          // If there's an error checking onboarding status, redirect to onboarding
-          setTimeout(() => {
-            router.push('/onboarding/customer');
-          }, 500); // Small delay to allow modal to close and message to show
-        }
+        // Default redirect for other roles
+        router.push('/');
       }
+      
+      // Call success callback and close modal
+      if (onSuccess) {
+        onSuccess();
+      }
+      onCancel();
     } catch (error: any) {
       // Handle different types of errors
       if (error.status === 400) {

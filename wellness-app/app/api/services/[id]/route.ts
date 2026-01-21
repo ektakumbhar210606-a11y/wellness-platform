@@ -25,7 +25,7 @@ function verifyToken(token: string, secret: string): any {
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Connect to database
     await connectToDatabase();
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       );
     }
 
-    const serviceId = params.id;
+    const serviceId = (await params).id;
 
     // Find the business associated with the user
     const business = await BusinessModel.findOne({ owner: user._id });
@@ -110,7 +110,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Connect to database
     await connectToDatabase();
@@ -154,7 +154,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
-    const serviceId = params.id;
+    const serviceId = (await params).id;
 
     // Find the business associated with the user
     const business = await BusinessModel.findOne({ owner: user._id });
@@ -203,7 +203,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Connect to database
     await connectToDatabase();
@@ -247,7 +247,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
-    const serviceId = params.id;
+    const serviceId = (await params).id;
 
     // Parse request body
     const body = await req.json();
