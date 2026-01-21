@@ -166,11 +166,11 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   }, [pathname, activeSection]);
 
   const isProvider = user && (user.role?.toLowerCase() === 'provider' || user.role?.toLowerCase() === 'business');
-  const hasBusiness = user && user.businessId;
-  const showProviderDashboard = isProvider && hasBusiness;
-  
   const isTherapist = user && user.role?.toLowerCase() === 'therapist';
-  const showTherapistDashboard = isTherapist;
+  
+  // Don't show dashboard button for providers and therapists
+  const showProviderDashboard = false;
+  const showTherapistDashboard = false;
 
   const isCustomer = user && user.role?.toLowerCase() === 'customer';
   const showCustomerDashboard = isCustomer;
@@ -202,6 +202,10 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   };
 
   const handleNavClick = (sectionId: string) => {
+    // Prevent providers and therapists from accessing landing page sections
+    if ((isProvider || isTherapist) && isAuthenticated) {
+      return;
+    }
     scrollToSection(sectionId);
     closeMobileMenu();
   };
@@ -248,6 +252,10 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                     href={page.href}
                     className={styles.navLink}
                     onClick={() => {
+                      // Prevent providers and therapists from accessing static pages
+                      if ((isProvider || isTherapist) && isAuthenticated) {
+                        return;
+                      }
                       router.push(page.href);
                     }}
                   >
@@ -275,22 +283,6 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                 >
                   Logout
                 </button>
-                {showProviderDashboard && (
-                  <button 
-                    className={`${styles.authButton} ${styles.primaryButton}`}
-                    onClick={() => handleDashboardClick('/dashboard/provider')}
-                  >
-                    Dashboard
-                  </button>
-                )}
-                {showTherapistDashboard && (
-                  <button 
-                    className={`${styles.authButton} ${styles.primaryButton}`}
-                    onClick={() => handleDashboardClick('/dashboard/therapist')}
-                  >
-                    Dashboard
-                  </button>
-                )}
                 {showCustomerDashboard && (
                   <button 
                     className={`${styles.authButton} ${styles.primaryButton}`}
@@ -361,6 +353,10 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                 href={page.href}
                 className={styles.mobileNavLink}
                 onClick={() => {
+                  // Prevent providers and therapists from accessing static pages
+                  if ((isProvider || isTherapist) && isAuthenticated) {
+                    return;
+                  }
                   router.push(page.href);
                   closeMobileMenu();
                 }}
@@ -392,26 +388,6 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
                     Logout
                   </button>
                 </li>
-                {showProviderDashboard && (
-                  <li>
-                    <button 
-                      className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
-                      onClick={() => handleDashboardClick('/dashboard/provider')}
-                    >
-                      Dashboard
-                    </button>
-                  </li>
-                )}
-                {showTherapistDashboard && (
-                  <li>
-                    <button 
-                      className={`${styles.mobileActionButton} ${styles.mobilePrimaryButton}`}
-                      onClick={() => handleDashboardClick('/dashboard/therapist')}
-                    >
-                      Dashboard
-                    </button>
-                  </li>
-                )}
                 {showCustomerDashboard && (
                   <li>
                     <button 
