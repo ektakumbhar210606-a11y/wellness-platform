@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Steps, Button, Space, message } from 'antd';
+import { Modal, Steps, message } from 'antd';
 
 // Dynamically import step components to avoid circular dependencies during build
 const ServiceStepBasic = React.lazy(() => import('./ServiceStepBasic'));
@@ -95,9 +95,27 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   const renderStepContent = (stepIndex: number) => {
     switch (stepIndex) {
       case 0:
-        return <ServiceStepBasic formData={formData} setFormData={setFormData} />;
+        return (
+          <ServiceStepBasic 
+            formData={formData} 
+            setFormData={setFormData}
+            onNext={() => setCurrent(current + 1)}
+            onPrev={() => setCurrent(current - 1)}
+            current={current}
+            totalSteps={4}
+          />
+        );
       case 1:
-        return <ServiceStepMedia formData={formData} setFormData={setFormData} />;
+        return (
+          <ServiceStepMedia 
+            formData={formData} 
+            setFormData={setFormData}
+            onNext={() => setCurrent(current + 1)}
+            onPrev={() => setCurrent(current - 1)}
+            current={current}
+            totalSteps={4}
+          />
+        );
       case 2:
         return (
           <ServiceStepTeam 
@@ -105,10 +123,22 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             setFormData={setFormData}
             approvedTherapists={approvedTherapists}
             loadingTherapists={loadingTherapists}
+            onNext={() => setCurrent(current + 1)}
+            onPrev={() => setCurrent(current - 1)}
+            current={current}
+            totalSteps={4}
           />
         );
       case 3:
-        return <ServiceStepReview formData={formData} />;
+        return (
+          <ServiceStepReview 
+            formData={formData}
+            onPrev={() => setCurrent(current - 1)}
+            onSubmit={handleSubmit}
+            loading={loading}
+            isEditing={!!editingService}
+          />
+        );
       default:
         return null;
     }
@@ -121,38 +151,12 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
     { title: 'Review & Submit' },
   ];
 
-  const next = () => {
-    setCurrent(current + 1);
-  };
-
-  const prev = () => {
-    setCurrent(current - 1);
-  };
-
   const handleSubmit = async () => {
     try {
       await onSubmit(formData);
       onClose();
     } catch (error) {
       console.error('Error submitting service:', error);
-    }
-  };
-
-  const isStepValid = () => {
-    switch (current) {
-      case 0: // Basic Details
-        return formData.name.trim() !== '' && 
-               formData.price !== undefined && 
-               formData.duration !== undefined && 
-               formData.description.trim() !== '';
-      case 1: // Media Upload
-        return true; // Optional step
-      case 2: // Team Members
-        return true; // Optional step
-      case 3: // Review & Submit
-        return true; // Always valid
-      default:
-        return false;
     }
   };
 
@@ -169,29 +173,6 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
       
       <div className="mt-6">
         {renderStepContent(current)}
-      </div>
-      
-      <div className="mt-8 flex justify-between">
-        <Space>
-          <Button disabled={current === 0} onClick={() => prev()}>
-            Previous
-          </Button>
-          {current < steps.length - 1 && (
-            <Button type="primary" onClick={() => next()} disabled={!isStepValid()}>
-              Next
-            </Button>
-          )}
-          {current === steps.length - 1 && (
-            <Button 
-              type="primary" 
-              onClick={handleSubmit} 
-              loading={loading}
-              disabled={!isStepValid()}
-            >
-              {editingService ? "Update Service" : "Create Service"}
-            </Button>
-          )}
-        </Space>
       </div>
     </Modal>
   );

@@ -1,13 +1,23 @@
 import React from 'react';
-import { Typography, Descriptions, Tag, Space, Divider } from 'antd';
+import { Typography, Descriptions, Tag, Space, Divider, Button } from 'antd';
 
 const { Title, Text } = Typography;
 
 interface ServiceStepReviewProps {
   formData: any;
+  onPrev: () => void;
+  onSubmit: () => void;
+  loading: boolean;
+  isEditing: boolean;
 }
 
-const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({ formData }) => {
+const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({ 
+  formData,
+  onPrev,
+  onSubmit,
+  loading,
+  isEditing
+}) => {
   return (
     <div>
       <Title level={4}>Review Your Service</Title>
@@ -56,6 +66,20 @@ const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({ formData }) => {
         ) : (
           <Text type="secondary">No team members added</Text>
         )}
+      </div>
+      
+      {/* Navigation buttons */}
+      <div style={{ marginTop: 24, textAlign: 'right' }}>
+        <Button style={{ marginRight: 8 }} onClick={onPrev}>
+          Previous
+        </Button>
+        <Button 
+          type="primary" 
+          onClick={onSubmit}
+          loading={loading}
+        >
+          {isEditing ? "Update Service" : "Create Service"}
+        </Button>
       </div>
     </div>
   );

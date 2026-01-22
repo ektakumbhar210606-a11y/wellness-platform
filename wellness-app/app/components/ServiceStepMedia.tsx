@@ -8,9 +8,20 @@ const { Title, Text } = Typography;
 interface ServiceStepMediaProps {
   formData: any;
   setFormData: (data: any) => void;
+  onNext: () => void;
+  onPrev: () => void;
+  current: number;
+  totalSteps: number;
 }
 
-const ServiceStepMedia: React.FC<ServiceStepMediaProps> = ({ formData, setFormData }) => {
+const ServiceStepMedia: React.FC<ServiceStepMediaProps> = ({ 
+  formData, 
+  setFormData, 
+  onNext,
+  onPrev,
+  current,
+  totalSteps
+}) => {
   const handleUploadChange = (info: any) => {
     // Convert file list to the format we need
     const fileList = info.fileList.map((file: any) => ({
@@ -69,6 +80,18 @@ const ServiceStepMedia: React.FC<ServiceStepMediaProps> = ({ formData, setFormDa
           <Text strong>Uploaded {formData.images.length} image(s)</Text>
         </div>
       )}
+      
+      {/* Navigation buttons */}
+      <div style={{ marginTop: 24, textAlign: 'right' }}>
+        <Button style={{ marginRight: 8 }} onClick={onPrev}>
+          Previous
+        </Button>
+        {current < totalSteps - 1 && (
+          <Button type="primary" onClick={onNext}>
+            Next
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

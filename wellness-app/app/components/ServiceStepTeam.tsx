@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Select, Typography, Card, Spin, Alert } from 'antd';
+import { Form, Select, Typography, Card, Spin, Alert, Button } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -10,13 +10,21 @@ interface ServiceStepTeamProps {
   setFormData: (data: any) => void;
   approvedTherapists?: any[]; // List of approved therapists for this business
   loadingTherapists?: boolean;
+  onNext: () => void;
+  onPrev: () => void;
+  current: number;
+  totalSteps: number;
 }
 
 const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({ 
   formData, 
   setFormData,
   approvedTherapists = [],
-  loadingTherapists = false
+  loadingTherapists = false,
+  onNext,
+  onPrev,
+  current,
+  totalSteps
 }) => {
   const [selectedTherapists, setSelectedTherapists] = useState<string[]>(
     formData.therapists || []
@@ -139,6 +147,18 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
           )}
         </div>
       )}
+      
+      {/* Navigation buttons */}
+      <div style={{ marginTop: 24, textAlign: 'right' }}>
+        <Button style={{ marginRight: 8 }} onClick={onPrev}>
+          Previous
+        </Button>
+        {current < totalSteps - 1 && (
+          <Button type="primary" onClick={onNext}>
+            Next
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
