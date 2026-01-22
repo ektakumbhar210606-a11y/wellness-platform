@@ -17,7 +17,7 @@ interface BusinessCardProps {
     openingTime: string;
     closingTime: string;
     status: string;
-    associationStatus?: 'pending' | 'approved' | 'none';
+    associationStatus?: 'pending' | 'approved' | 'rejected' | 'none';
   };
   onJoinRequest: (businessId: string) => void;
   loading?: boolean;
@@ -36,12 +36,14 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
         return <Tag color="green">Approved</Tag>;
       case 'pending':
         return <Tag color="orange">Pending</Tag>;
+      case 'rejected':
+        return <Tag color="red">Rejected</Tag>;
       default:
         return <Tag color="blue">Available</Tag>;
     }
   };
 
-  const isJoinDisabled = disabled || business.associationStatus === 'pending' || business.associationStatus === 'approved';
+  const isJoinDisabled = disabled || business.associationStatus === 'pending' || business.associationStatus === 'approved' || business.associationStatus === 'rejected';
 
   return (
     <Card 
@@ -58,7 +60,9 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
             ? 'Already Joined' 
             : business.associationStatus === 'pending' 
               ? 'Request Pending' 
-              : 'Request to Join'}
+              : business.associationStatus === 'rejected'
+                ? 'Request Rejected'
+                : 'Request to Join'}
         </Button>
       ]}
     >

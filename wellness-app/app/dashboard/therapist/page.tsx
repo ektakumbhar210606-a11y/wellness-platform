@@ -6,6 +6,7 @@ import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Ava
 import { UserOutlined, CalendarOutlined, BookOutlined, MessageOutlined, ProfileOutlined, ShopOutlined } from '@ant-design/icons';
 import TherapistProfileDisplay from '../../components/TherapistProfileDisplay';
 import BusinessCard from '../../components/BusinessCard';
+import TherapistBusinessRequests from '../../components/TherapistBusinessRequests';
 import { useAuth } from '../../context/AuthContext';
 import { therapistApi, makeAuthenticatedRequest } from '../../utils/apiUtils';
 
@@ -32,11 +33,11 @@ const TherapistDashboardPage = () => {
     }
   }, [profileCheckComplete, therapistProfileExists, shouldRedirect, router]);
 
-  // Fetch all businesses
+  // Fetch all businesses with therapist association status
   const fetchBusinesses = async () => {
     try {
       setBusinessesLoading(true);
-      const response = await makeAuthenticatedRequest('/api/businesses');
+      const response = await makeAuthenticatedRequest('/api/therapist/businesses');
       if (response.success && response.data) {
         setBusinesses(response.data);
       }
@@ -153,6 +154,24 @@ const TherapistDashboardPage = () => {
     if (activeTab === 'businesses' && businesses.length === 0) {
       fetchBusinesses();
     }
+  }, [activeTab]);
+
+  // Auto-refresh businesses list periodically to show updated request status
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (activeTab === 'businesses') {
+      // Refresh every 15 seconds when on businesses tab to show real-time status updates
+      intervalId = setInterval(() => {
+        fetchBusinesses();
+      }, 15000);
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [activeTab]);
 
   const menuItems = [
@@ -397,62 +416,77 @@ const TherapistDashboardPage = () => {
                 ),
                 children: (
                   <div style={{ marginTop: 16 }}>
-                    {profileCheckComplete && !therapistProfileExists && (
-                      <div style={{ marginBottom: 16 }}>
-                        <Alert
-                          message="Complete your therapist profile to join businesses"
-                          type="warning"
-                          showIcon
-                          action={
-                            <Button size="small" onClick={() => router.push('/onboarding/therapist')}>
-                              Complete Profile
-                            </Button>
-                          }
-                        />
-                      </div>
-                    )}
-                    <Row gutter={[16, 16]}>
-                      <Col span={24}>
-                        <Title level={3}>Available Businesses</Title>
-                        <Text type="secondary">
-                          Request to join businesses to expand your practice opportunities
-                        </Text>
-                      </Col>
-                      
-                      <Col span={24}>
-                        {businessesLoading ? (
-                          <div style={{ textAlign: 'center', padding: '40px' }}>
-                            <Spin size="large" />
-                            <div style={{ marginTop: 16 }}>
-                              <Text>Loading businesses...</Text>
-                            </div>
-                          </div>
-                        ) : businesses.length > 0 ? (
-                          <Row gutter={[16, 16]}>
-                            {businesses.map((business) => (
-                              <Col xs={24} sm={12} md={8} lg={6} key={business._id}>
-                                <BusinessCard 
-                                  business={business}
-                                  onJoinRequest={handleJoinRequest}
-                                  disabled={!therapistProfileExists}
+                    <Tabs 
+                      defaultActiveKey="available"
+                      items={[{
+                        key: 'available',
+                        label: 'Available Businesses',
+                        children: (
+                          <>
+                            {profileCheckComplete && !therapistProfileExists && (
+                              <div style={{ marginBottom: 16 }}>
+                                <Alert
+                                  message="Complete your therapist profile to join businesses"
+                                  type="warning"
+                                  showIcon
+                                  action={
+                                    <Button size="small" onClick={() => router.push('/onboarding/therapist')}>
+                                      Complete Profile
+                                    </Button>
+                                  }
                                 />
+                              </div>
+                            )}
+                            <Row gutter={[16, 16]}>
+                              <Col span={24}>
+                                <Title level={3}>Available Businesses</Title>
+                                <Text type="secondary">
+                                  Request to join businesses to expand your practice opportunities
+                                </Text>
                               </Col>
-                            ))}
-                          </Row>
-                        ) : (
-                          <Card>
-                            <div style={{ textAlign: 'center', padding: '40px' }}>
-                              <ShopOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
-                              <Title level={4}>No Businesses Available</Title>
-                              <Text type="secondary">
-                                There are currently no businesses available for joining.
-                                Please check back later.
-                              </Text>
-                            </div>
-                          </Card>
-                        )}
-                      </Col>
-                    </Row>
+                              
+                              <Col span={24}>
+                                {businessesLoading ? (
+                                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                                    <Spin size="large" />
+                                    <div style={{ marginTop: 16 }}>
+                                      <Text>Loading businesses...</Text>
+                                    </div>
+                                  </div>
+                                ) : businesses.length > 0 ? (
+                                  <Row gutter={[16, 16]}>
+                                    {businesses.map((business) => (
+                                      <Col xs={24} sm={12} md={8} lg={6} key={business._id}>
+                                        <BusinessCard 
+                                          business={business}
+                                          onJoinRequest={handleJoinRequest}
+                                          disabled={!therapistProfileExists}
+                                        />
+                                      </Col>
+                                    ))}
+                                  </Row>
+                                ) : (
+                                  <Card>
+                                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                                      <ShopOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
+                                      <Title level={4}>No Businesses Available</Title>
+                                      <Text type="secondary">
+                                        There are currently no businesses available for joining.
+                                        Please check back later.
+                                      </Text>
+                                    </div>
+                                  </Card>
+                                )}
+                              </Col>
+                            </Row>
+                          </>
+                        )
+                      }, {
+                        key: 'requests',
+                        label: 'My Requests',
+                        children: <TherapistBusinessRequests />
+                      }]}
+                    />
                   </div>
                 ),
               }, {

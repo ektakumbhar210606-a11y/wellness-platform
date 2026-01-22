@@ -53,7 +53,7 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
     }
 
     return (
-      <Space direction="vertical" size="small">
+      <Space orientation="vertical" size="small">
         {profile.weeklyAvailability.map((slot: any, index: number) => (
           <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ClockCircleOutlined />

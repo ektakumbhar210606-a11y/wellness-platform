@@ -87,10 +87,10 @@ const ApiExample: React.FC = () => {
         This component demonstrates how to use the custom API hooks for different HTTP methods.
       </Paragraph>
 
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         {/* GET Request Example */}
         <Card title="GET Request">
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Space>
               <Input
                 type="number"
@@ -119,7 +119,7 @@ const ApiExample: React.FC = () => {
 
         {/* POST Request Example */}
         <Card title="POST Request">
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Space>
               <Input
                 placeholder="User Name"
@@ -153,7 +153,7 @@ const ApiExample: React.FC = () => {
 
         {/* PUT Request Example */}
         <Card title="PUT Request">
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Space>
               <Input
                 type="number"
@@ -194,7 +194,7 @@ const ApiExample: React.FC = () => {
 
         {/* DELETE Request Example */}
         <Card title="DELETE Request">
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Space>
               <Input
                 type="number"

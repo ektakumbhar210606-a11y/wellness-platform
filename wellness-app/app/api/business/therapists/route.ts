@@ -103,13 +103,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get therapists with populated user information
+    // Get therapists with populated user information and full profile
     const therapistsWithUsers = await TherapistModel.find({
       'associatedBusinesses.businessId': business._id
     }).populate({
       path: 'user',
       select: 'firstName lastName email phone'
-    }).lean();
+    }).select('+fullName +professionalTitle +bio +location +certifications +licenseNumber +weeklyAvailability')
+    .lean();
 
     // Separate and organize therapists by status
     const approvedTherapists = [];
@@ -124,6 +125,7 @@ export async function GET(req: NextRequest) {
       if (businessAssociation) {
         const therapistData = {
           id: therapist._id,
+          therapistId: therapist._id,
           userId: therapist.user._id,
           firstName: (therapist.user as any).firstName,
           lastName: (therapist.user as any).lastName,
@@ -135,7 +137,16 @@ export async function GET(req: NextRequest) {
           availabilityStatus: therapist.availabilityStatus,
           requestedAt: businessAssociation.requestedAt,
           approvedAt: businessAssociation.approvedAt,
-          status: businessAssociation.status
+          status: businessAssociation.status,
+          
+          // Enhanced profile information
+          fullName: therapist.fullName,
+          professionalTitle: therapist.professionalTitle,
+          bio: therapist.bio,
+          location: therapist.location,
+          certifications: therapist.certifications,
+          licenseNumber: therapist.licenseNumber,
+          weeklyAvailability: therapist.weeklyAvailability
         };
 
         if (businessAssociation.status === 'approved') {
