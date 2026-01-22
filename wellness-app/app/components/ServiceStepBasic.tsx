@@ -4,9 +4,17 @@ import { Form, Input, InputNumber, Select, Typography, Button } from 'antd';
 const { TextArea } = Input;
 const { Title } = Typography;
 
+interface ServiceFormData {
+  name?: string;
+  price?: number;
+  duration?: number;
+  description?: string;
+  [key: string]: any;
+}
+
 interface ServiceStepBasicProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: ServiceFormData;
+  setFormData: (data: ServiceFormData) => void;
   onNext: () => void;
   onPrev: () => void;
   current: number;
@@ -23,12 +31,20 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
 }) => {
   const [form] = Form.useForm();
   
+  // Update form fields when formData changes
+  React.useEffect(() => {
+    form.setFieldsValue(formData);
+  }, [formData, form]);
+  
   // Handle field changes and update parent state
   const handleFieldChange = (field: string, value: any) => {
     setFormData({
       ...formData,
       [field]: value,
     });
+    
+    // Also update the form's internal state to keep it in sync
+    form.setFieldsValue({ [field]: value });
   };
 
   // Handle form submission/validation
@@ -45,7 +61,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
 
   return (
     <div>
-      <Title level={4}>Service Basic Details</Title>
+      <Title level={4} className="responsive-h4">Service Basic Details</Title>
       {/* 
         Ant Design Form with proper validation:
         - validateTrigger={['onBlur', 'onSubmit']} prevents immediate validation on render
@@ -57,6 +73,16 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
         layout="vertical"
         initialValues={formData}
         validateTrigger={['onBlur', 'onSubmit']}
+        onValuesChange={(changedValues) => {
+          // Update parent state when form values change
+          const fieldName = Object.keys(changedValues)[0];
+          const fieldValue = changedValues[fieldName];
+          setFormData((prev: ServiceFormData) => ({
+            ...prev,
+            [fieldName]: fieldValue
+          }));
+        }}
+        className="form-responsive"
       >
         <Form.Item 
           label="Service Name" 
@@ -171,14 +197,14 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
       </Form>
       
       {/* Navigation buttons */}
-      <div style={{ marginTop: 24, textAlign: 'right' }}>
+      <div style={{ marginTop: 24, textAlign: 'right' }} className="flex-responsive">
         {current > 0 && (
-          <Button style={{ marginRight: 8 }} onClick={onPrev}>
+          <Button className="btn-responsive" style={{ marginRight: 8 }} onClick={onPrev}>
             Previous
           </Button>
         )}
         {current < totalSteps - 1 && (
-          <Button type="primary" onClick={handleNext}>
+          <Button type="primary" className="btn-responsive" onClick={handleNext}>
             Next
           </Button>
         )}

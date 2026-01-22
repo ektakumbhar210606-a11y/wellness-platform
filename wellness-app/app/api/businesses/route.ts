@@ -98,9 +98,14 @@ export async function GET(req: NextRequest) {
     const businesses = await BusinessModel.find({}, {
       _id: 1,
       name: 1,
+      description: 1,
       address: 1,
+      phone: 1,
+      email: 1,
+      website: 1,
       openingTime: 1,
       closingTime: 1,
+      businessHours: 1,
       status: 1
     });
 

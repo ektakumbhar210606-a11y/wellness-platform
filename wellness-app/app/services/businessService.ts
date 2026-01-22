@@ -203,7 +203,7 @@ async function apiPost<T = any, R = any>(endpoint: string, data: T): Promise<R> 
 export interface BusinessProfile {
   id?: string;
   business_name: string;
-  description: string;
+  description?: string;
   address: {
     street: string;
     city: string;
@@ -211,12 +211,15 @@ export interface BusinessProfile {
     zipCode: string;
     country: string;
   };
-  businessHours?: {
-    day: string;
-    openingTime: string;
-    closingTime: string;
-  }[];
-  status: 'active' | 'inactive';
+  phone?: string;
+  email?: string;
+  website?: string;
+  openingTime: string;
+  closingTime: string;
+  businessHours?: any;
+  status: 'active' | 'inactive' | 'suspended';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface BusinessCreationData {

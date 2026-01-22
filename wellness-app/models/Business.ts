@@ -34,9 +34,22 @@ export interface IAddress {
 export interface IBusiness extends Document {
   owner: IUser['_id'] | IUser; // Reference to User model
   name: string;
+  description?: string; // Business description
   address: IAddress;
+  phone?: string; // Business phone number
+  email?: string; // Business email
+  website?: string; // Business website
   openingTime: string; // In HH:MM format
   closingTime: string; // In HH:MM format
+  businessHours?: {
+    Monday?: { open: string; close: string; closed?: boolean };
+    Tuesday?: { open: string; close: string; closed?: boolean };
+    Wednesday?: { open: string; close: string; closed?: boolean };
+    Thursday?: { open: string; close: string; closed?: boolean };
+    Friday?: { open: string; close: string; closed?: boolean };
+    Saturday?: { open: string; close: string; closed?: boolean };
+    Sunday?: { open: string; close: string; closed?: boolean };
+  };
   status: BusinessStatus;
   therapists?: ITherapistAssociation[]; // Array of therapist associations
   createdAt: Date;
@@ -61,11 +74,35 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
     validate: {
       validator: (value: string) => {
         // Basic validation for business name (alphanumeric, spaces, hyphens, apostrophes)
-        const businessNameRegex = /^[a-zA-Z0-9\s\-'\.]+$/;
+        const businessNameRegex = /^[a-zA-Z0-9\s\-\'\.]+$/;
         return businessNameRegex.test(value);
       },
       message: 'Please provide a valid business name'
     }
+  },
+  description: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Business description cannot exceed 500 characters']
+  },
+  phone: {
+    type: String,
+    trim: true,
+    match: [/^\+?[1-9]\d{1,14}$/, 'Please provide a valid phone number'],
+    maxlength: [20, 'Phone number cannot exceed 20 characters']
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
+    maxlength: [100, 'Email cannot exceed 100 characters']
+  },
+  website: {
+    type: String,
+    trim: true,
+    match: [/^https?:\/\/[^\s/$.?#].[^\s]*$/i, 'Please provide a valid website URL'],
+    maxlength: [200, 'Website URL cannot exceed 200 characters']
   },
   address: {
     street: {
@@ -113,6 +150,43 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
     validate: {
       validator: (value: string) => timeFormatRegex.test(value),
       message: 'Please provide a valid closing time in HH:MM format (24-hour)'
+    }
+  },
+  businessHours: {
+    Monday: {
+      open: String,
+      close: String,
+      closed: Boolean
+    },
+    Tuesday: {
+      open: String,
+      close: String,
+      closed: Boolean
+    },
+    Wednesday: {
+      open: String,
+      close: String,
+      closed: Boolean
+    },
+    Thursday: {
+      open: String,
+      close: String,
+      closed: Boolean
+    },
+    Friday: {
+      open: String,
+      close: String,
+      closed: Boolean
+    },
+    Saturday: {
+      open: String,
+      close: String,
+      closed: Boolean
+    },
+    Sunday: {
+      open: String,
+      close: String,
+      closed: Boolean
     }
   },
   status: {
