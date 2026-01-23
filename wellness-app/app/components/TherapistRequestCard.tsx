@@ -18,6 +18,13 @@ interface TherapistRequestProps {
     status: 'pending' | 'approved' | 'rejected';
     requestedAt: string;
     approvedAt?: string;
+    professionalTitle?: string | object;
+    certifications?: string[] | object[];
+    licenseNumber?: string | object;
+    location?: string | { city?: string; state?: string; country?: string; };
+    availability?: string | object;
+    experience?: number;
+    expertise?: string[];
   };
   onApprove: (therapistId: string) => void;
   onReject: (therapistId: string) => void;
@@ -62,7 +69,7 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
       }}
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space align="center">
+          <Space align="center" size="small">
             <UserOutlined style={{ fontSize: '24px', color: '#667eea' }} />
             <div>
               <Title level={5} style={{ margin: 0 }}>
@@ -83,24 +90,22 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
               size="small"
               onClick={handleReject}
               loading={loading}
-            >
-              Reject
-            </Button>
+              title="Reject"
+            />
             <Button 
               type="primary" 
               icon={<CheckOutlined />}
               size="small"
               onClick={handleApprove}
               loading={loading}
-            >
-              Approve
-            </Button>
+              title="Approve"
+            />
           </Space>
         )
       }
     >
       <div style={{ flex: 1 }}>
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
           <div>
             <MailOutlined style={{ marginRight: 8, color: '#667eea' }} />
             <Text copyable={{ text: request.email }}>{request.email}</Text>
@@ -120,10 +125,94 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
             </div>
           )}
           
+          {request.professionalTitle && (
+            <div>
+              <Text strong>Title: </Text>
+              <Text type="secondary">
+                {typeof request.professionalTitle === 'string' 
+                  ? request.professionalTitle 
+                  : 'Professional title available'}
+              </Text>
+            </div>
+          )}
+          
+          {request.licenseNumber && (
+            <div>
+              <Text strong>License: </Text>
+              <Text type="secondary">
+                {typeof request.licenseNumber === 'string' 
+                  ? request.licenseNumber 
+                  : 'License information available'}
+              </Text>
+            </div>
+          )}
+          
+          {request.certifications && request.certifications.length > 0 && (
+            <div>
+              <Text strong>Certifications: </Text>
+              <Space wrap={true}>
+                {request.certifications.map((certification, index) => {
+                  const certValue = typeof certification === 'string' 
+                    ? certification 
+                    : typeof certification === 'object' && certification !== null
+                    ? JSON.stringify(certification)
+                    : 'Certification';
+                  return (
+                    <Tag key={index} color="blue">
+                      {certValue}
+                    </Tag>
+                  );
+                })}
+              </Space>
+            </div>
+          )}
+          
+          {request.location && (
+            <div>
+              <Text strong>Location: </Text>
+              <Text type="secondary">
+                {typeof request.location === 'string' 
+                  ? request.location 
+                  : `${request.location.city || ''} ${request.location.state || ''}`.trim() || 'N/A'}
+              </Text>
+            </div>
+          )}
+          
+          {request.experience !== undefined && (
+            <div>
+              <Text strong>Experience: </Text>
+              <Text type="secondary">{request.experience} years</Text>
+            </div>
+          )}
+          
+          {request.availability && (
+            <div>
+              <Text strong>Availability: </Text>
+              <Text type="secondary">
+                {typeof request.availability === 'string' 
+                  ? request.availability 
+                  : 'Availability information available'}
+              </Text>
+            </div>
+          )}
+          
+          {request.expertise && request.expertise.length > 0 && (
+            <div>
+              <Text strong>Expertise: </Text>
+              <Space wrap={true}>
+                {request.expertise.map((expertise, index) => (
+                  <Tag key={index} color="blue">
+                    {expertise}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+          )}
+          
           {request.specialties && request.specialties.length > 0 && (
             <div>
               <Text strong>Specialties: </Text>
-              <Space wrap>
+              <Space wrap={true}>
                 {request.specialties.map((specialty, index) => (
                   <Tag key={index} color="blue">
                     {specialty}

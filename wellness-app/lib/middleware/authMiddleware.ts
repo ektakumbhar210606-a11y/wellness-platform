@@ -42,7 +42,7 @@ export async function requireTherapistAuth(request: NextRequest) {
       };
     }
 
-    // Check user role - allow both 'Therapist' and 'therapist' for backward compatibility
+    // Check user role - case insensitive comparison
     if (decoded.role.toLowerCase() !== 'therapist') {
       return {
         authenticated: false,
