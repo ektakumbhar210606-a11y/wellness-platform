@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs } from 'antd';
 import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { businessService, BusinessProfile } from '@/app/services/businessService';
 import ServiceModal from '@/app/components/ServiceModal';
 import ServiceCard from '@/app/components/ServiceCard';
@@ -16,6 +16,7 @@ const ProviderDashboardContent = () => {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [business, setBusiness] = useState<BusinessProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<any[]>([]);
@@ -187,6 +188,7 @@ const ProviderDashboardContent = () => {
     }
   }, []);
 
+  // Effect for initial data loading, authentication check, and URL parameter handling
   React.useEffect(() => {
     if (!isAuthenticated) {
       router.push('/');
@@ -204,7 +206,7 @@ const ProviderDashboardContent = () => {
       return;
     }
     
-    // Set active tab based on URL parameter
+    // Set active tab based on URL parameter (unified approach)
     const tabFromUrl = searchParams.get('tab');
     if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'profile', 'schedule'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
@@ -219,10 +221,6 @@ const ProviderDashboardContent = () => {
         setBusiness(profile);
         // Fetch services after getting business profile
         await fetchServices();
-        // Fetch therapist requests if on requests tab
-        if (activeTab === 'requests') {
-          await fetchTherapistRequests();
-        }
       } catch (error: any) {
         // For 404 errors (business not found), just redirect to onboarding without showing error
         if (error.status === 404) {
@@ -239,7 +237,46 @@ const ProviderDashboardContent = () => {
     };
     
     fetchBusinessProfile();
-  }, [isAuthenticated, user, router, activeTab, searchParams]);
+  }, [isAuthenticated, user, router, searchParams]);
+  
+  // Effect to update active tab when URL parameters change
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'profile', 'schedule'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    } else if (!tabFromUrl) {
+      setActiveTab('dashboard');
+    }
+  }, [searchParams]);
+  
+  // Effect to handle tab-specific data fetching
+  useEffect(() => {
+    if (activeTab === 'requests' && business) {
+      fetchTherapistRequests();
+    }
+    // Add any other tab-specific data fetching here if needed
+  }, [activeTab, business, fetchTherapistRequests]);
+  
+  // Effect to handle URL parameter changes via browser history
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabFromUrl = urlParams.get('tab');
+        if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'profile', 'schedule'].includes(tabFromUrl)) {
+          setActiveTab(tabFromUrl);
+        } else if (!tabFromUrl) {
+          setActiveTab('dashboard');
+        }
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const handleSubmitService = React.useCallback(async (formData: any) => {
     setSubmitting(true);
@@ -327,7 +364,19 @@ const ProviderDashboardContent = () => {
       
       <Tabs 
         activeKey={activeTab}
-        onChange={setActiveTab}
+        onChange={(key) => {
+          setActiveTab(key);
+          // Update URL with query parameter (unified approach)
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (key === 'dashboard') {
+              url.searchParams.delete('tab');
+            } else {
+              url.searchParams.set('tab', key);
+            }
+            window.history.replaceState({}, '', url.toString());
+          }
+        }}
         items={[{
           key: 'dashboard',
           label: 'Dashboard Overview',

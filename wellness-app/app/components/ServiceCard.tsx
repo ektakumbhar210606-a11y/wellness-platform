@@ -12,6 +12,10 @@ interface ServiceCardProps {
     price: number;
     duration: number;
     description: string;
+    serviceCategory?: {
+      id: string;
+      name: string;
+    } | null;
     image?: string;
     teamMembers?: any[];
     therapists?: any[];
@@ -96,7 +100,17 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, de
           }
           description={
             <div>
+              {/* Service Category Display */}
               <div className="flex items-center mb-2">
+                {service.serviceCategory ? (
+                  <Tag color="blue" style={{ marginRight: 8 }}>
+                    {service.serviceCategory.name}
+                  </Tag>
+                ) : (
+                  <Tag color="default" style={{ marginRight: 8 }}>
+                    No Category
+                  </Tag>
+                )}
                 <ClockCircleOutlined style={{ marginRight: 8 }} />
                 <Text type="secondary">{service.duration} minutes</Text>
               </div>
