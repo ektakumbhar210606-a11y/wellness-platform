@@ -3,11 +3,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '../../../../lib/db';
 import User, { IUser } from '../../../../models/User';
+import mongoose from 'mongoose';
 
 export async function POST(request: NextRequest) {
   try {
     // Connect to database
-    await connectToDatabase();
+    const conn = await connectToDatabase();
+    console.log('Connected to database:', conn.connection.name);
 
     // Parse request body
     const body = await request.json();
@@ -31,24 +33,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
+    console.log('Searching for user with email:', email);
     const user = await User.findOne({ email }).select('+password'); // Include password field
     
     if (!user) {
+      console.log('User not found for email:', email);
+      // Check if there are any users in the database
+      const userCount = await User.countDocuments();
+      console.log('Total users in database:', userCount);
+      if (userCount > 0) {
+        // List all users
+        const allUsers = await User.find().select('email');
+        console.log('All users in database:', allUsers.map(u => u.email));
+      }
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
+    console.log('User found:', user.email, user.role);
+
     // Compare passwords
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
+      console.log('Invalid password for user:', user.email);
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
+
+    console.log('Password valid for user:', user.email);
 
     // Generate JWT token with user ID, role and 7-day expiration
     const token = jwt.sign(

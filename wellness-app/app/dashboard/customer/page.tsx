@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Avatar, Tabs } from 'antd';
+import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Avatar, Tabs, Skeleton, Result, Alert } from 'antd';
 import { 
   UserOutlined, 
   CalendarOutlined, 
@@ -10,12 +10,39 @@ import {
   HeartOutlined, 
   ShoppingCartOutlined,
   StarOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
+import CustomerUpcomingAppointmentCard from '@/app/components/CustomerUpcomingAppointmentCard';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
+
+interface Appointment {
+  id: string;
+  service: {
+    id: string;
+    name: string;
+    price: number;
+    duration: number;
+    description: string;
+  } | null;
+  therapist: {
+    id: string;
+    fullName: string;
+    professionalTitle: string;
+  } | null;
+  business: {
+    id: string;
+    name: string;
+  } | null;
+  date: Date;
+  time: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 
 const CustomerDashboardPage = () => {
@@ -23,6 +50,17 @@ const CustomerDashboardPage = () => {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [customerProfile, setCustomerProfile] = useState<any>(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    appointments: null as number | null,
+    upcomingAppointments: null as number | null,
+    servicesUsed: null as number | null,
+    avgRating: null as number | null,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [upcomingAppointmentsList, setUpcomingAppointmentsList] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
+
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -31,16 +69,6 @@ const CustomerDashboardPage = () => {
         return;
       }
 
-      // In a real app, you would fetch customer profile
-      // For now, we'll simulate having a profile
-      // const response = await customerApi.getProfile();
-      // if (response.success && response.data) {
-      //   setCustomerProfile(response.data);
-      // } else {
-      //   // If profile doesn't exist, redirect to onboarding
-      //   router.push('/onboarding/customer');
-      // }
-      
       // Simulate profile data
       setCustomerProfile({
         fullName: user.name || 'Customer',
@@ -48,11 +76,86 @@ const CustomerDashboardPage = () => {
         wellnessGoals: 'Reduce stress and improve flexibility'
       });
 
+      // Fetch dashboard statistics
+      fetchDashboardStats();
+          
+      // Fetch upcoming appointments
+      fetchUpcomingAppointments();
+
       setLoading(false);
     };
 
     checkAccess();
   }, [user, router]);
+
+  const fetchUpcomingAppointments = async () => {
+    try {
+      setAppointmentsLoading(true);
+      setAppointmentsError(null);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch('/api/customer/bookings/upcoming?page=1&limit=10', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch upcoming appointments');
+      }
+
+      const result = await response.json();
+      if (result.success && result.data?.bookings) {
+        setUpcomingAppointmentsList(result.data.bookings);
+      }
+    } catch (err: any) {
+      console.error('Error fetching upcoming appointments:', err);
+      setAppointmentsError(err.message || 'Failed to load upcoming appointments');
+      setUpcomingAppointmentsList([]);
+    } finally {
+      setAppointmentsLoading(false);
+    };
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch('/api/customer/dashboard/stats', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch dashboard statistics');
+      }
+
+      const data = await response.json();
+      setDashboardStats({
+        appointments: data.appointments,
+        upcomingAppointments: data.upcomingAppointments,
+        servicesUsed: data.servicesUsed,
+        avgRating: data.avgRating,
+      });
+    } catch (err: any) {
+      console.error('Error fetching dashboard stats:', err);
+      setError(err.message || 'Failed to load dashboard statistics');
+    }
+  };
 
   const menuItems = [
     {
@@ -105,6 +208,30 @@ const CustomerDashboardPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Layout style={{ minHeight: '100vh' }}>
+        <Content style={{ padding: '24px', textAlign: 'center' }}>
+          <Card title="Error" style={{ maxWidth: 400, margin: '0 auto' }}>
+            <Text type="danger">{error}</Text>
+            <div style={{ marginTop: 16 }}>
+              <Button 
+                type="primary" 
+                onClick={() => {
+                  setError(null);
+                  setLoading(true);
+                  window.location.reload();
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          </Card>
+        </Content>
+      </Layout>
+    );
+  }
+
   if (!customerProfile) {
     return null; // Already redirected in useEffect
   }
@@ -143,40 +270,64 @@ const CustomerDashboardPage = () => {
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
               <Col xs={24} sm={12} md={6}>
                 <Card>
-                  <Statistic
-                    title="Appointments"
-                    value={3}
-                    prefix={<CalendarOutlined />}
-                  />
+                  {dashboardStats.appointments !== null ? (
+                    <Statistic
+                      title="Total Appointments"
+                      value={dashboardStats.appointments}
+                      prefix={<CalendarOutlined />}
+                    />
+                  ) : (
+                    <div style={{ padding: '24px 0' }}>
+                      <Skeleton active paragraph={{ rows: 2 }} />
+                    </div>
+                  )}
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card>
-                  <Statistic
-                    title="Favorite Therapists"
-                    value={2}
-                    prefix={<HeartOutlined />}
-                  />
+                  {dashboardStats.upcomingAppointments !== null ? (
+                    <Statistic
+                      title="Upcoming"
+                      value={dashboardStats.upcomingAppointments}
+                      prefix={<ClockCircleOutlined />}
+                    />
+                  ) : (
+                    <div style={{ padding: '24px 0' }}>
+                      <Skeleton active paragraph={{ rows: 2 }} />
+                    </div>
+                  )}
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card>
-                  <Statistic
-                    title="Services Used"
-                    value={5}
-                    prefix={<ShoppingCartOutlined />}
-                  />
+                  {dashboardStats.servicesUsed !== null ? (
+                    <Statistic
+                      title="Services Used"
+                      value={dashboardStats.servicesUsed}
+                      prefix={<ShoppingCartOutlined />}
+                    />
+                  ) : (
+                    <div style={{ padding: '24px 0' }}>
+                      <Skeleton active paragraph={{ rows: 2 }} />
+                    </div>
+                  )}
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card>
-                  <Statistic
-                    title="Avg. Rating"
-                    value={4.7}
-                    precision={1}
-                    prefix={<StarOutlined />}
-                    suffix="/ 5"
-                  />
+                  {dashboardStats.avgRating !== null ? (
+                    <Statistic
+                      title="Avg. Rating"
+                      value={dashboardStats.avgRating}
+                      precision={1}
+                      prefix={<StarOutlined />}
+                      suffix="/ 5"
+                    />
+                  ) : (
+                    <div style={{ padding: '24px 0' }}>
+                      <Skeleton active paragraph={{ rows: 2 }} />
+                    </div>
+                  )}
                 </Card>
               </Col>
             </Row>
@@ -189,32 +340,65 @@ const CustomerDashboardPage = () => {
                     label: 'Upcoming Appointments',
                     key: 'upcoming',
                     children: (
-                      <>
-                        <Card style={{ marginBottom: 16 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <Text strong>Swedish Massage</Text>
-                              <br />
-                              <Text type="secondary">with Sarah Johnson</Text>
-                              <br />
-                              <Text type="secondary">Jan 20, 2026 at 2:00 PM</Text>
-                            </div>
-                            <Button type="primary">Reschedule</Button>
+                      <div>
+                        {appointmentsLoading ? (
+                          <div style={{ padding: '24px 0' }}>
+                            <Skeleton active paragraph={{ rows: 4 }} />
+                            <Skeleton active paragraph={{ rows: 4 }} style={{ marginTop: 16 }} />
                           </div>
-                        </Card>
-                        <Card>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <Text strong>Deep Tissue Session</Text>
-                              <br />
-                              <Text type="secondary">with Michael Chen</Text>
-                              <br />
-                              <Text type="secondary">Jan 25, 2026 at 10:00 AM</Text>
-                            </div>
-                            <Button>Cancel</Button>
+                        ) : appointmentsError ? (
+                          <Alert 
+                            message="Failed to load appointments" 
+                            description={appointmentsError}
+                            type="error" 
+                            showIcon
+                            action={
+                              <Button size="small" type="primary" onClick={() => {
+                                setAppointmentsLoading(true);
+                                setAppointmentsError(null);
+                                // Re-fetch appointments
+                                const token = localStorage.getItem('token');
+                                if (token) {
+                                  fetchUpcomingAppointments();
+                                }
+                              }}>
+                                Retry
+                              </Button>
+                            }
+                          />
+                        ) : upcomingAppointmentsList.length > 0 ? (
+                          <div>
+                            {upcomingAppointmentsList.map(appointment => (
+                              <CustomerUpcomingAppointmentCard
+                                key={appointment.id}
+                                appointment={appointment}
+                                onReschedule={(id) => {
+                                  // TODO: Implement reschedule functionality
+                                  console.log('Reschedule appointment:', id);
+                                }}
+                                onCancel={(id) => {
+                                  // TODO: Implement cancel functionality
+                                  console.log('Cancel appointment:', id);
+                                }}
+                              />
+                            ))}
                           </div>
-                        </Card>
-                      </>
+                        ) : (
+                          <Result
+                            title="No Upcoming Appointments"
+                            subTitle="You don't have any upcoming appointments. Book your first appointment to start your wellness journey!"
+                            extra={
+                              <Button 
+                                type="primary" 
+                                icon={<PlusOutlined />}
+                                onClick={() => router.push('/book/appointment')}
+                              >
+                                Book Your First Appointment
+                              </Button>
+                            }
+                          />
+                        )}
+                      </div>
                     ),
                   }, {
                     label: 'Recent Activity',
@@ -238,7 +422,8 @@ const CustomerDashboardPage = () => {
                     <Button 
                       type="primary" 
                       block
-                      onClick={() => router.push('/book/appointment')}
+                      disabled={loading}
+                      onClick={() => router.push('/dashboard/customer/services')}
                     >
                       Book New Appointment
                     </Button>

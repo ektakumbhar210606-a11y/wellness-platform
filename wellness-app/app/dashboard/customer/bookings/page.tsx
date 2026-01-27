@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, Table, Tag, Space, Typography, Modal } from 'antd';
+import { Card, Button, Table, Tag, Space, Typography, Modal, Skeleton } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
 
@@ -13,6 +13,11 @@ const CustomerBookingsPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingStats, setBookingStats] = useState({
+    totalBookings: null as number | null,
+    upcomingBookings: null as number | null,
+    completedBookings: null as number | null,
+  });
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<any>(null);
 
@@ -23,52 +28,16 @@ const CustomerBookingsPage = () => {
         return;
       }
 
-      // In a real app, you would fetch customer bookings
-      // For now, we'll simulate booking data
-      const mockBookings = [
-        {
-          id: 'BK001',
-          serviceName: 'Swedish Massage',
-          therapist: 'Sarah Johnson',
-          date: '2026-01-20',
-          time: '14:00',
-          duration: '60 mins',
-          status: 'confirmed',
-          price: '$85',
-        },
-        {
-          id: 'BK002',
-          serviceName: 'Deep Tissue Session',
-          therapist: 'Michael Chen',
-          date: '2026-01-25',
-          time: '10:00',
-          duration: '90 mins',
-          status: 'confirmed',
-          price: '$120',
-        },
-        {
-          id: 'BK003',
-          serviceName: 'Aromatherapy Facial',
-          therapist: 'Emma Rodriguez',
-          date: '2026-01-15',
-          time: '16:30',
-          duration: '75 mins',
-          status: 'completed',
-          price: '$95',
-        },
-        {
-          id: 'BK004',
-          serviceName: 'Hot Stone Therapy',
-          therapist: 'David Wilson',
-          date: '2026-01-10',
-          time: '11:00',
-          duration: '90 mins',
-          status: 'completed',
-          price: '$110',
-        },
-      ];
+      // TODO: Fetch actual customer bookings data
+      // const response = await customerApi.getBookings();
+      // setBookings(response.data);
       
-      setBookings(mockBookings);
+      // TODO: Fetch actual booking statistics
+      // const statsResponse = await customerApi.getBookingStats();
+      // setBookingStats(statsResponse.data);
+      
+      // Set empty bookings array to show loading state
+      setBookings([]);
       setLoading(false);
     };
 

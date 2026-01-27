@@ -32,16 +32,23 @@ const CustomerProfilePage = () => {
       //   router.push('/onboarding/customer');
       // }
       
-      // Simulate setting initial values
+      // TODO: Fetch actual profile data when connecting to database
+      // const response = await customerApi.getProfile();
+      // form.setFieldsValue(response.data);
+      
+      // Initialize form with empty values for clean state
       form.setFieldsValue({
-        fullName: user.name || 'Customer Name',
-        email: user.email || 'customer@example.com',
-        phoneNumber: '+1 (555) 123-4567',
-        location: { city: 'New York', state: 'NY', country: 'USA' },
-        preferences: ['massage', 'spa'],
-        wellnessGoals: 'Reduce stress and improve flexibility',
-        medicalConditions: 'None at the moment',
-        preferredTherapies: ['swedish', 'aromatherapy']
+        fullName: user.name || '',
+        email: user.email || '',
+        phoneNumber: '',
+        location: { city: '', state: '', country: '' },
+        preferences: [],
+        wellnessGoals: '',
+        medicalConditions: '',
+        preferredTherapies: [],
+        frequency: '',
+        stressLevel: '',
+        lifestyleFactors: []
       });
 
       setLoading(false);
