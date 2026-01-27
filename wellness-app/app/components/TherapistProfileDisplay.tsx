@@ -12,6 +12,7 @@ import {
   StarOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
+import { formatTimeRange } from '../utils/timeUtils';
 
 const { Title, Text } = Typography;
 
@@ -20,8 +21,12 @@ interface TherapistProfileDisplayProps {
 }
 
 const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profile }) => {
-  console.log('TherapistProfileDisplay received profile:', profile);
-  console.log('Weekly availability in profile:', profile?.weeklyAvailability);
+  console.log('TherapistProfileDisplay received profile:', {
+    hasProfile: !!profile,
+    fullName: profile?.fullName,
+    weeklyAvailability: profile?.weeklyAvailability,
+    weeklyAvailabilityCount: profile?.weeklyAvailability ? profile.weeklyAvailability.length : 0
+  });
   // Format location display
   const getLocationDisplay = () => {
     if (!profile.location) return 'Not specified';
@@ -61,7 +66,7 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
             <ClockCircleOutlined />
             <Text strong>{slot.day}:</Text>
             {slot.available ? (
-              <Text>{slot.startTime} - {slot.endTime}</Text>
+              <Text>{(() => { console.log(`${slot.day} availability data:`, { startTime: slot.startTime, endTime: slot.endTime }); return formatTimeRange(slot.startTime, slot.endTime); })()}</Text>
             ) : (
               <Text type="secondary">Not Available</Text>
             )}

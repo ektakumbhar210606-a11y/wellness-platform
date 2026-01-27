@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card, Button, Tag, Space, Typography, Divider } from 'antd';
 import { ShopOutlined, EnvironmentOutlined, ClockCircleOutlined, PhoneOutlined, MailOutlined, GlobalOutlined } from '@ant-design/icons';
+import { formatTimeRange } from '../utils/timeUtils';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -153,11 +154,11 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
           </Space>
           
           {/* Business Hours */}
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space direction="vertical" style={{ width: '100%' }} className="responsive-caption">
             <Space>
               <ClockCircleOutlined />
               <Text className="responsive-caption" ellipsis>
-                Hours: {business.openingTime} - {business.closingTime}
+                Hours: {formatTimeRange(business.openingTime, business.closingTime)}
               </Text>
             </Space>
           </Space>

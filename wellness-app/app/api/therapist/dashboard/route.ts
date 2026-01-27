@@ -26,13 +26,22 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     // Get therapist profile by user ID
+    console.log('Fetching therapist profile for user ID:', decoded.id);
     const therapistProfile = await TherapistModel.findOne({ user: decoded.id }).lean();
     if (!therapistProfile) {
+      console.log('No therapist profile found for user ID:', decoded.id);
       return Response.json(
         { success: false, error: 'Therapist profile not found' },
         { status: 404 }
       );
     }
+    console.log('Therapist profile found:', {
+      id: therapistProfile._id,
+      fullName: therapistProfile.fullName,
+      userId: therapistProfile.user,
+      weeklyAvailabilityCount: therapistProfile.weeklyAvailability ? therapistProfile.weeklyAvailability.length : 0,
+      weeklyAvailability: therapistProfile.weeklyAvailability
+    });
 
     // Calculate dashboard statistics
     const today = new Date();

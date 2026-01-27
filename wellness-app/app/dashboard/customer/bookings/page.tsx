@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Table, Tag, Space, Typography, Modal } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
+import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
 
 const { Title, Text } = Typography;
 
@@ -93,7 +94,7 @@ const CustomerBookingsPage = () => {
     {
       title: 'Date & Time',
       key: 'datetime',
-      render: (record: any) => `${record.date} at ${record.time}`,
+      render: (record: any) => `${record.date} at ${formatTimeTo12Hour(record.time)}`,
     },
     {
       title: 'Duration',

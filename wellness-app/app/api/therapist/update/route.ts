@@ -99,6 +99,12 @@ export async function PUT(req: NextRequest) {
     }
 
     // Update therapist profile
+    console.log('Updating therapist profile for user ID:', decoded.id);
+    console.log('Update data being saved:', {
+      ...updateData,
+      weeklyAvailabilityCount: updateData.weeklyAvailability ? updateData.weeklyAvailability.length : 0
+    });
+    
     const updatedProfile = await TherapistModel.findOneAndUpdate(
       { user: decoded.id },
       { $set: updateData },
@@ -111,6 +117,11 @@ export async function PUT(req: NextRequest) {
         { status: 404 }
       );
     }
+    
+    console.log('Profile updated successfully, new weeklyAvailability:', {
+      count: updatedProfile.weeklyAvailability ? updatedProfile.weeklyAvailability.length : 0,
+      data: updatedProfile.weeklyAvailability
+    });
 
     return Response.json({
       success: true,
