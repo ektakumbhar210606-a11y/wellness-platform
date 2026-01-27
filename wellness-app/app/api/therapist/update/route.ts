@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest) {
     
     // Therapist-specific fields
     if (experience !== undefined) updateData.experience = experience;
-    if (skills) updateData.expertise = skills;
+    if (skills) updateData.skills = skills;
     if (status) updateData.availabilityStatus = status;
     
     // Profile information fields
@@ -69,6 +69,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Validate weeklyAvailability if provided
+    console.log('Received weeklyAvailability data:', weeklyAvailability);
     if (updateData.weeklyAvailability && Array.isArray(updateData.weeklyAvailability)) {
       for (const availability of updateData.weeklyAvailability) {
         if (!availability.day) {

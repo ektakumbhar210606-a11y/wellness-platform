@@ -79,6 +79,7 @@ export async function GET(req: NextRequest) {
     .sort({ date: -1, createdAt: -1 })
     .limit(5);
 
+    console.log('Sending dashboard data with weeklyAvailability:', therapistProfile.weeklyAvailability);
     return Response.json({
       success: true,
       data: {

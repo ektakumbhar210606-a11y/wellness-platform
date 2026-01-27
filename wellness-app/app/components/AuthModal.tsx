@@ -100,7 +100,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       // Store the JWT token in localStorage with the key 'token'
       localStorage.setItem('token', token);
       
-      // Update auth state with user data from the API
+      // Update auth state with user data from the APIw 
       const userData = {
         id: user.id,
         email: user.email,

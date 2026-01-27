@@ -1,32 +1,31 @@
-// Test API connection to database
+import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../lib/db';
-import ServiceCategoryModel from '../../../models/ServiceCategory';
+import TherapistModel from '../../../models/Therapist';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    console.log('Connecting to database...');
     await connectToDatabase();
-    console.log('Connected to database');
     
-    console.log('Fetching service categories...');
-    const categories = await ServiceCategoryModel.find({ isActive: true });
-    console.log('Found categories:', categories.length);
-    
-    return Response.json({
-      success: true,
-      message: 'Test successful',
-      count: categories.length,
-      sample: categories.slice(0, 3).map((c: any) => ({ 
-        id: c._id.toString(), 
-        name: c.name, 
-        slug: c.slug 
-      }))
-    });
-  } catch (error) {
-    console.error('Test failed:', error);
-    return Response.json({
-      success: false,
-      error: (error as Error).message
-    }, { status: 500 });
+    // Find a therapist profile
+    const therapist = await TherapistModel.findOne({}).lean();
+    if (therapist) {
+      return Response.json({
+        success: true,
+        fullName: therapist.fullName,
+        weeklyAvailability: therapist.weeklyAvailability,
+        skills: therapist.skills
+      });
+    } else {
+      return Response.json({
+        success: false,
+        message: 'No therapist found'
+      });
+    }
+  } catch (error: any) {
+    console.error('Error:', error);
+    return Response.json(
+      { success: false, error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Avatar, Tabs, message, Spin, Alert } from 'antd';
+import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Avatar, Tabs, message, Spin, Alert, Tag } from 'antd';
 import { UserOutlined, CalendarOutlined, BookOutlined, MessageOutlined, ProfileOutlined, ShopOutlined } from '@ant-design/icons';
 import TherapistProfileDisplay from '../../components/TherapistProfileDisplay';
 import BusinessCard from '../../components/BusinessCard';
@@ -23,6 +23,7 @@ const TherapistDashboardPage = () => {
   const [profileCheckComplete, setProfileCheckComplete] = useState<boolean>(false);
   const [shouldRedirect, setShouldRedirect] = useState<boolean>(false); // State to track redirect decision
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [therapistData, setTherapistData] = useState<any>(null);
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -87,15 +88,8 @@ const TherapistDashboardPage = () => {
       const response = await makeAuthenticatedRequest('/api/therapist/me');
       if (response.success && response.data) {
         setTherapistProfileExists(true);
-        // Load dashboard data if not already loaded
-        if (!dashboardData) {
-          const dashboardResponse = await therapistApi.getDashboardData();
-          if (dashboardResponse.success && dashboardResponse.data) {
-            setDashboardData(dashboardResponse.data);
-          } else {
-            setDashboardData({});
-          }
-        }
+        setTherapistData(response.data);
+        // Dashboard data is now handled by the main useEffect in checkAccess
       } else {
         // Profile not found, set flag to redirect
         setShouldRedirect(true);
@@ -123,19 +117,31 @@ const TherapistDashboardPage = () => {
 
   useEffect(() => {
     const checkAccess = async () => {
+      console.log('User:', user);
       if (!user || user.role.toLowerCase() !== 'therapist') {
+        console.log('User not authorized or not a therapist');
         router.push('/');
         return;
       }
 
       try {
         // Profile check will be handled by checkTherapistProfile function
-        // Just initialize the dashboard data to empty if not already set
-        if (!dashboardData) {
-          setDashboardData(null);
+        // Always fetch dashboard data when component mounts
+        console.log('Attempting to fetch dashboard data...');
+        const dashboardResponse = await therapistApi.getDashboardData();
+        console.log('Dashboard API response:', dashboardResponse);
+        if (dashboardResponse.success && dashboardResponse.data) {
+          console.log('Successfully fetched dashboard data');
+          setDashboardData(dashboardResponse.data);
+        } else {
+          console.error('Failed to fetch dashboard data - invalid response', dashboardResponse);
+          // If dashboard data fetch fails, set to empty object to trigger error handling
+          setDashboardData({});
         }
       } catch (error) {
         console.error('Error in initial check:', error);
+        // Set dashboard data to empty object to trigger error handling
+        setDashboardData({});
         router.push('/onboarding/therapist');
         return;
       } finally {
@@ -155,6 +161,56 @@ const TherapistDashboardPage = () => {
       fetchBusinesses();
     }
   }, [activeTab]);
+
+  // Refetch dashboard data when profile tab is activated to ensure fresh data
+  useEffect(() => {
+    if (activeTab === 'profile' && therapistProfileExists) {
+      const fetchFreshDashboardData = async () => {
+        try {
+          const dashboardResponse = await therapistApi.getDashboardData();
+          if (dashboardResponse.success && dashboardResponse.data) {
+            console.log('Received dashboard data:', dashboardResponse.data);
+            console.log('Weekly availability in dashboard data:', dashboardResponse.data.profile?.weeklyAvailability);
+            setDashboardData(dashboardResponse.data);
+          }
+        } catch (error) {
+          console.error('Error fetching fresh dashboard data:', error);
+        }
+      };
+      
+      fetchFreshDashboardData();
+    }
+  }, [activeTab, therapistProfileExists]);
+
+  // Effect to refresh data when the page becomes visible again (e.g., after returning from profile edit)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && therapistProfileExists) {
+        // Page became visible again, refresh dashboard data
+        const refreshDashboardData = async () => {
+          try {
+            const dashboardResponse = await therapistApi.getDashboardData();
+            if (dashboardResponse.success && dashboardResponse.data) {
+              console.log('Successfully refreshed dashboard data');
+              setDashboardData(dashboardResponse.data);
+            } else {
+              console.error('Failed to refresh dashboard data - invalid response', dashboardResponse);
+            }
+          } catch (error) {
+            console.error('Error refreshing dashboard data:', error);
+          }
+        };
+        
+        refreshDashboardData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [therapistProfileExists]);
 
   // Auto-refresh businesses list periodically to show updated request status
   useEffect(() => {
@@ -248,7 +304,7 @@ const TherapistDashboardPage = () => {
           </div>
           <div style={{ float: 'right', padding: '0 24px', lineHeight: '64px' }}>
             <Space>
-              <Text strong>{user?.name || 'Therapist'}</Text>
+              <Text strong>{user?.name || therapistData?.fullName || ''}</Text>
               <Avatar icon={<UserOutlined />} />
             </Space>
           </div>
@@ -267,7 +323,7 @@ const TherapistDashboardPage = () => {
             <Content style={{ background: '#fff', padding: 24, margin: 0, minHeight: 280, borderRadius: 8 }}>
               <Row gutter={[16, 16]}>
                 <Col span={24}>
-                  <Title level={2}>Welcome Back, {user?.name || 'Therapist'}!</Title>
+                  <Title level={2}>Welcome Back, {user?.name || ''}!</Title>
                   <Text type="secondary">We're loading your dashboard information...</Text>
                 </Col>
               </Row>
@@ -293,7 +349,7 @@ const TherapistDashboardPage = () => {
         </div>
         <div style={{ float: 'right', padding: '0 24px', lineHeight: '64px' }}>
           <Space>
-            <Text strong>{user?.name || dashboardData.profile?.fullName || 'Therapist'}</Text>
+            <Text strong>{user?.name || therapistData?.fullName || ''}</Text>
             <Avatar icon={<UserOutlined />} />
           </Space>
         </div>
@@ -312,7 +368,7 @@ const TherapistDashboardPage = () => {
           <Content style={{ background: '#fff', padding: 24, margin: 0, minHeight: 280, borderRadius: 8 }}>
             <Row gutter={[16, 16]}>
               <Col span={24}>
-                <Title level={2}>Welcome Back, {dashboardData.profile?.fullName || 'Therapist'}!</Title>
+                <Title level={2}>Welcome Back, {therapistData?.fullName || user?.name || ''}!</Title>
                 <Text type="secondary">Here's what's happening with your practice today.</Text>
               </Col>
             </Row>
@@ -383,23 +439,27 @@ const TherapistDashboardPage = () => {
                             </div>
                           ) : (
                             <div style={{ padding: '12px 0' }}>
-                              <p>No recent activity yet. Your upcoming appointments will appear here.</p>
+                              <p>No recent activity yet.</p>
                             </div>
                           )}
                         </Card>
+                                      
+
                       </Col>
                       <Col xs={24} md={8}>
                         <Card title="Quick Actions">
                           <Space vertical style={{ width: '100%' }}>
-                            <Button 
-                              type="primary" 
-                              block
-                              onClick={() => router.push('/dashboard/therapist/profile')}
-                            >
-                              Edit Profile
-                            </Button>
-                            <Button block>View Schedule</Button>
-                            <Button block>Manage Availability</Button>
+                            {therapistData && (
+                              <Button 
+                                type="primary" 
+                                block
+                                onClick={() => router.push('/dashboard/therapist/profile')}
+                              >
+                                Edit Profile
+                              </Button>
+                            )}
+                            <Button block onClick={() => router.push('/dashboard/therapist/schedule')}>View Schedule</Button>
+                            <Button block onClick={() => router.push('/dashboard/therapist/availability')}>Manage Availability</Button>
                           </Space>
                         </Card>
                       </Col>
@@ -441,7 +501,10 @@ const TherapistDashboardPage = () => {
                               <Col span={24}>
                                 <Title level={3}>Available Businesses</Title>
                                 <Text type="secondary">
-                                  Request to join businesses to expand your practice opportunities
+                                  {businesses.length > 0 ? 
+                                    'Request to join businesses to expand your practice opportunities' : 
+                                    'No businesses available to join at this time'
+                                  }
                                 </Text>
                               </Col>
                               
@@ -457,11 +520,13 @@ const TherapistDashboardPage = () => {
                                   <Row gutter={[16, 16]}>
                                     {businesses.map((business) => (
                                       <Col xs={24} sm={12} md={8} lg={6} key={business._id}>
-                                        <BusinessCard 
-                                          business={business}
-                                          onJoinRequest={handleJoinRequest}
-                                          disabled={!therapistProfileExists}
-                                        />
+                                        <div style={{ height: '100%' }}>
+                                          <BusinessCard 
+                                            business={business}
+                                            onJoinRequest={handleJoinRequest}
+                                            disabled={!therapistProfileExists}
+                                          />
+                                        </div>
                                       </Col>
                                     ))}
                                   </Row>
@@ -471,8 +536,10 @@ const TherapistDashboardPage = () => {
                                       <ShopOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
                                       <Title level={4}>No Businesses Available</Title>
                                       <Text type="secondary">
-                                        There are currently no businesses available for joining.
-                                        Please check back later.
+                                        {therapistProfileExists ? 
+                                          'No businesses are currently available for joining.' : 
+                                          'Complete your profile to view and join businesses.'
+                                        }
                                       </Text>
                                     </div>
                                   </Card>

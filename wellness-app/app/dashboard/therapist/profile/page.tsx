@@ -104,7 +104,7 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
           description: 'Therapist profile updated successfully!',
         });
         
-        // Navigate back to the therapist dashboard after a short delay to allow the user to see the success message
+        // Redirect back to the therapist dashboard to see updated information
         setTimeout(() => {
           router.push('/dashboard/therapist');
         }, 1500);
@@ -134,7 +134,7 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
           description: 'Availability updated successfully!',
         });
         
-        // Navigate back to the therapist dashboard after a short delay to allow the user to see the success message
+        // Redirect back to the therapist dashboard to see updated information
         setTimeout(() => {
           router.push('/dashboard/therapist');
         }, 1500);

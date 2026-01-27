@@ -30,7 +30,7 @@ export interface ITherapist extends Document {
   user: IUser['_id'] | IUser; // Reference to User model (userId)
   business: IBusiness['_id'] | IBusiness; // Reference to Business model (can be null initially)
   experience: number; // Years of experience
-  expertise: string[]; // Array of therapy specializations
+  skills: string[]; // Array of therapy skills
   rating?: number; // Average customer rating (0-5)
   availabilityStatus: TherapistAvailability; // Current availability status
   associatedBusinesses?: IBusinessAssociation[]; // Array of business associations
@@ -79,22 +79,22 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
       message: 'Experience must be a whole number'
     }
   },
-  expertise: {
+  skills: {
     type: [String], // Array of strings
-    required: [true, 'Expertise is required'],
+    required: [true, 'Skills are required'],
     validate: [
       {
-        validator: function(expertise: string[]) {
-          return expertise && expertise.length > 0;
+        validator: function(skills: string[]) {
+          return skills && skills.length > 0;
         },
-        message: 'Therapist must have at least one area of expertise'
+        message: 'Therapist must have at least one skill'
       },
       {
-        validator: function(expertise: string[]) {
-          // Ensure all expertise strings are valid (not empty after trimming)
-          return expertise.every(item => item.trim().length > 0);
+        validator: function(skills: string[]) {
+          // Ensure all skills strings are valid (not empty after trimming)
+          return skills.every(item => item.trim().length > 0);
         },
-        message: 'All expertise items must be non-empty strings'
+        message: 'All skills items must be non-empty strings'
       }
     ]
   },
@@ -181,7 +181,7 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
 // Create indexes for better query performance
 TherapistSchema.index({ user: 1 }, { unique: true }); // Unique index on user for preventing duplicate therapist profiles
 TherapistSchema.index({ business: 1 }); // Index on business for quick lookups by business
-TherapistSchema.index({ expertise: 1 }); // Index on expertise for searching by specialization
+TherapistSchema.index({ skills: 1 }); // Index on skills for searching by specialization
 TherapistSchema.index({ rating: 1 }); // Index on rating for sorting/filtering
 TherapistSchema.index({ availabilityStatus: 1 }); // Index on availability status for filtering
 TherapistSchema.index({ 'associatedBusinesses.businessId': 1 }); // Index on associated businesses for marketplace queries

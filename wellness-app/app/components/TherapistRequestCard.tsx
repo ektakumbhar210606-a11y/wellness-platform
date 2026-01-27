@@ -24,7 +24,7 @@ interface TherapistRequestProps {
     location?: string | { city?: string; state?: string; country?: string; };
     availability?: string | object;
     experience?: number;
-    expertise?: string[];
+    skills?: string[];
   };
   onApprove: (therapistId: string) => void;
   onReject: (therapistId: string) => void;
@@ -196,13 +196,13 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
             </div>
           )}
           
-          {request.expertise && request.expertise.length > 0 && (
+          {request.skills && request.skills.length > 0 && (
             <div>
-              <Text strong>Expertise: </Text>
+              <Text strong>Skills: </Text>
               <Space wrap={true}>
-                {request.expertise.map((expertise, index) => (
+                {request.skills.map((skill, index) => (
                   <Tag key={index} color="blue">
-                    {expertise}
+                    {skill}
                   </Tag>
                 ))}
               </Space>

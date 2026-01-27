@@ -20,6 +20,8 @@ interface TherapistProfileDisplayProps {
 }
 
 const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profile }) => {
+  console.log('TherapistProfileDisplay received profile:', profile);
+  console.log('Weekly availability in profile:', profile?.weeklyAvailability);
   // Format location display
   const getLocationDisplay = () => {
     if (!profile.location) return 'Not specified';
@@ -58,7 +60,11 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
           <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ClockCircleOutlined />
             <Text strong>{slot.day}:</Text>
-            <Text>{slot.startTime} - {slot.endTime}</Text>
+            {slot.available ? (
+              <Text>{slot.startTime} - {slot.endTime}</Text>
+            ) : (
+              <Text type="secondary">Not Available</Text>
+            )}
           </div>
         ))}
       </Space>

@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       user: decoded.id,  // Set the user field to userId from JWT
       business: null,    // Initially no business association
       experience: experience,
-      expertise: skills || [],  // Map skills to expertise field
+      skills: skills || [],  // Store skills directly
       availabilityStatus: 'available',  // Default availability status
       
       // Profile information

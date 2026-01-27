@@ -48,9 +48,9 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      // Only send days that are available to match backend expectations
-      const availableDays = updatedAvailability.filter(day => day.available && day.startTime && day.endTime);
-      onChange(availableDays);
+      // Send all days with their availability status to match backend expectations
+      console.log('Sending availability data:', updatedAvailability);
+      onChange(updatedAvailability);
     }
   };
 
@@ -67,9 +67,9 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      // Only send days that are available to match backend expectations
-      const availableDays = updatedAvailability.filter(day => day.available && day.startTime && day.endTime);
-      onChange(availableDays);
+      // Send all days with their availability status to match backend expectations
+      console.log('Sending availability data:', updatedAvailability);
+      onChange(updatedAvailability);
     }
   };
 
