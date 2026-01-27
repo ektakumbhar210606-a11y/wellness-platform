@@ -18,11 +18,13 @@ interface DayAvailability {
 interface WeeklyAvailabilityProps {
   initialAvailability?: DayAvailability[];
   onChange?: (availability: DayAvailability[]) => void;
+  getCurrentAvailability?: (availability: DayAvailability[]) => void;
 }
 
 const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({ 
   initialAvailability = [], 
-  onChange 
+  onChange,
+  getCurrentAvailability
 }) => {
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const [availability, setAvailability] = useState<DayAvailability[]>(() => {
@@ -48,14 +50,20 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      // Only send days that are available to match backend expectations
-      const availableDays = updatedAvailability.filter(day => day.available && day.startTime && day.endTime);
-      onChange(availableDays);
+      // Send all days with their availability status to match backend expectations
+      console.log('Sending availability data:', updatedAvailability);
+      onChange(updatedAvailability);
+    }
+    
+    if (getCurrentAvailability) {
+      getCurrentAvailability(updatedAvailability);
     }
   };
 
   const handleTimeRangeChange = (dayIndex: number, time: any, timeString: [string, string]) => {
     const [startTime, endTime] = timeString;
+    console.log(`Time range change for day ${dayIndex}: start=${startTime}, end=${endTime}`);
+    console.log(`Day availability before update:`, availability[dayIndex]);
     
     const updatedAvailability = [...availability];
     updatedAvailability[dayIndex] = {
@@ -63,13 +71,18 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
       startTime,
       endTime,
     };
+    console.log(`Day availability after update:`, updatedAvailability[dayIndex]);
     
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      // Only send days that are available to match backend expectations
-      const availableDays = updatedAvailability.filter(day => day.available && day.startTime && day.endTime);
-      onChange(availableDays);
+      // Send all days with their availability status to match backend expectations
+      console.log('Sending availability data:', updatedAvailability);
+      onChange(updatedAvailability);
+    }
+    
+    if (getCurrentAvailability) {
+      getCurrentAvailability(updatedAvailability);
     }
   };
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card, Button, Tag, Space, Typography, Divider } from 'antd';
 import { ShopOutlined, EnvironmentOutlined, ClockCircleOutlined, PhoneOutlined, MailOutlined, GlobalOutlined } from '@ant-design/icons';
+import { formatTimeRange } from '../utils/timeUtils';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -57,13 +58,28 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
     <Card 
       hoverable
       className="card-responsive"
-      style={{ marginBottom: 16 }}
+      style={{ 
+        height: 280,
+        display: 'flex',
+        flexDirection: 'column',
+        marginBottom: 16 
+      }}
+      styles={{
+        body: {
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          overflow: 'hidden'
+        }
+      }}
       actions={[
         <Button 
           type="primary" 
           disabled={isJoinDisabled}
           loading={loading}
           onClick={() => onJoinRequest(business._id)}
+          style={{ width: '100%' }}
         >
           {(() => {
             switch (business.associationStatus) {
@@ -80,83 +96,87 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
         </Button>
       ]}
     >
-      <Space orientation="vertical" style={{ width: '100%' }}>
-        <Space align="start" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Space>
-              <ShopOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
-              <Title level={4} className="responsive-h4" style={{ margin: 0 }}>
-                {business.name}
-              </Title>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <Space align="start" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+            <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Space>
+                <ShopOutlined style={{ fontSize: '20px', color: '#1890ff' }} />
+                <Title level={4} className="responsive-h4" style={{ margin: 0 }} ellipsis>
+                  {business.name}
+                </Title>
+              </Space>
+              {getStatusTag()}
             </Space>
-            {getStatusTag()}
           </Space>
-        </Space>
-        
-        {/* Business Description */}
-        {business.description && (
-          <Paragraph className="responsive-body" ellipsis={{ rows: 2, expandable: true, symbol: 'more' }} style={{ marginBottom: 8 }}>
-            {business.description}
-          </Paragraph>
-        )}
-        
-        {/* Business Address */}
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Space>
-            <EnvironmentOutlined />
-            <Text className="responsive-caption">
-              {business.address.street}, {business.address.city}, {business.address.state} {business.address.zipCode}, {business.address.country}
-            </Text>
-          </Space>
-        </Space>
-        
-        {/* Contact Information */}
-        <Space wrap direction="vertical" style={{ width: '100%' }}>
-          {business.phone && (
-            <Space>
-              <PhoneOutlined />
-              <Text className="responsive-caption">{business.phone}</Text>
-            </Space>
+          
+          {/* Business Description */}
+          {business.description && (
+            <Paragraph className="responsive-body" ellipsis={{ rows: 2 }} style={{ marginBottom: 8 }}>
+              {business.description}
+            </Paragraph>
           )}
-          {business.email && (
+          
+          {/* Business Address */}
+          <Space direction="vertical" style={{ width: '100%' }}>
             <Space>
-              <MailOutlined />
-              <Text className="responsive-caption">{business.email}</Text>
-            </Space>
-          )}
-          {business.website && (
-            <Space>
-              <GlobalOutlined />
-              <Text className="responsive-caption">
-                <a href={business.website} target="_blank" rel="noopener noreferrer" style={{ color: '#1890ff' }}>
-                  {business.website.replace(/^https?:\/\//, '')}
-                </a>
+              <EnvironmentOutlined />
+              <Text className="responsive-caption" ellipsis>
+                {business.address.street}, {business.address.city}, {business.address.state} {business.address.zipCode}, {business.address.country}
               </Text>
             </Space>
-          )}
-        </Space>
+          </Space>
+          
+          {/* Contact Information */}
+          <Space wrap direction="vertical" style={{ width: '100%' }}>
+            {business.phone && (
+              <Space>
+                <PhoneOutlined />
+                <Text className="responsive-caption" ellipsis>{business.phone}</Text>
+              </Space>
+            )}
+            {business.email && (
+              <Space>
+                <MailOutlined />
+                <Text className="responsive-caption" ellipsis>{business.email}</Text>
+              </Space>
+            )}
+            {business.website && (
+              <Space>
+                <GlobalOutlined />
+                <Text className="responsive-caption" ellipsis>
+                  <a href={business.website} target="_blank" rel="noopener noreferrer" style={{ color: '#1890ff' }}>
+                    {business.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </Text>
+              </Space>
+            )}
+          </Space>
+          
+          {/* Business Hours */}
+          <Space direction="vertical" style={{ width: '100%' }} className="responsive-caption">
+            <Space>
+              <ClockCircleOutlined />
+              <Text className="responsive-caption" ellipsis>
+                Hours: {formatTimeRange(business.openingTime, business.closingTime)}
+              </Text>
+            </Space>
+          </Space>
+        </div>
         
-        {/* Business Hours */}
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Space>
-            <ClockCircleOutlined />
-            <Text className="responsive-caption">
-              Hours: {business.openingTime} - {business.closingTime}
+        <div>
+          <Divider style={{ margin: '8px 0' }} />
+          
+          <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }} className="responsive-caption">
+            <Text type="secondary" className="responsive-caption" ellipsis>
+              Status: {business.status}
+            </Text>
+            <Text type="secondary" className="responsive-caption" ellipsis>
+              ID: {business._id.substring(0, 8)}...
             </Text>
           </Space>
-        </Space>
-        
-        <Divider style={{ margin: '8px 0' }} />
-        
-        <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }} className="responsive-caption">
-          <Text type="secondary" className="responsive-caption">
-            Status: {business.status}
-          </Text>
-          <Text type="secondary" className="responsive-caption">
-            ID: {business._id.substring(0, 8)}...
-          </Text>
-        </Space>
-      </Space>
+        </div>
+      </div>
     </Card>
   );
 };

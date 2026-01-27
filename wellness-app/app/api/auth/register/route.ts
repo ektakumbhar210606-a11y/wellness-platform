@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
             user: savedUser._id,
             business: null, // Initially no business association
             experience: 0, // Default experience
-            expertise: [], // No initial expertise
+            skills: [], // No initial skills
             rating: 0, // Default rating
             availabilityStatus: 'available', // Default availability
                     

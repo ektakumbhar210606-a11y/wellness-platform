@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
           email: (therapist.user as any).email,
           phone: (therapist.user as any).phone,
           experience: therapist.experience,
-          expertise: therapist.expertise,
+          skills: therapist.skills,
           rating: therapist.rating,
           availabilityStatus: therapist.availabilityStatus,
           requestedAt: businessAssociation.requestedAt,

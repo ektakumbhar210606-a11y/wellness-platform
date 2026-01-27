@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import { apiPostAuth } from '@/lib/api';
 import dayjs from 'dayjs';
+import { formatTimeRange } from '../utils/timeUtils';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -606,7 +607,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                   {hourRows.map((hour) => (
                     <div key={hour.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span><Tag color="blue">{hour.day}</Tag></span>
-                      <span>{hour.openingTime.format('HH:mm')} - {hour.closingTime.format('HH:mm')}</span>
+                      <span>{formatTimeRange(hour.openingTime.format('HH:mm'), hour.closingTime.format('HH:mm'))}</span>
                     </div>
                   ))}
                 </Space>

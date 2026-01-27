@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, List, Tag, Typography, Space, Button, Spin, Alert, Tabs } from 'antd';
+import { Card, Tag, Typography, Space, Button, Spin, Alert, Tabs } from 'antd';
 import { 
   ClockCircleOutlined, 
   CheckCircleOutlined, 
@@ -13,13 +13,19 @@ import { useAuth } from '../context/AuthContext';
 import { makeAuthenticatedRequest } from '../utils/apiUtils';
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+
 
 interface BusinessRequest {
   id: string;
   businessId: string;
   businessName: string;
-  businessAddress: string;
+  businessAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
   businessDescription?: string;
   businessStatus: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -171,84 +177,88 @@ const TherapistBusinessRequests = () => {
           </div>
         </Card>
       ) : (
-        <Tabs defaultActiveKey="all">
-          <TabPane tab={`All Requests (${requests.length})`} key="all">
-            <List
-              dataSource={requests}
-              renderItem={(request) => (
-                <List.Item>
-                  <Card 
-                    style={{ 
-                      width: '100%', 
-                      backgroundColor: getStatusColor(request.status),
-                      borderLeft: `4px solid ${
-                        request.status === 'approved' ? '#52c41a' : 
-                        request.status === 'rejected' ? '#ff4d4f' : '#faad14'
-                      }`
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <Title level={4} style={{ margin: '0 0 8px 0' }}>
-                          {request.businessName}
-                        </Title>
-                        
-                        <Space orientation="vertical" size="small">
-                          <Text type="secondary">
-                            <ShopOutlined /> {request.businessAddress}
-                          </Text>
+        <Tabs 
+          defaultActiveKey="all" 
+          items={[
+            {
+              key: 'all',
+              label: `All Requests (${requests.length})`,
+              children: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {requests.map((request) => (
+                    <Card 
+                      key={request.id}
+                      style={{ 
+                        width: '100%', 
+                        backgroundColor: getStatusColor(request.status),
+                        borderLeft: `4px solid ${
+                          request.status === 'approved' ? '#52c41a' : 
+                          request.status === 'rejected' ? '#ff4d4f' : '#faad14'
+                        }`
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <Title level={4} style={{ margin: '0 0 8px 0' }}>
+                            {request.businessName}
+                          </Title>
                           
-                          {request.businessDescription && (
+                          <Space orientation="vertical" size="small">
                             <Text type="secondary">
-                              {request.businessDescription.substring(0, 100)}
-                              {request.businessDescription.length > 100 ? '...' : ''}
-                            </Text>
-                          )}
-                          
-                          <Space size="middle">
-                            <Text type="secondary">
-                              Requested: {new Date(request.requestedAt).toLocaleDateString()}
+                              <ShopOutlined /> {request.businessAddress.street}, {request.businessAddress.city}, {request.businessAddress.state} {request.businessAddress.zipCode}
                             </Text>
                             
-                            {request.approvedAt && (
+                            {request.businessDescription && (
                               <Text type="secondary">
-                                Approved: {new Date(request.approvedAt).toLocaleDateString()}
+                                {request.businessDescription.substring(0, 100)}
+                                {request.businessDescription.length > 100 ? '...' : ''}
                               </Text>
                             )}
+                            
+                            <Space size="middle">
+                              <Text type="secondary">
+                                Requested: {new Date(request.requestedAt).toLocaleDateString()}
+                              </Text>
+                              
+                              {request.approvedAt && (
+                                <Text type="secondary">
+                                  Approved: {new Date(request.approvedAt).toLocaleDateString()}
+                                </Text>
+                              )}
+                            </Space>
                           </Space>
-                        </Space>
+                        </div>
+                        
+                        <div style={{ textAlign: 'right' }}>
+                          {getStatusTag(request.status)}
+                          {request.businessContact?.email && (
+                            <div style={{ marginTop: 8 }}>
+                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                                Contact: {request.businessContact.email}
+                              </Text>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      
-                      <div style={{ textAlign: 'right' }}>
-                        {getStatusTag(request.status)}
-                        {request.businessContact?.email && (
-                          <div style={{ marginTop: 8 }}>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              Contact: {request.businessContact.email}
-                            </Text>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </List.Item>
-              )}
-            />
-          </TabPane>
+                    </Card>
+                  ))}
+                </div>
+              )
+            },
           
-          <TabPane tab={`Pending (${groupedRequests.pending.length})`} key="pending">
-            {groupedRequests.pending.length > 0 ? (
-              <List
-                dataSource={groupedRequests.pending}
-                renderItem={(request) => (
-                  <List.Item>
-                    <Card style={{ width: '100%', backgroundColor: '#fffbe6' }}>
+            {
+              key: 'pending',
+              label: `Pending (${groupedRequests.pending.length})`,
+              children: groupedRequests.pending.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {groupedRequests.pending.map((request) => (
+                    <Card key={request.id} style={{ width: '100%', backgroundColor: '#fffbe6' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <div>
                           <Title level={4} style={{ margin: '0 0 8px 0' }}>
                             {request.businessName}
                           </Title>
-                          <Text type="secondary">{request.businessAddress}</Text>
+                          <Text type="secondary">{request.businessAddress.street}, {request.businessAddress.city}, {request.businessAddress.state} {request.businessAddress.zipCode}</Text>
                         </div>
                         <div>
                           <Tag icon={<ClockCircleOutlined />} color="orange">
@@ -262,32 +272,31 @@ const TherapistBusinessRequests = () => {
                         </div>
                       </div>
                     </Card>
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Card>
-                <div style={{ textAlign: 'center', padding: '24px' }}>
-                  <ClockCircleOutlined style={{ fontSize: '32px', color: '#ccc', marginBottom: 8 }} />
-                  <Text type="secondary">No pending requests</Text>
+                  ))}
                 </div>
-              </Card>
-            )}
-          </TabPane>
+              ) : (
+                <Card>
+                  <div style={{ textAlign: 'center', padding: '24px' }}>
+                    <ClockCircleOutlined style={{ fontSize: '32px', color: '#ccc', marginBottom: 8 }} />
+                    <Text type="secondary">No pending requests</Text>
+                  </div>
+                </Card>
+              )
+            },
           
-          <TabPane tab={`Approved (${groupedRequests.approved.length})`} key="approved">
-            {groupedRequests.approved.length > 0 ? (
-              <List
-                dataSource={groupedRequests.approved}
-                renderItem={(request) => (
-                  <List.Item>
-                    <Card style={{ width: '100%', backgroundColor: '#f6ffed' }}>
+            {
+              key: 'approved',
+              label: `Approved (${groupedRequests.approved.length})`,
+              children: groupedRequests.approved.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {groupedRequests.approved.map((request) => (
+                    <Card key={request.id} style={{ width: '100%', backgroundColor: '#f6ffed' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <div>
                           <Title level={4} style={{ margin: '0 0 8px 0' }}>
                             {request.businessName}
                           </Title>
-                          <Text type="secondary">{request.businessAddress}</Text>
+                          <Text type="secondary">{request.businessAddress.street}, {request.businessAddress.city}, {request.businessAddress.state} {request.businessAddress.zipCode}</Text>
                         </div>
                         <div>
                           <Tag icon={<CheckCircleOutlined />} color="green">
@@ -301,32 +310,31 @@ const TherapistBusinessRequests = () => {
                         </div>
                       </div>
                     </Card>
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Card>
-                <div style={{ textAlign: 'center', padding: '24px' }}>
-                  <CheckCircleOutlined style={{ fontSize: '32px', color: '#ccc', marginBottom: 8 }} />
-                  <Text type="secondary">No approved requests</Text>
+                  ))}
                 </div>
-              </Card>
-            )}
-          </TabPane>
+              ) : (
+                <Card>
+                  <div style={{ textAlign: 'center', padding: '24px' }}>
+                    <CheckCircleOutlined style={{ fontSize: '32px', color: '#ccc', marginBottom: 8 }} />
+                    <Text type="secondary">No approved requests</Text>
+                  </div>
+                </Card>
+              )
+            },
           
-          <TabPane tab={`Rejected (${groupedRequests.rejected.length})`} key="rejected">
-            {groupedRequests.rejected.length > 0 ? (
-              <List
-                dataSource={groupedRequests.rejected}
-                renderItem={(request) => (
-                  <List.Item>
-                    <Card style={{ width: '100%', backgroundColor: '#fff2f0' }}>
+            {
+              key: 'rejected',
+              label: `Rejected (${groupedRequests.rejected.length})`,
+              children: groupedRequests.rejected.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {groupedRequests.rejected.map((request) => (
+                    <Card key={request.id} style={{ width: '100%', backgroundColor: '#fff2f0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <div>
                           <Title level={4} style={{ margin: '0 0 8px 0' }}>
                             {request.businessName}
                           </Title>
-                          <Text type="secondary">{request.businessAddress}</Text>
+                          <Text type="secondary">{request.businessAddress.street}, {request.businessAddress.city}, {request.businessAddress.state} {request.businessAddress.zipCode}</Text>
                         </div>
                         <div>
                           <Tag icon={<CloseCircleOutlined />} color="red">
@@ -340,19 +348,19 @@ const TherapistBusinessRequests = () => {
                         </div>
                       </div>
                     </Card>
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Card>
-                <div style={{ textAlign: 'center', padding: '24px' }}>
-                  <CloseCircleOutlined style={{ fontSize: '32px', color: '#ccc', marginBottom: 8 }} />
-                  <Text type="secondary">No rejected requests</Text>
+                  ))}
                 </div>
-              </Card>
-            )}
-          </TabPane>
-        </Tabs>
+              ) : (
+                <Card>
+                  <div style={{ textAlign: 'center', padding: '24px' }}>
+                    <CloseCircleOutlined style={{ fontSize: '32px', color: '#ccc', marginBottom: 8 }} />
+                    <Text type="secondary">No rejected requests</Text>
+                  </div>
+                </Card>
+              )
+            }
+          ]}
+        />
       )}
     </div>
   );

@@ -69,6 +69,7 @@ const TherapistProfilePage = () => {
 const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving }: { profile: any; user: any; router: any; saving: boolean; setSaving: React.Dispatch<React.SetStateAction<boolean>> }) => {
   const [profileForm] = Form.useForm();
   const [availabilityForm] = Form.useForm();
+  const [currentAvailability, setCurrentAvailability] = useState<any[]>(profile?.weeklyAvailability || []);
 
   // Set initial form values after forms are created
   useEffect(() => {
@@ -104,7 +105,7 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
           description: 'Therapist profile updated successfully!',
         });
         
-        // Navigate back to the therapist dashboard after a short delay to allow the user to see the success message
+        // Redirect back to the therapist dashboard to see updated information
         setTimeout(() => {
           router.push('/dashboard/therapist');
         }, 1500);
@@ -121,11 +122,16 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
 
   const handleAvailabilitySubmit = async (values: any) => {
     try {
+      console.log('handleAvailabilitySubmit called with values:', values);
       setSaving(true);
+      
+      console.log('Form values received:', values);
+      console.log('Weekly availability in form values:', values.weeklyAvailability);
+      console.log('Current availability state:', currentAvailability);
       
       // Update profile with availability
       const response = await therapistApi.updateProfile({
-        weeklyAvailability: values.weeklyAvailability || []
+        weeklyAvailability: currentAvailability || []
       });
       
       if (response.success) {
@@ -134,7 +140,7 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
           description: 'Availability updated successfully!',
         });
         
-        // Navigate back to the therapist dashboard after a short delay to allow the user to see the success message
+        // Redirect back to the therapist dashboard to see updated information
         setTimeout(() => {
           router.push('/dashboard/therapist');
         }, 1500);
@@ -293,13 +299,12 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
                   onFinish={handleAvailabilitySubmit}
                 >
                   <Card title="Weekly Availability Settings">
+                    {/* Hidden field to store the current availability */}
                     <WeeklyAvailability 
                       initialAvailability={profile?.weeklyAvailability || []} 
                       onChange={(availability) => {
-                        // Update the form field with the new availability
-                        availabilityForm.setFieldsValue({
-                          weeklyAvailability: availability
-                        });
+                        // Update the current availability state
+                        setCurrentAvailability(availability);
                       }}
                     />
                     

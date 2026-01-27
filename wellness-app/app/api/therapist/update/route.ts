@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest) {
     
     // Therapist-specific fields
     if (experience !== undefined) updateData.experience = experience;
-    if (skills) updateData.expertise = skills;
+    if (skills) updateData.skills = skills;
     if (status) updateData.availabilityStatus = status;
     
     // Profile information fields
@@ -69,6 +69,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Validate weeklyAvailability if provided
+    console.log('Received weeklyAvailability data:', weeklyAvailability);
     if (updateData.weeklyAvailability && Array.isArray(updateData.weeklyAvailability)) {
       for (const availability of updateData.weeklyAvailability) {
         if (!availability.day) {
@@ -98,6 +99,12 @@ export async function PUT(req: NextRequest) {
     }
 
     // Update therapist profile
+    console.log('Updating therapist profile for user ID:', decoded.id);
+    console.log('Update data being saved:', {
+      ...updateData,
+      weeklyAvailabilityCount: updateData.weeklyAvailability ? updateData.weeklyAvailability.length : 0
+    });
+    
     const updatedProfile = await TherapistModel.findOneAndUpdate(
       { user: decoded.id },
       { $set: updateData },
@@ -110,6 +117,11 @@ export async function PUT(req: NextRequest) {
         { status: 404 }
       );
     }
+    
+    console.log('Profile updated successfully, new weeklyAvailability:', {
+      count: updatedProfile.weeklyAvailability ? updatedProfile.weeklyAvailability.length : 0,
+      data: updatedProfile.weeklyAvailability
+    });
 
     return Response.json({
       success: true,

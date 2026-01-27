@@ -34,10 +34,38 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Return clean JSON response with only the relevant fields
+    const therapistData = {
+      id: therapist._id.toString(),
+      userId: therapist.user.toString(),
+      businessId: therapist.business ? therapist.business.toString() : null,
+      experience: therapist.experience,
+      skills: therapist.skills,
+      rating: therapist.rating,
+      availabilityStatus: therapist.availabilityStatus,
+      associatedBusinesses: therapist.associatedBusinesses?.map((assoc: any) => ({
+        businessId: assoc.businessId.toString(),
+        status: assoc.status,
+        requestedAt: assoc.requestedAt,
+        approvedAt: assoc.approvedAt
+      })) || [],
+      fullName: therapist.fullName,
+      email: therapist.email,
+      phoneNumber: therapist.phoneNumber,
+      professionalTitle: therapist.professionalTitle,
+      bio: therapist.bio,
+      location: therapist.location,
+      certifications: therapist.certifications,
+      licenseNumber: therapist.licenseNumber,
+      weeklyAvailability: therapist.weeklyAvailability,
+      createdAt: therapist.createdAt,
+      updatedAt: therapist.updatedAt
+    };
+
     return Response.json({
       success: true,
       message: 'Therapist profile retrieved successfully',
-      data: therapist
+      data: therapistData
     });
 
   } catch (error: any) {
