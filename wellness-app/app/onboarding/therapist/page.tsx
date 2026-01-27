@@ -18,6 +18,8 @@ const TherapistOnboardingPage = () => {
   const [loading, setLoading] = useState(false);
   const [profileForm] = Form.useForm();
   const [availabilityForm] = Form.useForm();
+  const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   // Check if onboarding is already completed
   useEffect(() => {
@@ -41,6 +43,26 @@ const TherapistOnboardingPage = () => {
 
     checkOnboardingStatus();
   }, [user, router]);
+
+  // Fetch service categories for expertise dropdown
+  useEffect(() => {
+    const fetchServiceCategories = async () => {
+      try {
+        const response = await fetch('/api/service-categories');
+        const result = await response.json();
+        
+        if (result.success && Array.isArray(result.data)) {
+          setServiceCategories(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch service categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchServiceCategories();
+  }, []);
 
   const steps = [
     {
@@ -240,6 +262,26 @@ const TherapistOnboardingPage = () => {
               tokenSeparators={[',']}
             >
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="expertise"
+            label="Areas of Expertise"
+            rules={[{ required: true, message: 'Please select at least one area of expertise' }]}
+          >
+            <Select
+              mode="multiple"
+              style={{ width: '100%' }}
+              placeholder="Select your areas of expertise"
+              loading={categoriesLoading}
+              notFoundContent={categoriesLoading ? 'Loading...' : 'No categories found'}
+              options={serviceCategories.map(category => ({
+                value: category.id,
+                label: category.name
+              }))}
+              showSearch
+              optionFilterProp="label"
+            />
           </Form.Item>
 
           <Form.Item name="certifications" label="Certifications">

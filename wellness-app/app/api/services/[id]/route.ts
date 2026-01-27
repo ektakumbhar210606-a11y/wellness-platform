@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import ServiceModel from '@/models/Service';
+import ServiceCategoryModel from '@/models/ServiceCategory';
 import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
 
@@ -170,7 +171,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const service = await ServiceModel.findOne({
       _id: serviceId,
       business: business._id
-    });
+    }).populate('serviceCategory', 'name');
 
     if (!service) {
       return NextResponse.json(
@@ -183,11 +184,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       { 
         service: {
           id: service._id.toString(),
-          name: service.name,
+          serviceCategory: service.serviceCategory ? {
+            id: service.serviceCategory._id.toString(),
+            name: service.serviceCategory.name
+          } : null,
           price: service.price,
           duration: service.duration,
           description: service.description,
-          category: service.category,
           createdAt: service.createdAt,
         }
       },
@@ -251,7 +254,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Parse request body
     const body = await req.json();
-    const { name, price, duration, description, category, therapists } = body;
+    const { serviceCategoryId, price, duration, description, therapists } = body;
 
     // Find the business associated with the user
     const business = await BusinessModel.findOne({ owner: user._id });
@@ -264,9 +267,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Validate required fields if they are provided
-    if (name !== undefined && typeof name !== 'string') {
+    if (serviceCategoryId !== undefined && typeof serviceCategoryId !== 'string') {
       return NextResponse.json(
-        { error: 'Name must be a string' },
+        { error: 'Service category ID must be a string' },
         { status: 400 }
       );
     }
@@ -292,12 +295,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-    if (category !== undefined && typeof category !== 'string') {
-      return NextResponse.json(
-        { error: 'Category must be a string' },
-        { status: 400 }
-      );
-    }
+
 
     if (therapists !== undefined && !Array.isArray(therapists)) {
       return NextResponse.json(
@@ -306,13 +304,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-// Update the service if it belongs to the user's business
     const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
+
+    // Verify service category exists and is active if provided
+    if (serviceCategoryId !== undefined) {
+      const serviceCategory = await ServiceCategoryModel.findById(serviceCategoryId);
+      if (!serviceCategory || !serviceCategory.isActive) {
+        return NextResponse.json(
+          { error: 'Invalid or inactive service category' },
+          { status: 400 }
+        );
+      }
+      updateData.serviceCategory = serviceCategoryId;
+    }
     if (price !== undefined) updateData.price = price;
     if (duration !== undefined) updateData.duration = duration;
     if (description !== undefined) updateData.description = description;
-    if (category !== undefined) updateData.category = category;
     if (therapists !== undefined) updateData.therapists = therapists;
     
     const updatedService = await ServiceModel.findOneAndUpdate(
@@ -328,18 +335,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
+    // Populate service category name
+    const populatedService = await ServiceModel.findById(updatedService._id)
+      .populate('serviceCategory', 'name');
+
     return NextResponse.json(
       { 
         message: 'Service updated successfully',
         service: {
-          id: updatedService._id.toString(),
-          name: updatedService.name,
-          price: updatedService.price,
-          duration: updatedService.duration,
-          description: updatedService.description,
-          category: updatedService.category,
-          therapists: updatedService.therapists || [],
-          createdAt: updatedService.createdAt,
+          id: populatedService._id.toString(),
+          serviceCategory: populatedService.serviceCategory ? {
+            id: populatedService.serviceCategory._id.toString(),
+            name: populatedService.serviceCategory.name
+          } : null,
+          price: populatedService.price,
+          duration: populatedService.duration,
+          description: populatedService.description,
+          therapists: populatedService.therapists || [],
+          createdAt: populatedService.createdAt,
         }
       },
       { status: 200 }

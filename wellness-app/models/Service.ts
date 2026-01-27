@@ -1,15 +1,15 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IBusiness } from './Business'; // Import the Business interface
 import { ITherapist } from './Therapist'; // Import the Therapist interface
+import { IServiceCategory } from './ServiceCategory'; // Import the ServiceCategory interface
 
 // Define the interface for the Service document
 export interface IService extends Document {
   business: IBusiness['_id'] | IBusiness; // Reference to Business model
-  name: string; // Service name
+  serviceCategory: IServiceCategory['_id'] | IServiceCategory; // Reference to ServiceCategory model
   price: number; // Service price
   duration: number; // Duration in minutes
   description?: string; // Optional service description
-  category?: string; // Optional service category
   therapists?: ITherapist['_id'][] | ITherapist[]; // Array of therapist references
   teamMembers?: ITherapist['_id'][] | ITherapist[]; // Array of team member references
   createdAt: Date;
@@ -23,11 +23,10 @@ const ServiceSchema: Schema<IService> = new Schema({
     ref: 'Business',
     required: [true, 'Business reference is required'],
   },
-  name: {
-    type: String,
-    required: [true, 'Service name is required'],
-    trim: true,
-    maxlength: [100, 'Service name cannot exceed 100 characters']
+  serviceCategory: {
+    type: Schema.Types.ObjectId,
+    ref: 'ServiceCategory',
+    required: [true, 'Service category is required'],
   },
   price: {
     type: Number,
@@ -44,11 +43,7 @@ const ServiceSchema: Schema<IService> = new Schema({
     trim: true,
     maxlength: [500, 'Description cannot exceed 500 characters']
   },
-  category: {
-    type: String,
-    trim: true,
-    maxlength: [50, 'Category cannot exceed 50 characters']
-  },
+
   therapists: [{
     type: Schema.Types.ObjectId,
     ref: 'Therapist'
@@ -63,10 +58,10 @@ const ServiceSchema: Schema<IService> = new Schema({
 
 // Create indexes for better query performance
 ServiceSchema.index({ business: 1 }); // Index on business for quick lookups by business
-ServiceSchema.index({ name: 'text' }); // Text index for service name search
+ServiceSchema.index({ serviceCategory: 1 }); // Index on serviceCategory for filtering
 ServiceSchema.index({ price: 1 }); // Index on price for sorting/filtering
 ServiceSchema.index({ duration: 1 }); // Index on duration for sorting/filtering
-ServiceSchema.index({ category: 1 }); // Index on category for filtering
+
 ServiceSchema.index({ therapists: 1 }); // Index on therapists for marketplace queries
 ServiceSchema.index({ teamMembers: 1 }); // Index on team members for marketplace queries
 

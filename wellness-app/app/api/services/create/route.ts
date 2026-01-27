@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import ServiceModel, { IService } from '@/models/Service';
+import ServiceCategoryModel from '@/models/ServiceCategory';
 import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
 
@@ -71,23 +72,22 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { name, price, duration, description, category, images, teamMembers, therapists } = body;
+    const { serviceCategoryId, price, duration, description, images, teamMembers, therapists } = body;
 
     // Validate required fields
-    if (!name || !price || !duration || !description) {
+    if (!serviceCategoryId || !price || !duration || !description) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, price, duration, and description are required' },
+        { error: 'Missing required fields: serviceCategoryId, price, duration, and description are required' },
         { status: 400 }
       );
     }
 
     // Validate data types
-    if (typeof name !== 'string' || typeof description !== 'string' || 
+    if (typeof serviceCategoryId !== 'string' || typeof description !== 'string' || 
         typeof price !== 'number' || typeof duration !== 'number' ||
-        (category && typeof category !== 'string') ||
         (therapists && !Array.isArray(therapists))) {
       return NextResponse.json(
-        { error: 'Invalid data types: name, description, and category must be strings; price and duration must be numbers; therapists must be an array' },
+        { error: 'Invalid data types: serviceCategoryId and description must be strings; price and duration must be numbers; therapists must be an array' },
         { status: 400 }
       );
     }
@@ -110,32 +110,46 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Verify service category exists and is active
+    const serviceCategory = await ServiceCategoryModel.findById(serviceCategoryId);
+    if (!serviceCategory || !serviceCategory.isActive) {
+      return NextResponse.json(
+        { error: 'Invalid or inactive service category' },
+        { status: 400 }
+      );
+    }
+
     // Create new service
     const newService = new ServiceModel({
       business: business._id,
-      name,
+      serviceCategory: serviceCategoryId,
       price,
       duration,
       description,
-      category: category || undefined, // Optional field
       therapists: therapists || [], // Assign therapists if provided
       teamMembers: teamMembers || [] // Also assign team members if provided
     });
 
     const createdService = await newService.save();
 
+    // Populate service category name
+    const populatedService = await ServiceModel.findById(createdService._id)
+      .populate('serviceCategory', 'name');
+
     return NextResponse.json(
       { 
         message: 'Service created successfully', 
         service: {
-          id: createdService._id.toString(),
-          name: createdService.name,
-          price: createdService.price,
-          duration: createdService.duration,
-          description: createdService.description,
-          category: createdService.category,
-          therapists: createdService.therapists || [],
-          createdAt: createdService.createdAt,
+          id: populatedService._id.toString(),
+          serviceCategory: {
+            id: populatedService.serviceCategory._id.toString(),
+            name: populatedService.serviceCategory.name
+          },
+          price: populatedService.price,
+          duration: populatedService.duration,
+          description: populatedService.description,
+          therapists: populatedService.therapists || [],
+          createdAt: populatedService.createdAt,
         }
       },
       { status: 201 }

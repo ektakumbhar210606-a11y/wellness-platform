@@ -79,17 +79,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch all services for the user's business
-    const services = await ServiceModel.find({ business: business._id }).sort({ createdAt: -1 });
+    // Fetch all services for the user's business with populated service categories
+    const services = await ServiceModel.find({ business: business._id })
+      .populate('serviceCategory', 'name')
+      .sort({ createdAt: -1 });
 
     // Format the services for the response
     const formattedServices = services.map(service => ({
       id: service._id.toString(),
-      name: service.name,
+      serviceCategory: service.serviceCategory ? {
+        id: service.serviceCategory._id.toString(),
+        name: service.serviceCategory.name
+      } : null,
       price: service.price,
       duration: service.duration,
       description: service.description,
-      category: service.category,
       createdAt: service.createdAt,
     }));
 

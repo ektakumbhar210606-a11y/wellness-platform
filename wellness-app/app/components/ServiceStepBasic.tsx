@@ -1,11 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Select, Typography, Button } from 'antd';
 
 const { TextArea } = Input;
 const { Title } = Typography;
 
 interface ServiceFormData {
-  name?: string;
+  serviceCategoryId?: string;
   price?: number;
   duration?: number;
   description?: string;
@@ -30,6 +30,28 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   totalSteps
 }) => {
   const [form] = Form.useForm();
+  const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Fetch service categories
+  useEffect(() => {
+    const fetchServiceCategories = async () => {
+      try {
+        const response = await fetch('/api/service-categories');
+        const result = await response.json();
+        
+        if (result.success && Array.isArray(result.data)) {
+          setServiceCategories(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch service categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchServiceCategories();
+  }, []);
   
   // Update form fields when formData changes
   React.useEffect(() => {
@@ -85,26 +107,26 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
         className="form-responsive"
       >
         <Form.Item 
-          label="Service Name" 
-          name="name"
+          label="Service Type" 
+          name="serviceCategoryId"
           rules={[
             { 
               required: true, 
-              message: 'Service name is required' 
-            },
-            { 
-              min: 2, 
-              message: 'Service name must be at least 2 characters' 
-            },
-            { 
-              max: 100, 
-              message: 'Service name cannot exceed 100 characters' 
+              message: 'Please select a service type' 
             }
           ]}
         >
-          <Input
-            placeholder="Enter service name"
-            onChange={(e) => handleFieldChange('name', e.target.value)}
+          <Select
+            showSearch
+            placeholder="Select a service type"
+            optionFilterProp="label"
+            loading={categoriesLoading}
+            notFoundContent={categoriesLoading ? 'Loading...' : 'No categories found'}
+            options={serviceCategories.map(category => ({
+              value: category.id,
+              label: category.name
+            }))}
+            onChange={(value) => handleFieldChange('serviceCategoryId', value)}
           />
         </Form.Item>
 
