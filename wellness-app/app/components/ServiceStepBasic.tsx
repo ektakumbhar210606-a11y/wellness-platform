@@ -9,12 +9,17 @@ interface ServiceFormData {
   price?: number;
   duration?: number;
   description?: string;
+  name?: string;
+  images?: string[];
+  teamMembers?: string[];
+  therapists?: string[];
+  isEditing?: boolean;
   [key: string]: any;
 }
 
 interface ServiceStepBasicProps {
-  formData: ServiceFormData;
-  setFormData: (data: ServiceFormData) => void;
+  formData: any;
+  setFormData: (data: any) => void;
   onNext: () => void;
   onPrev: () => void;
   current: number;
