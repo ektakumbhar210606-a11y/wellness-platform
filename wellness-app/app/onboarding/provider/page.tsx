@@ -1,40 +1,71 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { message } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
+import { businessService } from '@/app/services/businessService';
 import ProviderOnboarding from '@/app/components/ProviderOnboarding';
 
 const ProviderOnboardingPage = () => {
   const router = useRouter();
   const { user, isAuthenticated, login } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
 
   // Check if user is authenticated and is a provider
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      message.error('Please log in to continue');
-      router.push('/'); // Redirect to home if not authenticated
-      return;
-    }
-    
-    // If user is not a provider, redirect to appropriate dashboard
-    if (user && user.role && user.role.toLowerCase() !== 'provider' && user.role.toLowerCase() !== 'business') {
-      if (user.role.toLowerCase() === 'customer') {
-        router.push('/dashboard/customer');
-      } else if (user.role.toLowerCase() === 'therapist') {
-        router.push('/dashboard/therapist');
-      } else {
-        router.push('/');
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (!isAuthenticated) {
+        message.error('Please log in to continue');
+        router.push('/'); // Redirect to home if not authenticated
+        return;
       }
-      return;
-    }
+      
+      // If user is not a provider, redirect to appropriate dashboard
+      if (user && user.role && user.role.toLowerCase() !== 'provider' && user.role.toLowerCase() !== 'business') {
+        if (user.role.toLowerCase() === 'customer') {
+          router.push('/dashboard/customer');
+        } else if (user.role.toLowerCase() === 'therapist') {
+          router.push('/dashboard/therapist');
+        } else {
+          router.push('/');
+        }
+        return;
+      }
+      
+      try {
+        // Check if onboarding is already completed
+        const onboardingStatus = await businessService.checkOnboardingStatus();
+        
+        if (onboardingStatus.completed) {
+          // If onboarding is already completed, redirect to dashboard
+          message.info('Onboarding already completed. Redirecting to dashboard...');
+          router.push('/dashboard/provider');
+          return;
+        }
+      } catch (error: any) {
+        console.error('Error checking onboarding status:', error);
+        // If there's an error checking status, continue with onboarding
+      }
+      
+      // Set user data for auto-fill
+      if (user) {
+        setUserData({
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+        });
+      }
+      
+      setLoading(false);
+    };
     
-    // If user is a provider and has already completed onboarding, redirect to dashboard
-    if (user && user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
-      // In a real app, you would check if onboarding is complete
-      // For now, we'll allow the onboarding to proceed
-    }
+    checkOnboardingStatus();
   }, [isAuthenticated, user, router]);
 
   const handleComplete = async (formData: any) => {
@@ -65,6 +96,21 @@ const ProviderOnboardingPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        width: '100%',
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
+  
   return (
     <div style={{ 
       padding: '40px 20px', 
@@ -94,7 +140,7 @@ const ProviderOnboardingPage = () => {
         </p>
       </div>
       
-      <ProviderOnboarding onComplete={handleComplete} />
+      <ProviderOnboarding onComplete={handleComplete} userData={userData} />
     </div>
   );
 };

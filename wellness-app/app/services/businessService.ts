@@ -248,4 +248,8 @@ export const businessService = {
   getBusinessProfile: async (): Promise<BusinessProfile> => {
     return await apiGet('/businesses/my-business');
   },
+
+  checkOnboardingStatus: async (): Promise<{ completed: boolean; hasBusiness: boolean }> => {
+    return await apiGet('/businesses/onboarding-status');
+  },
 };

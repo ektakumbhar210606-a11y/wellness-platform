@@ -55,9 +55,14 @@ interface FormData {
 
 interface ProviderOnboardingProps {
   onComplete?: (formData: any) => void;
+  userData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
 }
 
-const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) => {
+const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, userData }) => {
   // Step management
   const [currentStep, setCurrentStep] = useState<number>(0);
   
@@ -83,6 +88,26 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
   
   // Loading state for submission
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Auto-fill form data when userData is provided
+  React.useEffect(() => {
+    if (userData) {
+      // Set initial form data with user information
+      setFormData(prev => ({
+        ...prev,
+        fullName: userData.name || prev.fullName,
+        email: userData.email || prev.email,
+        phoneNumber: userData.phone || prev.phoneNumber,
+      }));
+      
+      // Set form field values
+      basicForm.setFieldsValue({
+        fullName: userData.name,
+        email: userData.email,
+        phoneNumber: userData.phone,
+      });
+    }
+  }, [userData, basicForm]);
 
   const steps = [
     {
@@ -387,6 +412,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                 placeholder="Enter your full name" 
                 prefix={<UserOutlined />}
                 size="large"
+                readOnly={!!userData?.name}
               />
             </Form.Item>
                     
@@ -402,6 +428,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                 placeholder="Enter your email" 
                 type="email"
                 size="large"
+                readOnly={!!userData?.email}
               />
             </Form.Item>
                     
@@ -416,6 +443,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
               <Input 
                 placeholder="Enter your phone number" 
                 size="large"
+                readOnly={!!userData?.phone}
               />
             </Form.Item>
                     

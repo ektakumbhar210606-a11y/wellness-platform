@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/app/context/AuthContext';
 import { postApi } from '@/lib/api';
 import { customerApi } from '@/app/utils/apiUtils';
+import { businessService } from '@/app/services/businessService';
 import { useRouter } from 'next/navigation';
 import ForgotPasswordModal from './auth/ForgotPasswordModal';
 
@@ -233,31 +234,23 @@ const AuthModal: React.FC<AuthModalProps> = ({
           router.push('/onboarding/therapist');
         }, 500); // Small delay to allow modal to close and message to show
       } else if (user.role && (user.role.toLowerCase() === 'provider' || user.role.toLowerCase() === 'business')) {
-        // Check if provider already has a business profile
+        // Check if provider already has completed onboarding
         try {
-          // Fetch business profile to see if onboarding is already completed
-          const token = localStorage.getItem('token');
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/my-business`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-          });
+          const onboardingStatus = await businessService.checkOnboardingStatus();
           
-          if (response.ok) {
-            // Provider already has a business profile, redirect to dashboard
+          if (onboardingStatus.completed) {
+            // Provider has already completed onboarding, redirect to dashboard
             setTimeout(() => {
               router.push('/dashboard/provider');
             }, 500); // Small delay to allow modal to close and message to show
           } else {
-            // Provider doesn't have a business profile, redirect to onboarding
+            // Provider hasn't completed onboarding, redirect to onboarding
             setTimeout(() => {
               router.push('/onboarding/provider');
             }, 500); // Small delay to allow modal to close and message to show
           }
         } catch (error) {
-          // If there's an error checking business profile, redirect to onboarding
+          // If there's an error checking onboarding status, redirect to onboarding
           setTimeout(() => {
             router.push('/onboarding/provider');
           }, 500); // Small delay to allow modal to close and message to show
