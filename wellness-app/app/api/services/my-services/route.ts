@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import ServiceModel from '@/models/Service';
-import ServiceCategoryModel from '@/models/ServiceCategory';
 import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
-
-// Import ServiceCategoryModel to ensure it's registered with Mongoose
-// This is needed for populate() to work with serviceCategory references
-ServiceCategoryModel;
 
 // Simple JWT verification (for demo purposes)
 // In production, use a proper JWT library like 'jsonwebtoken'
@@ -84,10 +79,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Force ServiceCategory model registration by doing a simple find
-    // This ensures Mongoose knows about the ServiceCategory schema for populate()
-    await ServiceCategoryModel.findOne({});
-    
     // Fetch all services for the user's business with populated service categories
     const services = await ServiceModel.find({ business: business._id })
       .populate('serviceCategory', 'name')

@@ -65,31 +65,13 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   
   // Handle field changes and update parent state
   const handleFieldChange = (field: string, value: any) => {
-    // Special handling for serviceCategoryId - also set the service name
-    if (field === 'serviceCategoryId') {
-      const selectedCategory = serviceCategories.find(cat => cat.id === value);
-      const serviceName = selectedCategory ? selectedCategory.name : '';
-      
-      setFormData({
-        ...formData,
-        serviceCategoryId: value,
-        name: serviceName, // Auto-populate service name from category
-      });
-      
-      // Update form's internal state
-      form.setFieldsValue({ 
-        serviceCategoryId: value,
-        name: serviceName
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [field]: value,
-      });
-      
-      // Also update the form's internal state to keep it in sync
-      form.setFieldsValue({ [field]: value });
-    }
+    setFormData({
+      ...formData,
+      [field]: value,
+    });
+    
+    // Also update the form's internal state to keep it in sync
+    form.setFieldsValue({ [field]: value });
   };
 
   // Handle form submission/validation
@@ -122,23 +104,10 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
           // Update parent state when form values change
           const fieldName = Object.keys(changedValues)[0];
           const fieldValue = changedValues[fieldName];
-          
-          // Special handling for serviceCategoryId to auto-set service name
-          if (fieldName === 'serviceCategoryId') {
-            const selectedCategory = serviceCategories.find(cat => cat.id === fieldValue);
-            const serviceName = selectedCategory ? selectedCategory.name : '';
-            
-            setFormData((prev: ServiceFormData) => ({
-              ...prev,
-              serviceCategoryId: fieldValue,
-              name: serviceName,
-            }));
-          } else {
-            setFormData((prev: ServiceFormData) => ({
-              ...prev,
-              [fieldName]: fieldValue
-            }));
-          }
+          setFormData((prev: ServiceFormData) => ({
+            ...prev,
+            [fieldName]: fieldValue
+          }));
         }}
         className="form-responsive"
       >

@@ -1,14 +1,9 @@
 'use client';
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  Suspense,
-} from 'react';
-import { Modal, Steps, message, Spin } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Modal, Steps, message } from 'antd';
 
-// Lazy-loaded steps
+// Dynamically import step components to avoid circular dependencies during build
 const ServiceStepBasic = React.lazy(() => import('./ServiceStepBasic'));
 const ServiceStepMedia = React.lazy(() => import('./ServiceStepMedia'));
 const ServiceStepTeam = React.lazy(() => import('./ServiceStepTeam'));
@@ -22,134 +17,128 @@ interface ServiceModalProps {
   editingService?: any;
 }
 
-const TOTAL_STEPS = 4;
-
-const ServiceModal: React.FC<ServiceModalProps> = ({
-  visible,
-  onClose,
+const ServiceModal: React.FC<ServiceModalProps> = ({ 
+  visible, 
+  onClose, 
   onSubmit,
   loading,
-  editingService,
+  editingService
 }) => {
   const [current, setCurrent] = useState(0);
   const [approvedTherapists, setApprovedTherapists] = useState<any[]>([]);
   const [loadingTherapists, setLoadingTherapists] = useState(false);
-
-  const [formData, setFormData] = useState<any>({
-    name: '',
-    price: undefined,
-    duration: undefined,
-    description: '',
-    images: [],
-    teamMembers: [],
-    therapists: [],
-    isEditing: false,
+  
+  // Initialize form data based on whether we're editing or creating
+  const [formData, setFormData] = useState({
+    name: editingService ? editingService.name : '',
+    price: editingService ? editingService.price : undefined,
+    duration: editingService ? editingService.duration : undefined,
+    description: editingService ? editingService.description : '',
+    images: editingService ? editingService.images || [] : [],
+    teamMembers: editingService ? editingService.teamMembers || [] : [],
+    therapists: editingService ? editingService.therapists || [] : [],
+    isEditing: !!editingService
   });
-
-  /* ------------------ Initialize Modal Data ------------------ */
+  
+  // Fetch approved therapists when modal opens
   useEffect(() => {
-    if (!visible) return;
-
-    setCurrent(0);
-    setFormData({
-      name: editingService?.name || '',
-      price: editingService?.price,
-      duration: editingService?.duration,
-      description: editingService?.description || '',
-      images: editingService?.images || [],
-      teamMembers: editingService?.teamMembers || [],
-      therapists: editingService?.therapists || [],
-      isEditing: !!editingService,
-    });
-
-    fetchApprovedTherapists();
+    if (visible) {
+      fetchApprovedTherapists();
+      setFormData({
+        name: editingService ? editingService.name : '',
+        price: editingService ? editingService.price : undefined,
+        duration: editingService ? editingService.duration : undefined,
+        description: editingService ? editingService.description : '',
+        images: editingService ? editingService.images || [] : [],
+        teamMembers: editingService ? editingService.teamMembers || [] : [],
+        therapists: editingService ? editingService.therapists || [] : [],
+        isEditing: !!editingService
+      });
+      setCurrent(0); // Reset to first step
+    }
   }, [visible, editingService]);
 
-  /* ------------------ Fetch Therapists ------------------ */
   const fetchApprovedTherapists = async () => {
     try {
       setLoadingTherapists(true);
-      const token = localStorage.getItem('token');
-
-      if (!token) throw new Error('Token missing');
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/business/therapists`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/therapists`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch approved therapists');
+      }
+      
       setApprovedTherapists(result.data?.approvedTherapists || []);
-    } catch (err: any) {
-      message.error(err.message || 'Failed to load therapists');
+    } catch (error: any) {
+      console.error('Error fetching approved therapists:', error);
+      message.error(error.message || 'Failed to load approved therapists');
+      setApprovedTherapists([]);
     } finally {
       setLoadingTherapists(false);
     }
   };
 
-  /* ------------------ Navigation Handlers ------------------ */
-  const nextStep = useCallback(() => {
-    setCurrent((prev) => Math.min(prev + 1, TOTAL_STEPS - 1));
-  }, []);
-
-  const prevStep = useCallback(() => {
-    setCurrent((prev) => Math.max(prev - 1, 0));
-  }, []);
-
-  /* ------------------ Submit ------------------ */
-  const handleSubmit = async () => {
-    try {
-      await onSubmit(formData);
-      onClose();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  /* ------------------ Step Renderer ------------------ */
-  const renderStepContent = () => {
-    const commonProps = {
-      formData,
-      setFormData,
-      onNext: nextStep,
-      onPrev: prevStep,
-      current,
-      totalSteps: TOTAL_STEPS,
-    };
-
-    switch (current) {
+  // Dynamically render components to avoid import issues
+  const renderStepContent = (stepIndex: number) => {
+    switch (stepIndex) {
       case 0:
-        return <ServiceStepBasic {...commonProps} />;
-
-      case 1:
-        return <ServiceStepMedia {...commonProps} />;
-
-      case 2:
         return (
-          <ServiceStepTeam
-            {...commonProps}
-            approvedTherapists={approvedTherapists}
-            loadingTherapists={loadingTherapists}
+          <ServiceStepBasic 
+            formData={formData} 
+            setFormData={setFormData}
+            onNext={() => setCurrent(current + 1)}
+            onPrev={() => setCurrent(current - 1)}
+            current={current}
+            totalSteps={4}
           />
         );
-
+      case 1:
+        return (
+          <ServiceStepMedia 
+            formData={formData} 
+            setFormData={setFormData}
+            onNext={() => setCurrent(current + 1)}
+            onPrev={() => setCurrent(current - 1)}
+            current={current}
+            totalSteps={4}
+          />
+        );
+      case 2:
+        return (
+          <ServiceStepTeam 
+            formData={formData} 
+            setFormData={setFormData}
+            approvedTherapists={approvedTherapists}
+            loadingTherapists={loadingTherapists}
+            onNext={() => setCurrent(current + 1)}
+            onPrev={() => setCurrent(current - 1)}
+            current={current}
+            totalSteps={4}
+          />
+        );
       case 3:
         return (
-          <ServiceStepReview
+          <ServiceStepReview 
             formData={formData}
-            onPrev={prevStep}
+            onPrev={() => setCurrent(current - 1)}
             onSubmit={handleSubmit}
             loading={loading}
             isEditing={!!editingService}
           />
         );
-
       default:
         return null;
     }
@@ -162,26 +151,28 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
     { title: 'Review & Submit' },
   ];
 
+  const handleSubmit = async () => {
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (error) {
+      console.error('Error submitting service:', error);
+    }
+  };
+
   return (
     <Modal
+      title={editingService ? "Edit Service" : "Create New Service"}
       open={visible}
-      title={editingService ? 'Edit Service' : 'Create New Service'}
       onCancel={onClose}
       footer={null}
       width={900}
       centered
-      destroyOnHidden={false}   // ⭐ keeps state alive
-      maskClosable={false}
     >
-      {/* Prevent accidental form submit */}
-      <div onSubmit={(e) => e.preventDefault()}>
-        <Steps current={current} items={steps} />
-
-        <div className="mt-6 min-h-[350px]">
-          <Suspense fallback={<Spin size="large" />}>
-            {renderStepContent()}
-          </Suspense>
-        </div>
+      <Steps current={current} items={steps} />
+      
+      <div className="mt-6">
+        {renderStepContent(current)}
       </div>
     </Modal>
   );

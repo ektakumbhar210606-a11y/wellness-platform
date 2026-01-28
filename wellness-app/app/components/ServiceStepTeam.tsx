@@ -26,8 +26,6 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
   current,
   totalSteps
 }) => {
-
-  console.log('approvedTherapists', approvedTherapists)
   const [selectedTherapists, setSelectedTherapists] = useState<string[]>(
     formData.therapists && Array.isArray(formData.therapists) 
       ? formData.therapists.filter((id: string | null | undefined) => id != null && id !== '') 
@@ -47,8 +45,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
   };
 
   const formatTherapistName = (therapist: any) => {
-    console.log(therapist)
-    return therapist.fullName || `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 
+    return `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 
            therapist.email || 
            `Therapist ${therapist._id}`;
   };
@@ -100,28 +97,26 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                     </div>
                   )}
                 >
-                  {approvedTherapists
-                    .filter(therapist => therapist._id && therapist._id !== '')
-                    .map((therapist) => (
-                      <Option 
-                        key={therapist._id} 
-                        value={therapist._id}
-                        label={formatTherapistName(therapist)}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <UserOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-                          <div>
-                            <div>{formatTherapistName(therapist)}</div>
-                            <div style={{ fontSize: '12px', color: '#888' }}>
-                              {therapist.email}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#888' }}>
-                              Experience: {therapist.experience || 0} years
-                            </div>
+                  {approvedTherapists.map((therapist) => (
+                    <Option 
+                      key={therapist._id} 
+                      value={therapist._id}
+                      label={formatTherapistName(therapist)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <UserOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                        <div>
+                          <div>{formatTherapistName(therapist)}</div>
+                          <div style={{ fontSize: '12px', color: '#888' }}>
+                            {therapist.email}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#888' }}>
+                            Experience: {therapist.experience || 0} years
                           </div>
                         </div>
-                      </Option>
-                    ))}
+                      </div>
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Form>
@@ -130,7 +125,6 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
           {selectedTherapists.length > 0 && (
             <Card title="Selected Therapists" style={{ marginTop: 16 }}>
               {selectedTherapists.map((therapistId) => {
-                console.log('therapistId', therapistId)
                 const therapist = approvedTherapists.find(t => t._id === therapistId);
                 return (
                   <div key={therapistId} style={{ 
