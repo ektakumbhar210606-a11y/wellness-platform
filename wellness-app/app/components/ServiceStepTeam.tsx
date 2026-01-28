@@ -27,9 +27,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
   totalSteps
 }) => {
   const [selectedTherapists, setSelectedTherapists] = useState<string[]>(
-    formData.therapists && Array.isArray(formData.therapists) 
-      ? formData.therapists.filter((id: string | null | undefined) => id != null && id !== '') 
-      : []
+    formData.therapists || []
   );
 
   // Update form data when selected therapists change
@@ -82,11 +80,11 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                 <Select
                   mode="multiple"
                   placeholder="Select therapists"
-                  value={selectedTherapists.filter(id => id != null && id !== '')}
+                  value={selectedTherapists}
                   onChange={handleTherapistChange}
                   optionLabelProp="label"
                   style={{ width: '100%' }}
-                  popupRender={(menu) => (
+                  dropdownRender={(menu) => (
                     <div>
                       {menu}
                       {approvedTherapists.length > 0 && (

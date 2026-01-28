@@ -224,15 +224,13 @@ const ProviderDashboardContent = () => {
           await fetchTherapistRequests();
         }
       } catch (error: any) {
-        // For 404 errors (business not found), just redirect to onboarding without showing error
+        console.error('Error fetching business profile:', error);
+        message.error(error.message || 'Failed to fetch business profile');
+        // If profile doesn't exist, redirect to onboarding
         if (error.status === 404) {
           router.push('/onboarding/provider');
-        } else {
-          // For other errors, log and show error message
-          console.error('Error fetching business profile:', error);
-          message.error(error.message || 'Failed to fetch business profile');
-          return; // Exit early if there's an error
         }
+        return; // Exit early if there's an error
       } finally {
         setLoading(false);
       }

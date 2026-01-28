@@ -69,7 +69,7 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
       }}
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space align="center" size="small">
+          <Space align="center">
             <UserOutlined style={{ fontSize: '24px', color: '#667eea' }} />
             <div>
               <Title level={5} style={{ margin: 0 }}>
@@ -90,22 +90,24 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
               size="small"
               onClick={handleReject}
               loading={loading}
-              title="Reject"
-            />
+            >
+              Reject
+            </Button>
             <Button 
               type="primary" 
               icon={<CheckOutlined />}
               size="small"
               onClick={handleApprove}
               loading={loading}
-              title="Approve"
-            />
+            >
+              Approve
+            </Button>
           </Space>
         )
       }
     >
       <div style={{ flex: 1 }}>
-        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <div>
             <MailOutlined style={{ marginRight: 8, color: '#667eea' }} />
             <Text copyable={{ text: request.email }}>{request.email}</Text>
@@ -212,7 +214,7 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
           {request.specialties && request.specialties.length > 0 && (
             <div>
               <Text strong>Specialties: </Text>
-              <Space wrap={true}>
+              <Space wrap>
                 {request.specialties.map((specialty, index) => (
                   <Tag key={index} color="blue">
                     {specialty}
