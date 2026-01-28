@@ -47,6 +47,13 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
       [field]: value,
     };
     
+    // Ensure proper structure when toggling availability
+    if (field === 'available' && value === false) {
+      // If setting to not available, remove startTime and endTime
+      delete updatedAvailability[dayIndex].startTime;
+      delete updatedAvailability[dayIndex].endTime;
+    }
+    
     setAvailability(updatedAvailability);
     
     if (onChange) {
@@ -70,6 +77,7 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
       ...updatedAvailability[dayIndex],
       startTime,
       endTime,
+      available: true, // When setting time range, ensure the day is marked as available
     };
     console.log(`Day availability after update:`, updatedAvailability[dayIndex]);
     

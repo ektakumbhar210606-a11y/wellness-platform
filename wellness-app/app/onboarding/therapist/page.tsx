@@ -132,9 +132,30 @@ const TherapistOnboardingPage = () => {
       
       const availabilityValues = await availabilityForm.validateFields();
       
+      // Clean up the availability data before sending to API
+      const availabilityData = availabilityValues.weeklyAvailability || [];
+      const cleanedAvailability = availabilityData.map((avail: any) => {
+        if (avail.available === false) {
+          // If day is not available, remove startTime and endTime
+          return {
+            day: avail.day,
+            available: avail.available,
+            // Don't include startTime and endTime when not available
+          };
+        } else {
+          // If day is available, ensure all required fields are present
+          return {
+            day: avail.day,
+            available: avail.available,
+            startTime: avail.startTime,
+            endTime: avail.endTime,
+          };
+        }
+      });
+      
       // Update profile with availability
       await therapistApi.updateProfile({
-        weeklyAvailability: availabilityValues.weeklyAvailability || []
+        weeklyAvailability: cleanedAvailability
       });
       
       notification.success({

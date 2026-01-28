@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Steps, Card, Button, Form, Input, Select, Divider, notification } from 'antd';
 import { useAuth } from '../../context/AuthContext';
-import { apiPostAuth } from '@/lib/api'; // Assuming this exists for API calls
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -15,8 +14,21 @@ interface CustomerProfile {
   phoneNumber: string;
   preferences: string[];
   wellnessGoals: string;
-  medicalConditions: string;
+  medicalInfo?: {
+    conditions?: string[];
+    allergies?: string[];
+    medications?: string[];
+    notes?: string;
+  };
   preferredTherapies: string[];
+  appointmentFrequency?: string;
+  lifestyleFactors?: string[];
+  stressLevel?: string;
+  location?: {
+    city?: string;
+    state?: string;
+    country?: string;
+  };
 }
 
 const CustomerOnboardingPage = () => {
@@ -25,6 +37,28 @@ const CustomerOnboardingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [profileForm] = Form.useForm();
+  const [collectedData, setCollectedData] = useState<Partial<CustomerProfile>>({
+    fullName: user?.name || '',
+    email: user?.email || '',
+    phoneNumber: '',
+    preferences: [],
+    wellnessGoals: '',
+    medicalInfo: {
+      conditions: [],
+      allergies: [],
+      medications: [],
+      notes: ''
+    },
+    preferredTherapies: [],
+    appointmentFrequency: undefined,
+    lifestyleFactors: [],
+    stressLevel: undefined,
+    location: {
+      city: '',
+      state: '',
+      country: ''
+    }
+  });
 
   // Check if onboarding is already completed
   useEffect(() => {
@@ -33,6 +67,13 @@ const CustomerOnboardingPage = () => {
         router.push('/');
         return;
       }
+
+      // Initialize collectedData with user information
+      setCollectedData(prev => ({
+        ...prev,
+        fullName: user.name || prev.fullName || '',
+        email: user.email || prev.email || '',
+      }));
 
       // In a real app, you would check if customer profile exists
       // For now, we'll assume if they reach this point, they haven't completed onboarding
@@ -65,28 +106,32 @@ const CustomerOnboardingPage = () => {
     try {
       setLoading(true);
       
-      const profileValues = await profileForm.validateFields();
+      // Validate only the fields in the current step
+      const profileValues = await profileForm.validateFields(['fullName', 'email', 'phoneNumber', 'location']);
       
-      // Prepare profile data
-      const profileData = {
-        ...profileValues,
-        email: user?.email || profileValues.email, // Use user email if available
-      };
-
-      // Call API to create/update customer profile
-      // Note: This API endpoint would need to be implemented on the backend
-      // await apiPostAuth('/api/customers/create', profileData);
+      // Store the collected data
+      setCollectedData(prev => ({
+        ...prev,
+        fullName: profileValues.fullName || prev.fullName,
+        email: user?.email || profileValues.email || prev.email,
+        phoneNumber: profileValues.phoneNumber || '',
+        location: {
+          city: profileValues.location?.city || '',
+          state: profileValues.location?.state || '',
+          country: profileValues.location?.country || ''
+        }
+      }));
       
       notification.success({
-        title: 'Success',
-        description: 'Customer profile created successfully!',
+        message: 'Success',
+        description: 'Personal details saved!',
       });
       
       setCurrentStep(1);
     } catch (error: any) {
       notification.error({
-        title: 'Error',
-        description: error.message || 'Failed to create profile',
+        message: 'Error',
+        description: error.message || 'Please fill in all required fields',
       });
     } finally {
       setLoading(false);
@@ -96,13 +141,29 @@ const CustomerOnboardingPage = () => {
   const handlePreferences = async () => {
     try {
       setLoading(true);
-      await profileForm.validateFields(['preferences', 'preferredTherapies']);
+      
+      // Validate only the fields in the current step
+      const preferencesValues = await profileForm.validateFields(['preferences', 'preferredTherapies', 'frequency']);
+      
+      // Store the collected data
+      setCollectedData(prev => ({
+        ...prev,
+        preferences: preferencesValues.preferences || [],
+        preferredTherapies: preferencesValues.preferredTherapies || [],
+        appointmentFrequency: preferencesValues.frequency || undefined,
+      }));
+      
+      notification.success({
+        message: 'Success',
+        description: 'Preferences saved!',
+      });
+      
       setCurrentStep(2);
     } catch (error: any) {
       notification.error({
-        title: 'Error',
+        message: 'Error',
         description: error.message || 'Please fill in required fields',
-      })
+      });
     } finally {
       setLoading(false);
     }
@@ -111,20 +172,132 @@ const CustomerOnboardingPage = () => {
   const handleWellnessGoals = async () => {
     try {
       setLoading(true);
-      await profileForm.validateFields(['wellnessGoals', 'medicalConditions']);
+      
+      // Validate only the fields in the current step
+      const wellnessValues = await profileForm.validateFields(['wellnessGoals', 'medicalConditions', 'stressLevel', 'lifestyleFactors']);
+      
+      // Store the collected data
+      setCollectedData(prev => ({
+        ...prev,
+        wellnessGoals: wellnessValues.wellnessGoals || '',
+        medicalInfo: {
+          conditions: [],
+          allergies: [],
+          medications: [],
+          notes: wellnessValues.medicalConditions || ''
+        },
+        stressLevel: wellnessValues.stressLevel || undefined,
+        lifestyleFactors: wellnessValues.lifestyleFactors || [],
+      }));
+      
+      notification.success({
+        message: 'Success',
+        description: 'Wellness goals saved!',
+      });
+      
       setCurrentStep(3);
     } catch (error: any) {
       notification.error({
-        title: 'Error',
+        message: 'Error',
         description: error.message || 'Please fill in required fields',
-      })
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCompleteOnboarding = () => {
-    router.push('/dashboard/customer');
+  const handleCompleteOnboarding = async () => {
+    try {
+      setLoading(true);
+      
+      // Validate that we have all required data
+      if (!collectedData.fullName || !collectedData.email || !collectedData.wellnessGoals) {
+        throw new Error('Missing required profile information. Please complete all steps.');
+      }
+      
+      // Submit all collected data to the API
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      console.log('Sending collected data to API:', JSON.stringify({
+        ...collectedData,
+        onboardingCompleted: true,
+        onboardingCompletedAt: new Date(),
+        fullName: collectedData.fullName || user?.name || '',
+        email: collectedData.email || user?.email || '',
+        phoneNumber: collectedData.phoneNumber || '',
+        wellnessGoals: collectedData.wellnessGoals || '',
+      }, null, 2));
+
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...collectedData,
+          onboardingCompleted: true,
+          onboardingCompletedAt: new Date(),
+          // Ensure required fields are present
+          fullName: collectedData.fullName || user?.name || '',
+          email: collectedData.email || user?.email || '',
+          phoneNumber: collectedData.phoneNumber || '',
+          wellnessGoals: collectedData.wellnessGoals || '',
+          // Transform preferences to correct structure
+          preferences: (collectedData.preferences || []).map(pref => ({
+            type: 'service', // default type
+            value: pref,
+            category: 'general'
+          })),
+          medicalInfo: {
+            conditions: [],
+            allergies: [],
+            medications: [],
+            notes: collectedData.medicalInfo?.notes || ''
+          }
+        }),
+      });
+
+      // Check if response is OK and contains JSON
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format from server');
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create customer profile');
+      }
+      
+      notification.success({
+        message: 'Success',
+        description: 'Customer profile created successfully!',
+      });
+      
+      router.push('/dashboard/customer');
+    } catch (error: any) {
+      console.error('Error completing onboarding:', error);
+      notification.error({
+        message: 'Error',
+        description: error.message || 'Failed to complete onboarding. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const prev = () => {
@@ -132,11 +305,15 @@ const CustomerOnboardingPage = () => {
   };
 
   const next = () => {
+    console.log('Next button clicked, current step:', currentStep);
     if (currentStep === 0) {
+      console.log('Calling onFinishProfile');
       onFinishProfile();
     } else if (currentStep === 1) {
+      console.log('Calling handlePreferences');
       handlePreferences();
     } else if (currentStep === 2) {
+      console.log('Calling handleWellnessGoals');
       handleWellnessGoals();
     }
   };
@@ -170,7 +347,7 @@ const CustomerOnboardingPage = () => {
               { type: 'email', message: 'Please enter a valid email' },
             ]}
           >
-            <Input placeholder="Enter your email" disabled />
+            <Input placeholder="Enter your email" disabled={!!user?.email} />
           </Form.Item>
 
           <Form.Item
@@ -233,12 +410,24 @@ const CustomerOnboardingPage = () => {
               placeholder="Select your preferred therapies (press Enter to add)"
               tokenSeparators={[',']}
             >
-              <Option value="swedish">Swedish Massage</Option>
-              <Option value="deep-tissue">Deep Tissue Massage</Option>
-              <Option value="hot-stone">Hot Stone Therapy</Option>
-              <Option value="aromatherapy">Aromatherapy</Option>
-              <Option value="reflexology">Reflexology</Option>
-              <Option value="facials">Facials</Option>
+              <Option value="swedish-massage">Swedish Massage</Option>
+              <Option value="deep-tissue-massage">Deep Tissue Massage</Option>
+              <Option value="aromatherapy-massage">Aromatherapy Massage</Option>
+              <Option value="hot-stone-massage">Hot Stone Massage</Option>
+              <Option value="thai-massage">Thai Massage</Option>
+              <Option value="reflexology-foot-massage">Reflexology (Foot Massage)</Option>
+              <Option value="head-neck-shoulder-massage">Head, Neck & Shoulder Massage</Option>
+              <Option value="facial-treatments">Facial Treatments (Basic / Advanced)</Option>
+              <Option value="body-scrub-polishing">Body Scrub & Body Polishing</Option>
+              <Option value="body-wrap-therapy">Body Wrap Therapy</Option>
+              <Option value="manicure-pedicure">Manicure & Pedicure</Option>
+              <Option value="hair-spa-treatment">Hair Spa Treatment</Option>
+              <Option value="meditation-mindfulness">Meditation & Mindfulness Programs</Option>
+              <Option value="weight-management">Weight Management Programs</Option>
+              <Option value="stress-management-therapy">Stress Management Therapy</Option>
+              <Option value="detox-lifestyle-improvement">Detox & Lifestyle Improvement Programs</Option>
+              <Option value="mental-wellness-counseling">Mental Wellness Counseling</Option>
+              <Option value="sleep-improvement-programs">Sleep Improvement Programs</Option>
             </Select>
           </Form.Item>
 

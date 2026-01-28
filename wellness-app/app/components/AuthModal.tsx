@@ -113,7 +113,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       // Show success message
       message.success('Login successful!');
       
-      // Handle role-specific redirects immediately without profile API calls
+      // Handle role-specific redirects
       if (userData.role?.toLowerCase() === 'therapist') {
         // Direct redirect to therapist dashboard
         router.push('/dashboard/therapist');
@@ -121,8 +121,25 @@ const AuthModal: React.FC<AuthModalProps> = ({
         // Direct redirect to provider dashboard
         router.push('/dashboard/provider');
       } else if (userData.role?.toLowerCase() === 'customer') {
-        // Direct redirect to customer dashboard
-        router.push('/dashboard/customer');
+        // Check customer onboarding status
+        try {
+          console.log('Checking customer onboarding status...');
+          const hasCompletedOnboarding = await customerApi.hasCompletedOnboarding();
+          console.log('Onboarding status result:', hasCompletedOnboarding);
+          if (hasCompletedOnboarding) {
+            // Customer has completed onboarding, redirect to dashboard
+            console.log('Redirecting to customer dashboard...');
+            router.push('/dashboard/customer');
+          } else {
+            // Customer has not completed onboarding, redirect to onboarding flow
+            console.log('Redirecting to customer onboarding...');
+            router.push('/onboarding/customer');
+          }
+        } catch (error) {
+          // If there's an error checking onboarding status, redirect to onboarding
+          console.error('Error checking customer onboarding status:', error);
+          router.push('/onboarding/customer');
+        }
       } else {
         // Default redirect for other roles
         router.push('/');
@@ -245,11 +262,28 @@ const AuthModal: React.FC<AuthModalProps> = ({
             router.push('/onboarding/provider');
           }, 500); // Small delay to allow modal to close and message to show
         }
-      } else {
-        // For customers, after registration they need to complete onboarding
-        setTimeout(() => {
-          router.push('/onboarding/customer');
-        }, 500); // Small delay to allow modal to close and message to show
+      } else if (user.role && user.role.toLowerCase() === 'customer') {
+        // For customers, check if they already have a profile (returning customer)
+        try {
+          const hasCompletedOnboarding = await customerApi.hasCompletedOnboarding();
+          if (hasCompletedOnboarding) {
+            // Customer already has completed onboarding, redirect to dashboard
+            setTimeout(() => {
+              router.push('/dashboard/customer');
+            }, 500); // Small delay to allow modal to close and message to show
+          } else {
+            // New customer or existing customer without completed onboarding
+            setTimeout(() => {
+              router.push('/onboarding/customer');
+            }, 500); // Small delay to allow modal to close and message to show
+          }
+        } catch (error) {
+          // If there's an error checking onboarding status, redirect to onboarding
+          console.error('Error checking customer onboarding status:', error);
+          setTimeout(() => {
+            router.push('/onboarding/customer');
+          }, 500); // Small delay to allow modal to close and message to show
+        }
       }
     } catch (error: any) {
       // Handle different types of errors

@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.3",
+    "moment": "^2.30.1",
     "mongodb": "^7.0.0",
     "mongoose": "^9.1.2",
     "next": "16.1.1",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/moment": "^2.11.29",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^20.19.27",
     "@types/react": "^19",

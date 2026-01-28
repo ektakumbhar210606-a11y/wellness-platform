@@ -129,9 +129,29 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
       console.log('Weekly availability in form values:', values.weeklyAvailability);
       console.log('Current availability state:', currentAvailability);
       
+      // Clean up the availability data before sending to API
+      const cleanedAvailability = currentAvailability.map(avail => {
+        if (avail.available === false) {
+          // If day is not available, remove startTime and endTime
+          return {
+            day: avail.day,
+            available: avail.available,
+            // Don't include startTime and endTime when not available
+          };
+        } else {
+          // If day is available, ensure all required fields are present
+          return {
+            day: avail.day,
+            available: avail.available,
+            startTime: avail.startTime,
+            endTime: avail.endTime,
+          };
+        }
+      });
+      
       // Update profile with availability
       const response = await therapistApi.updateProfile({
-        weeklyAvailability: currentAvailability || []
+        weeklyAvailability: cleanedAvailability || []
       });
       
       if (response.success) {

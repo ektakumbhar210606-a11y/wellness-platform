@@ -79,12 +79,17 @@ export async function PUT(req: NextRequest) {
           );
         }
 
-        // Only validate startTime and endTime if the day is marked as available
-        if (availability.available !== false && (!availability.startTime || !availability.endTime)) {
+        // Only validate startTime and endTime if the day is marked as available (true)
+        // If available is false or undefined, don't require startTime and endTime
+        if (availability.available === true && (!availability.startTime || !availability.endTime)) {
           return Response.json(
             { success: false, error: 'Each available day must have startTime and endTime' },
             { status: 400 }
           );
+        } else if (availability.available === false) {
+          // If day is not available, ensure startTime and endTime are not present
+          delete availability.startTime;
+          delete availability.endTime;
         }
 
         // Validate day enum

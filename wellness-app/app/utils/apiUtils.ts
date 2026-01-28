@@ -32,27 +32,68 @@ export const makeAuthenticatedRequest = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    // Handle non-JSON responses (like HTML error pages)
+    const contentType = response.headers.get('content-type');
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (jsonError) {
+        // If JSON parsing fails, use the default error message
+      }
+    }
+    
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  // Check if response is JSON before parsing
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  } else {
+    // If not JSON, return text or handle appropriately
+    const text = await response.text();
+    throw new Error(`Expected JSON response but got ${contentType || 'unknown type'}`);
+  }
 };
 
 // Helper function specifically for customer API calls
 export const customerApi = {
   // Get customer profile
   getProfile: async () => {
-    return makeAuthenticatedRequest('/api/users/me');
+    return makeAuthenticatedRequest('/api/customers');
   },
 
   // Check if customer has completed onboarding
   hasCompletedOnboarding: async () => {
     try {
-      const response = await makeAuthenticatedRequest('/api/users/me');
-      // For now, we'll consider onboarding complete if they have basic profile info
-      // In a real implementation, you might have a dedicated endpoint or field
-      return response && response.name && response.email;
+      const token = getAuthToken();
+      if (!token) {
+        return false;
+      }
+      
+      const response = await fetch('/api/customers', {
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      // If profile doesn't exist (404), onboarding is not completed
+      if (response.status === 404) {
+        return false;
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      // Check if customer profile exists and onboarding is completed
+      return data && data.data && data.data.onboardingCompleted === true;
     } catch (error) {
       console.error('Error checking customer onboarding status:', error);
       return false;
