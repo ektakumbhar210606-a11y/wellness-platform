@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { business_name, description, address, opening_time, closing_time, businessHours, status } = body;
+    const { business_name, description, address, opening_time, closing_time, businessHours, status, phone, email } = body;
 
     // Validate required fields
     if (!business_name || !address) {
@@ -94,15 +94,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Convert businessHours array to the expected object format
+    let formattedBusinessHours: any = {};
+    if (Array.isArray(businessHours) && businessHours.length > 0) {
+      businessHours.forEach(hour => {
+        const day = hour.day.charAt(0).toUpperCase() + hour.day.slice(1); // Capitalize day
+        formattedBusinessHours[day] = {
+          open: hour.openingTime,
+          close: hour.closingTime,
+          closed: false
+        };
+      });
+    }
+
     // Create and save the new business document
     const newBusiness = new Business({
       owner: userId,
       name: business_name.trim(),
       description: description || '', // Use description if provided
+      phone: phone || '',
+      email: email || '',
       address: address, // Assuming address is an object with street, city, state, zipCode, country
       openingTime: opening_time || '09:00',
       closingTime: closing_time || '17:00',
-      businessHours: businessHours || [], // Store the detailed business hours
+      businessHours: formattedBusinessHours, // Store the formatted business hours
       status: status || 'active' // Default to active status
     });
 

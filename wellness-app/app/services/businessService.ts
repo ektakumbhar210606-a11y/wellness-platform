@@ -200,6 +200,107 @@ async function apiPost<T = any, R = any>(endpoint: string, data: T): Promise<R> 
   }
 }
 
+async function apiPut<T = any, R = any>(endpoint: string, data: T): Promise<R> {
+  // Get the JWT token from localStorage
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  if (!token) {
+    throw new Error('Authentication token not found. User is not logged in.');
+  }
+
+  // Get the base API URL from environment variables
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!baseUrl) {
+    throw new Error('NEXT_PUBLIC_API_URL is not defined in environment variables');
+  }
+
+  // Construct the full URL
+  // For Next.js API routes, ensure the URL includes the /api prefix if not already present
+  const url = `${baseUrl}${endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`}`;
+
+  try {
+    // Make the PUT request with authorization header
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    // Handle different HTTP status codes with meaningful error messages
+    if (!response.ok) {
+      let errorMessage = `Request failed with status ${response.status}`;
+      
+      // Map common HTTP status codes to meaningful messages
+      switch (response.status) {
+        case 400:
+          errorMessage = 'Bad Request: The request was invalid';
+          break;
+        case 401:
+          errorMessage = 'Unauthorized: Authentication required or failed';
+          break;
+        case 403:
+          errorMessage = 'Forbidden: Access denied';
+          break;
+        case 404:
+          errorMessage = 'Not Found: The requested resource was not found';
+          break;
+        case 409:
+          errorMessage = 'Conflict: The request could not be completed due to a conflict';
+          break;
+        case 422:
+          errorMessage = 'Unprocessable Entity: The request was well-formed but unable to be followed';
+          break;
+        case 500:
+          errorMessage = 'Internal Server Error: An unexpected error occurred on the server';
+          break;
+        case 502:
+          errorMessage = 'Bad Gateway: The server received an invalid response from the upstream server';
+          break;
+        case 503:
+          errorMessage = 'Service Unavailable: The server is temporarily unavailable';
+          break;
+        default:
+          errorMessage = `Request failed with status ${response.status}: ${response.statusText}`;
+      }
+      
+      // Attempt to parse error response for more details
+      let errorData;
+      try {
+        errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (parseError) {
+        // If response is not JSON, use the default error message
+      }
+      
+      const error = new Error(errorMessage) as Error & { status: number };
+      error.status = response.status;
+      throw error;
+    }
+
+    // Parse and return the JSON response
+    const responseData: R = await response.json();
+    return responseData;
+  } catch (error) {
+    // Handle network errors or other exceptions
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to the server');
+    }
+    
+    if (error instanceof Error && 'status' in error) {
+      throw error; // Re-throw HTTP errors with status
+    }
+    
+    // For other errors, throw a generic error
+    throw new Error(`An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 export interface BusinessProfile {
   id?: string;
   business_name: string;
@@ -240,12 +341,33 @@ export interface BusinessCreationData {
   status: 'active' | 'inactive';
 }
 
+export interface BusinessDashboardStats {
+  totalClients: number;
+  upcomingAppointments: number;
+  avgRating: number;
+  totalRevenue: number;
+  totalServices: number;
+  pendingTherapistRequests: number;
+}
+
 export const businessService = {
   createBusiness: async (data: BusinessCreationData): Promise<BusinessProfile> => {
     return await apiPost('/businesses/create', data);
   },
 
+  updateBusiness: async (data: BusinessCreationData): Promise<BusinessProfile> => {
+    return await apiPut('/businesses/update', data);
+  },
+
   getBusinessProfile: async (): Promise<BusinessProfile> => {
     return await apiGet('/businesses/my-business');
+  },
+
+  checkOnboardingStatus: async (): Promise<{ completed: boolean; hasBusiness: boolean }> => {
+    return await apiGet('/businesses/onboarding-status');
+  },
+
+  getDashboardStats: async (): Promise<BusinessDashboardStats> => {
+    return await apiGet('/business/dashboard/stats');
   },
 };

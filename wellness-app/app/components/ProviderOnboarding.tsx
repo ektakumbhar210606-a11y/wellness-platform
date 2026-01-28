@@ -25,7 +25,7 @@ import {
   ClockCircleOutlined, 
   CheckCircleOutlined 
 } from '@ant-design/icons';
-import { apiPostAuth } from '@/lib/api';
+import { apiPostAuth, apiPutAuth } from '@/lib/api';
 import dayjs from 'dayjs';
 import { formatTimeRange } from '../utils/timeUtils';
 
@@ -55,9 +55,15 @@ interface FormData {
 
 interface ProviderOnboardingProps {
   onComplete?: (formData: any) => void;
+  userData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  initialData?: any;
 }
 
-const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) => {
+const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, userData, initialData }) => {
   // Step management
   const [currentStep, setCurrentStep] = useState<number>(0);
   
@@ -68,21 +74,60 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
   const [hoursForm] = Form.useForm();
   
   // Data storage
-  const [formData, setFormData] = useState<FormData>({
-    fullName: '',
-    email: '',
-    password: '',
-    phoneNumber: '',
-    businessName: '',
-    businessDescription: '',
-    address: '',
-    state: '',
-    pincode: '',
-    businessHours: [],
+  const [formData, setFormData] = useState<FormData>(() => {
+    // If initialData is provided, use it to prefill the form
+    if (initialData) {
+      return {
+        fullName: initialData.ownerName || userData?.name || '',
+        email: initialData.email || userData?.email || '',
+        password: '',
+        phoneNumber: initialData.phone || userData?.phone || '',
+        businessName: initialData.business_name || initialData.name || '',
+        businessDescription: initialData.description || '',
+        address: initialData.address?.street || '',
+        state: initialData.address?.state || '',
+        pincode: initialData.address?.zipCode || '',
+        businessHours: initialData.businessHours || [],
+      };
+    }
+    
+    // Otherwise use default empty values
+    return {
+      fullName: '',
+      email: '',
+      password: '',
+      phoneNumber: '',
+      businessName: '',
+      businessDescription: '',
+      address: '',
+      state: '',
+      pincode: '',
+      businessHours: [],
+    };
   });
   
   // Loading state for submission
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Auto-fill form data when userData is provided
+  React.useEffect(() => {
+    if (userData) {
+      // Set initial form data with user information
+      setFormData(prev => ({
+        ...prev,
+        fullName: userData.name || prev.fullName,
+        email: userData.email || prev.email,
+        phoneNumber: userData.phone || prev.phoneNumber,
+      }));
+      
+      // Set form field values
+      basicForm.setFieldsValue({
+        fullName: userData.name,
+        email: userData.email,
+        phoneNumber: userData.phone,
+      });
+    }
+  }, [userData, basicForm]);
 
   const steps = [
     {
@@ -217,7 +262,8 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
       const businessData = {
         business_name: formData.businessName,
         description: formData.businessDescription,
-        phone_number: formData.phoneNumber,
+        phone: formData.phoneNumber,  // Changed from phone_number to phone
+        email: formData.email,      // Add email field
         address: {
           street: formData.address,
           city: 'Default City', // Provide a default city value
@@ -242,11 +288,17 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
         throw new Error('Authentication token not found');
       }
 
-      // Submit to backend API
-      const response = await apiPostAuth('/api/businesses/create', businessData);
-
-      // Show success message
-      message.success('Provider profile created successfully!');
+      // Submit to backend API - use update if initialData exists, otherwise create
+      let response;
+      if (initialData) {
+        // Update existing business profile
+        response = await apiPutAuth('/api/businesses/update', businessData);
+        message.success('Business profile updated successfully!');
+      } else {
+        // Create new business profile
+        response = await apiPostAuth('/api/businesses/create', businessData);
+        message.success('Provider profile created successfully!');
+      }
 
       // Call completion callback if provided
       if (onComplete) {
@@ -387,6 +439,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                 placeholder="Enter your full name" 
                 prefix={<UserOutlined />}
                 size="large"
+                readOnly={!!userData?.name}
               />
             </Form.Item>
                     
@@ -402,6 +455,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
                 placeholder="Enter your email" 
                 type="email"
                 size="large"
+                readOnly={!!userData?.email}
               />
             </Form.Item>
                     
@@ -416,6 +470,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete }) =
               <Input 
                 placeholder="Enter your phone number" 
                 size="large"
+                readOnly={!!userData?.phone}
               />
             </Form.Item>
                     
