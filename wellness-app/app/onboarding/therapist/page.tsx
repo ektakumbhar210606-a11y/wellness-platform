@@ -20,6 +20,8 @@ const TherapistOnboardingPage = () => {
   const [availabilityForm] = Form.useForm();
   const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [skillsOptions, setSkillsOptions] = useState<{id: string, name: string}[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(true);
 
   // Check if onboarding is already completed
   useEffect(() => {
@@ -44,24 +46,58 @@ const TherapistOnboardingPage = () => {
     checkOnboardingStatus();
   }, [user, router]);
 
-  // Fetch service categories for expertise dropdown
+  // Fetch expertise options for expertise dropdown
   useEffect(() => {
-    const fetchServiceCategories = async () => {
+    const fetchExpertiseOptions = async () => {
       try {
-        const response = await fetch('/api/service-categories');
+        const response = await fetch('/api/master/expertise');
         const result = await response.json();
         
         if (result.success && Array.isArray(result.data)) {
-          setServiceCategories(result.data);
+          // Convert expertise data to the format expected by the Select component
+          const formattedExpertise = result.data.map((expertise: { id: string; label: string }) => ({
+            id: expertise.id,
+            name: expertise.label // Use label as name for consistency
+          }));
+          setServiceCategories(formattedExpertise);
+        } else {
+          console.error('Failed to fetch expertise options:', result.error);
         }
       } catch (error) {
-        console.error('Failed to fetch service categories:', error);
+        console.error('Failed to fetch expertise options:', error);
       } finally {
         setCategoriesLoading(false);
       }
     };
 
-    fetchServiceCategories();
+    fetchExpertiseOptions();
+  }, []);
+
+  // Fetch skills options for skills dropdown
+  useEffect(() => {
+    const fetchSkillsOptions = async () => {
+      try {
+        const response = await fetch('/api/master/skills');
+        const result = await response.json();
+        
+        if (result.success && Array.isArray(result.data)) {
+          // Convert skills data to the format expected by the Select component
+          const formattedSkills = result.data.map((skill: { id: string; label: string }) => ({
+            id: skill.id,
+            name: skill.label // Use label as name for consistency
+          }));
+          setSkillsOptions(formattedSkills);
+        } else {
+          console.error('Failed to fetch skills options:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch skills options:', error);
+      } finally {
+        setSkillsLoading(false);
+      }
+    };
+
+    fetchSkillsOptions();
   }, []);
 
   const steps = [
@@ -275,28 +311,38 @@ const TherapistOnboardingPage = () => {
             </Form.Item>
           </Form.Item>
 
-          <Form.Item name="skills" label="Skills">
+          <Form.Item
+            name="skills"
+            label="Skills"
+            rules={[{ required: true, message: 'Please select at least one skill' }]}
+          >
             <Select
-              mode="tags"
+              mode="multiple"
               style={{ width: '100%' }}
-              placeholder="Add your skills (press Enter to add)"
-              tokenSeparators={[',']}
-            >
-            </Select>
+              placeholder="Select skills"
+              loading={skillsLoading}
+              notFoundContent={skillsLoading ? 'Loading...' : 'No skills options found'}
+              options={skillsOptions.map((skill: {id: string, name: string}) => ({
+                value: skill.id,
+                label: skill.name
+              }))}
+              showSearch
+              optionFilterProp="label"
+            />
           </Form.Item>
 
           <Form.Item
-            name="expertise"
-            label="Areas of Expertise"
+            name="areaOfExpertise"
+            label="Area of Expertise"
             rules={[{ required: true, message: 'Please select at least one area of expertise' }]}
           >
             <Select
               mode="multiple"
               style={{ width: '100%' }}
-              placeholder="Select your areas of expertise"
+              placeholder="Select areas of expertise"
               loading={categoriesLoading}
-              notFoundContent={categoriesLoading ? 'Loading...' : 'No categories found'}
-              options={serviceCategories.map(category => ({
+              notFoundContent={categoriesLoading ? 'Loading...' : 'No expertise options found'}
+              options={serviceCategories.map((category: {id: string, name: string}) => ({
                 value: category.id,
                 label: category.name
               }))}

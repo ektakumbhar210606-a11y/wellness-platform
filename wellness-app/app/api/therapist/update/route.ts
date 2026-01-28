@@ -38,7 +38,8 @@ export async function PUT(req: NextRequest) {
       certifications,
       licenseNumber,
       weeklyAvailability,
-      status
+      status,
+      areaOfExpertise
     } = body;
 
     // Build update object with only provided fields that exist in the Therapist schema
@@ -59,6 +60,7 @@ export async function PUT(req: NextRequest) {
     if (certifications !== undefined) updateData.certifications = certifications;
     if (licenseNumber !== undefined) updateData.licenseNumber = licenseNumber;
     if (weeklyAvailability !== undefined) updateData.weeklyAvailability = weeklyAvailability;
+    if (areaOfExpertise !== undefined) updateData.areaOfExpertise = areaOfExpertise;
 
     // Validate required fields if they are being updated
     if (updateData.experience !== undefined && (updateData.experience === null || updateData.experience < 0)) {
@@ -68,6 +70,51 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Validate skills if provided
+    if (skills !== undefined) {
+      if (!Array.isArray(skills)) {
+        return Response.json(
+          { success: false, error: 'Skills must be an array' },
+          { status: 400 }
+        );
+      }
+      
+      if (skills.length < 1) {
+        return Response.json(
+          { success: false, error: 'At least one skill is required' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate each skill ID against our master list
+      const { validateSkillIds } = require('../../../../lib/constants/skillsConstants');
+      if (!validateSkillIds(skills)) {
+        return Response.json(
+          { success: false, error: 'Invalid skill ID(s) provided' },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Validate areaOfExpertise if provided
+    if (areaOfExpertise !== undefined) {
+      if (!Array.isArray(areaOfExpertise)) {
+        return Response.json(
+          { success: false, error: 'areaOfExpertise must be an array' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate each expertise ID against our master list
+      const { validateExpertiseIds } = require('../../../../lib/constants/expertiseConstants');
+      if (!validateExpertiseIds(areaOfExpertise)) {
+        return Response.json(
+          { success: false, error: 'Invalid expertise ID(s) provided' },
+          { status: 400 }
+        );
+      }
+    }
+    
     // Validate weeklyAvailability if provided
     console.log('Received weeklyAvailability data:', weeklyAvailability);
     if (updateData.weeklyAvailability && Array.isArray(updateData.weeklyAvailability)) {

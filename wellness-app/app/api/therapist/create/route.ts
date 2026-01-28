@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
       skills,
       certifications,
       licenseNumber,
-      weeklyAvailability
+      weeklyAvailability,
+      areaOfExpertise
     } = body;
 
     // Validation
@@ -94,6 +95,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate skills if provided
+    if (skills !== undefined) {
+      if (!Array.isArray(skills)) {
+        return Response.json(
+          { success: false, error: 'Skills must be an array' },
+          { status: 400 }
+        );
+      }
+      
+      if (skills.length < 1) {
+        return Response.json(
+          { success: false, error: 'At least one skill is required' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate each skill ID against our master list
+      const { validateSkillIds } = require('../../../../lib/constants/skillsConstants');
+      if (!validateSkillIds(skills)) {
+        return Response.json(
+          { success: false, error: 'Invalid skill ID(s) provided' },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Validate areaOfExpertise if provided
+    if (areaOfExpertise !== undefined) {
+      if (!Array.isArray(areaOfExpertise)) {
+        return Response.json(
+          { success: false, error: 'areaOfExpertise must be an array' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate each expertise ID against our master list
+      const { validateExpertiseIds } = require('../../../../lib/constants/expertiseConstants');
+      if (!validateExpertiseIds(areaOfExpertise)) {
+        return Response.json(
+          { success: false, error: 'Invalid expertise ID(s) provided' },
+          { status: 400 }
+        );
+      }
+    }
+    
     // Create therapist profile
     const therapistProfile = new TherapistModel({
       user: decoded.id,  // Set the user field to userId from JWT
@@ -111,7 +157,8 @@ export async function POST(req: NextRequest) {
       location: location,
       certifications: certifications || [],
       licenseNumber: licenseNumber,
-      weeklyAvailability: weeklyAvailability || []
+      weeklyAvailability: weeklyAvailability || [],
+      areaOfExpertise: areaOfExpertise || []
     });
 
     // Additional profile information could be stored in User model

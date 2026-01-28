@@ -55,6 +55,9 @@ export interface ITherapist extends Document {
     endTime?: string;
   }>;
   
+  // Expertise information
+  areaOfExpertise?: string[];
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,10 +94,19 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
       },
       {
         validator: function(skills: string[]) {
-          // Ensure all skills strings are valid (not empty after trimming)
-          return skills.every(item => item.trim().length > 0);
+          // Ensure all skills are valid skill IDs from the master list
+          if (!skills || skills.length === 0) return true;
+          
+          // Hardcoded valid skill IDs from skills_master
+          const VALID_SKILL_IDS = [
+            'client_assessment_consultation', 'anatomy_physiology', 'manual_massage_techniques',
+            'mindfulness_coaching', 'stress_reduction_techniques', 'communication_client_care',
+            'hygiene_safety_management'
+          ];
+          
+          return skills.every(item => VALID_SKILL_IDS.includes(item));
         },
-        message: 'All skills items must be non-empty strings'
+        message: 'All skills must be from the predefined list of valid skills'
       }
     ]
   },
@@ -174,6 +186,37 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
     startTime: String,
     endTime: String,
   }],
+  
+  // Expertise information
+  areaOfExpertise: {
+    type: [String],
+    validate: [
+      {
+        validator: function(areaOfExpertise: string[]) {
+          // Ensure all expertise IDs are valid
+          if (!areaOfExpertise) return true; // Allow undefined/empty
+          
+          // Load expertise constants from the file system
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Since this is a server-side validation, we need to load the constants differently
+          // We'll use a static import at the top of the file to avoid dynamic imports in validators
+          // For now, we'll reference a hardcoded list or use the preloaded constants
+          const VALID_EXPERTISE_IDS = [
+            'swedish_massage', 'deep_tissue_massage', 'aromatherapy_massage', 'hot_stone_massage',
+            'thai_massage', 'reflexology', 'head_neck_shoulder_massage', 'facial_treatments_basic',
+            'facial_treatments_advanced', 'body_scrub_polishing', 'body_wrap_therapy', 'manicure_pedicure',
+            'hair_spa_treatment', 'meditation_mindfulness', 'weight_management', 'stress_management',
+            'detox_lifestyle', 'mental_wellness_counseling', 'sleep_improvement'
+          ];
+          
+          return areaOfExpertise.every(item => VALID_EXPERTISE_IDS.includes(item));
+        },
+        message: 'All expertise selections must be from the predefined list'
+      }
+    ]
+  },
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });
