@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs } from 'antd';
+import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal } from 'antd';
 import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { businessService, BusinessProfile } from '@/app/services/businessService';
+import { businessService, BusinessProfile, BusinessDashboardStats } from '@/app/services/businessService';
 import ServiceModal from '@/app/components/ServiceModal';
+import ProviderOnboarding from '@/app/components/ProviderOnboarding';
 import ServiceCard from '@/app/components/ServiceCard';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 
@@ -18,6 +19,8 @@ const ProviderDashboardContent = () => {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [business, setBusiness] = useState<BusinessProfile | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<BusinessDashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<any[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
@@ -28,6 +31,30 @@ const ProviderDashboardContent = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editingBusiness, setEditingBusiness] = useState(false);
+
+  // Fetch dashboard statistics
+  const fetchDashboardStats = React.useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await businessService.getDashboardStats();
+      setDashboardStats(stats);
+    } catch (error: any) {
+      console.error('Error fetching dashboard stats:', error);
+      message.error(error.message || 'Failed to load dashboard statistics');
+      // Set default values on error
+      setDashboardStats({
+        totalClients: 0,
+        upcomingAppointments: 0,
+        avgRating: 0,
+        totalRevenue: 0,
+        totalServices: 0,
+        pendingTherapistRequests: 0
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
 
   // Fetch therapist requests
   const fetchTherapistRequests = React.useCallback(async () => {
@@ -221,6 +248,11 @@ const ProviderDashboardContent = () => {
         setBusiness(profile);
         // Fetch services after getting business profile
         await fetchServices();
+        
+        // If we're on the dashboard tab, also fetch dashboard stats
+        if (activeTab === 'dashboard') {
+          await fetchDashboardStats();
+        }
       } catch (error: any) {
         // For 404 errors (business not found), just redirect to onboarding without showing error
         if (error.status === 404) {
@@ -254,8 +286,22 @@ const ProviderDashboardContent = () => {
     if (activeTab === 'requests' && business) {
       fetchTherapistRequests();
     }
+    if (activeTab === 'dashboard' && business) {
+      fetchDashboardStats();
+    }
     // Add any other tab-specific data fetching here if needed
-  }, [activeTab, business, fetchTherapistRequests]);
+  }, [activeTab, business, fetchTherapistRequests, fetchDashboardStats]);
+  
+  // Periodically refresh dashboard stats when on dashboard tab
+  useEffect(() => {
+    if (activeTab === 'dashboard' && business && !statsLoading) {
+      const interval = setInterval(() => {
+        fetchDashboardStats();
+      }, 60000); // Refresh every minute
+      
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, business, statsLoading, fetchDashboardStats]);
   
   // Effect to handle URL parameter changes via browser history
   useEffect(() => {
@@ -345,7 +391,52 @@ const ProviderDashboardContent = () => {
       setSubmitting(false);
     }
   }, [editingService, fetchServices]);
-
+  
+  // Handle opening business profile edit
+  const handleEditBusinessProfile = () => {
+    setEditingBusiness(true);
+  };
+  
+  // Handle closing business profile edit
+  const handleCloseBusinessEdit = () => {
+    setEditingBusiness(false);
+  };
+  
+  // Handle submitting business profile update
+  const handleSubmitBusinessProfile = async (formData: any) => {
+    try {
+      const updateData = {
+        business_name: formData.businessName,
+        description: formData.businessDescription,
+        phone: formData.phoneNumber,
+        email: formData.email,
+        address: {
+          street: formData.address,
+          city: formData.city || business?.address.city || 'Default City',
+          state: formData.state,
+          zipCode: formData.pincode,
+          country: formData.country || business?.address.country || 'USA',
+        },
+        opening_time: formData.openingTime,
+        closing_time: formData.closingTime,
+        businessHours: formData.businessHours,
+        status: formData.status || 'active',
+      };
+      
+      const updatedBusiness = await businessService.updateBusiness(updateData);
+      
+      // Update the business state with new data
+      setBusiness(updatedBusiness);
+      
+      message.success('Business profile updated successfully!');
+      setEditingBusiness(false);
+    } catch (error: any) {
+      console.error('Error updating business profile:', error);
+      message.error(error.message || 'Failed to update business profile');
+      throw error;
+    }
+  };
+  
   if (loading) {
     return (
       <div style={{ 
@@ -410,42 +501,66 @@ const ProviderDashboardContent = () => {
               <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
                 <Col span={6}>
                   <Card>
-                    <Statistic
-                      title="Total Clients"
-                      value={24}
-                      prefix={<UserOutlined />}
-                    />
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <Statistic
+                        title="Total Clients"
+                        value={dashboardStats?.totalClients || 0}
+                        prefix={<UserOutlined />}
+                      />
+                    )}
                   </Card>
                 </Col>
                 <Col span={6}>
                   <Card>
-                    <Statistic
-                      title="Upcoming Appointments"
-                      value={5}
-                      prefix={<CalendarOutlined />}
-                    />
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <Statistic
+                        title="Upcoming Appointments"
+                        value={dashboardStats?.upcomingAppointments || 0}
+                        prefix={<CalendarOutlined />}
+                      />
+                    )}
                   </Card>
                 </Col>
                 <Col span={6}>
                   <Card>
-                    <Statistic
-                      title="Avg. Rating"
-                      value={4.8}
-                      precision={1}
-                      prefix={<StarOutlined />}
-                      styles={{ content: { color: '#3f8600' } }}
-                    />
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <Statistic
+                        title="Avg. Rating"
+                        value={dashboardStats?.avgRating || 0}
+                        precision={1}
+                        prefix={<StarOutlined />}
+                        styles={{ content: { color: '#3f8600' } }}
+                      />
+                    )}
                   </Card>
                 </Col>
                 <Col span={6}>
                   <Card>
-                    <Statistic
-                      title="Revenue"
-                      value={2450}
-                      precision={2}
-                      prefix={<DollarOutlined />}
-                      suffix="USD"
-                    />
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <Statistic
+                        title="Revenue"
+                        value={dashboardStats?.totalRevenue || 0}
+                        precision={2}
+                        prefix={<DollarOutlined />}
+                        suffix="USD"
+                      />
+                    )}
                   </Card>
                 </Col>
               </Row>
@@ -471,7 +586,7 @@ const ProviderDashboardContent = () => {
               {/* Services Section */}
               <Row gutter={[16, 16]} style={{ marginTop: '30px' }}>
                 <Col span={24}>
-                  <Card title={`My Services (${services.length})`}>
+                  <Card title={`My Services (${dashboardStats?.totalServices || services.length})`}>
                     {servicesLoading ? (
                       <div style={{ textAlign: 'center', padding: '40px' }}>
                         <Spin size="large" />
@@ -666,7 +781,7 @@ const ProviderDashboardContent = () => {
             <span>
               <TeamOutlined />
               Therapist Requests
-              {requests.filter(r => r.status === 'pending').length > 0 && (
+              {(dashboardStats?.pendingTherapistRequests || requests.filter(r => r.status === 'pending').length) > 0 && (
                 <span style={{ 
                   marginLeft: 8, 
                   backgroundColor: '#ff4d4f', 
@@ -675,7 +790,7 @@ const ProviderDashboardContent = () => {
                   padding: '2px 6px', 
                   fontSize: '12px' 
                 }}>
-                  {requests.filter(r => r.status === 'pending').length}
+                  {dashboardStats?.pendingTherapistRequests || requests.filter(r => r.status === 'pending').length}
                 </span>
               )}
             </span>
@@ -756,14 +871,74 @@ const ProviderDashboardContent = () => {
                 
                 <Col span={24}>
                   <Card>
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                      <ProfileOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
-                      <Title level={4}>Profile Management</Title>
-                      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                        Business profile management functionality coming soon.
-                      </Text>
-                      <Button>Update Business Profile</Button>
-                    </div>
+                    {business ? (
+                      <div>
+                        <Title level={4} style={{ marginBottom: '20px' }}>Business Information</Title>
+                        <Row gutter={[16, 16]}>
+                          <Col span={12}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                              <ShopOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
+                              <div>
+                                <Text strong>Business Name:</Text>
+                                <br />
+                                <Text>{business.business_name}</Text>
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                              <EnvironmentOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
+                              <div>
+                                <Text strong>Address:</Text>
+                                <br />
+                                <Text>
+                                  {business.address.street}, {business.address.city}<br />
+                                  {business.address.state} {business.address.zipCode}
+                                </Text>
+                              </div>
+                            </div>
+                          </Col>
+                          
+                          <Col span={12}>
+                            {business.description && (
+                              <div style={{ marginBottom: '15px' }}>
+                                <Text strong>Description:</Text>
+                                <br />
+                                <Text type="secondary">{business.description}</Text>
+                              </div>
+                            )}
+                            
+                            {business.phone && (
+                              <div style={{ marginBottom: '15px' }}>
+                                <Text strong>Phone:</Text>
+                                <br />
+                                <Text>{business.phone}</Text>
+                              </div>
+                            )}
+                            
+                            {business.email && (
+                              <div style={{ marginBottom: '15px' }}>
+                                <Text strong>Email:</Text>
+                                <br />
+                                <Text>{business.email}</Text>
+                              </div>
+                            )}
+                          </Col>
+                        </Row>
+                        
+                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                          <Button type="primary" onClick={handleEditBusinessProfile}>Update Business Profile</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <ProfileOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
+                        <Title level={4}>Profile Management</Title>
+                        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                          Business profile management functionality coming soon.
+                        </Text>
+                        <Button>Update Business Profile</Button>
+                      </div>
+                    )}
                   </Card>
                 </Col>
               </Row>
@@ -789,14 +964,53 @@ const ProviderDashboardContent = () => {
                 
                 <Col span={24}>
                   <Card>
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                      <CalendarOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
-                      <Title level={4}>Schedule Management</Title>
-                      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                        Schedule management functionality coming soon.
-                      </Text>
-                      <Button>Create Availability</Button>
-                    </div>
+                    {business ? (
+                      <div>
+                        <Title level={4} style={{ marginBottom: '20px' }}>Business Hours</Title>
+                        
+                        {business.businessHours ? (
+                          <div>
+                            {Object.entries(business.businessHours).map(([day, hours]) => {
+                              const dayHours = hours as { open?: string; close?: string; closed?: boolean };
+                              return (
+                                <div key={day} style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  padding: '8px 0',
+                                  borderBottom: '1px solid #f0f0f0'
+                                }}>
+                                  <Text strong>{day}:</Text>
+                                  <Text>
+                                    {dayHours.closed ? (
+                                      <span style={{ color: '#ff4d4f' }}>Closed</span>
+                                    ) : (
+                                      `${dayHours.open || 'N/A'} - ${dayHours.close || 'N/A'}`
+                                    )}
+                                  </Text>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <Text type="secondary">Business hours not configured yet.</Text>
+                          </div>
+                        )}
+                        
+                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                          <Button type="primary">Update Business Hours</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <CalendarOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
+                        <Title level={4}>Schedule Management</Title>
+                        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                          Schedule management functionality coming soon.
+                        </Text>
+                        <Button>Create Availability</Button>
+                      </div>
+                    )}
                   </Card>
                 </Col>
               </Row>
@@ -814,6 +1028,39 @@ const ProviderDashboardContent = () => {
         loading={submitting}
         editingService={editingService}
       />
+      
+      {/* Business Profile Edit Modal */}
+      <Modal
+        title="Update Business Profile"
+        open={editingBusiness}
+        onCancel={handleCloseBusinessEdit}
+        footer={null}
+        width={800}
+        destroyOnClose
+      >
+        <ProviderOnboarding 
+          onComplete={() => {
+            message.success('Business profile updated successfully!');
+            handleCloseBusinessEdit();
+            // Refresh the business profile
+            const refreshProfile = async () => {
+              try {
+                const profile = await businessService.getBusinessProfile();
+                setBusiness(profile);
+              } catch (error) {
+                console.error('Error refreshing business profile:', error);
+              }
+            };
+            refreshProfile();
+          }}
+          userData={{
+            name: user?.name || '',
+            email: business?.email || '',
+            phone: business?.phone || '',
+          }}
+          initialData={business}
+        />
+      </Modal>
     </div>
   );
 }
