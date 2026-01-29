@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Select, Typography, Button } from 'antd';
 
@@ -77,93 +78,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
     form.setFieldsValue(formData);
   }, [formData, form]);
   
-  // Handle field changes and update parent state
-  const handleFieldChange = (field: string, value: any) => {
-    // Special handling for serviceCategoryId - update service name options
-    if (field === 'serviceCategoryId') {
-      const selectedCategory = serviceCategories.find(cat => cat.id === value);
-      const serviceTypeName = selectedCategory ? selectedCategory.name : '';
-      
-      // Update the selected service type state
-      setSelectedServiceType(serviceTypeName);
-      
-      // Set the service name options based on the selected service type
-      let options: {value: string, label: string}[] = [];
-      switch(serviceTypeName) {
-        case 'Massage Therapy':
-          options = [
-            { value: 'Swedish Massage', label: 'Swedish Massage' },
-            { value: 'Deep Tissue Massage', label: 'Deep Tissue Massage' },
-            { value: 'Aromatherapy Massage', label: 'Aromatherapy Massage' },
-            { value: 'Hot Stone Massage', label: 'Hot Stone Massage' },
-            { value: 'Thai Massage', label: 'Thai Massage' },
-            { value: 'Reflexology (Foot Massage)', label: 'Reflexology (Foot Massage)' },
-            { value: 'Head, Neck & Shoulder Massage', label: 'Head, Neck & Shoulder Massage' }
-          ];
-          break;
-        case 'Spa Services':
-          options = [
-            { value: 'Facial Treatments (Basic / Advanced)', label: 'Facial Treatments (Basic / Advanced)' },
-            { value: 'Body Scrub & Body Polishing', label: 'Body Scrub & Body Polishing' },
-            { value: 'Body Wrap Therapy', label: 'Body Wrap Therapy' },
-            { value: 'Manicure & Pedicure', label: 'Manicure & Pedicure' },
-            { value: 'Hair Spa Treatment', label: 'Hair Spa Treatment' }
-          ];
-          break;
-        case 'Wellness Programs':
-          options = [
-            { value: 'Meditation & Mindfulness Programs', label: 'Meditation & Mindfulness Programs' },
-            { value: 'Weight Management Programs', label: 'Weight Management Programs' },
-            { value: 'Stress Management Therapy', label: 'Stress Management Therapy' },
-            { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
-            { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
-            { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' }
-          ];
-          break;
-        case 'Corporate Wellness':
-          options = [
-            { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
-            { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
-            { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' },
-            { value: 'Workplace Ergonomics Programs', label: 'Workplace Ergonomics Programs' }
-          ];
-          break;
-        default:
-          options = [];
-      }
-      setServiceNameOptions(options);
-      
-      setFormData({
-        ...formData,
-        serviceCategoryId: value,
-        name: '', // Reset service name when service type changes
-      });
-      
-      // Update form's internal state
-      form.setFieldsValue({ 
-        serviceCategoryId: value,
-        name: '' // Reset service name when service type changes
-      });
-    } else if (field === 'name') { // Handle service name selection
-      setFormData({
-        ...formData,
-        name: value,
-      });
-      
-      // Update form's internal state
-      form.setFieldsValue({ 
-        name: value
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [field]: value,
-      });
-      
-      // Also update the form's internal state to keep it in sync
-      form.setFieldsValue({ [field]: value });
-    }
-  };
+  
 
   // Handle form submission/validation
   const handleNext = async () => {
@@ -289,7 +204,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
               value: category.id,
               label: category.name
             }))}
-            onChange={(value) => handleFieldChange('serviceCategoryId', value)}
+
           />
         </Form.Item>
 
@@ -309,7 +224,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
             optionFilterProp="label"
             disabled={!selectedServiceType} // Disable when no service type is selected
             options={serviceNameOptions}
-            onChange={(value) => handleFieldChange('name', value)}
+
           />
         </Form.Item>
 
@@ -338,7 +253,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
             min={0}
             step={0.01}
             style={{ width: '100%' }}
-            onChange={(value) => handleFieldChange('price', value)}
+
           />
         </Form.Item>
 
@@ -364,7 +279,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
         >
           <Select
             placeholder="Select duration"
-            onChange={(value) => handleFieldChange('duration', value)}
+
           >
             <Select.Option value={15}>15 minutes</Select.Option>
             <Select.Option value={30}>30 minutes</Select.Option>
@@ -396,7 +311,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
           <TextArea
             rows={4}
             placeholder="Enter service description"
-            onChange={(e) => handleFieldChange('description', e.target.value)}
+
           />
         </Form.Item>
       </Form>

@@ -332,6 +332,7 @@ const ProviderDashboardContent = () => {
 
   const handleSubmitService = React.useCallback(async (formData: any) => {
     setSubmitting(true);
+    console.log('Submitting service data:', formData);
     try {
       // Get JWT token from localStorage
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

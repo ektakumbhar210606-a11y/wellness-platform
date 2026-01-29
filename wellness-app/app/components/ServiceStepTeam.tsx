@@ -29,44 +29,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
   current,
   totalSteps
 }) => {
-
-  // Filter therapists based on their expertise matching the selected service name
-  const getFilteredTherapists = () => {
-    // If no service name is selected, return all approved therapists
-    if (!formData.name) {
-      return approvedTherapists;
-    }
-
-    // Find the expertise ID that corresponds to the selected service name
-    // We need to normalize both strings for comparison
-    const normalizedServiceName = formData.name.trim().toLowerCase();
-    const matchedExpertise = EXPERTISE_OPTIONS.find(expertise => 
-      expertise.label.trim().toLowerCase() === normalizedServiceName
-    );
-
-    if (matchedExpertise) {
-      // Filter therapists whose expertise includes the matched expertise
-      return approvedTherapists.filter(therapist => {
-        // Log therapist data for debugging
-        console.log('Checking therapist:', therapist._id, 'Expertise:', therapist.areaOfExpertise);
-        
-        return therapist.areaOfExpertise && 
-        Array.isArray(therapist.areaOfExpertise) && 
-        therapist.areaOfExpertise.includes(matchedExpertise.id);
-      });
-    } else {
-      // If no exact match found, return all approved therapists
-      console.log("No expertise match found for:", formData.name, "Available options:", EXPERTISE_OPTIONS.map(e => e.label));
-      return approvedTherapists;
-    }
-  };
-
   const [filteredTherapists, setFilteredTherapists] = useState<any[]>(approvedTherapists);
-
-  console.log('Service Name:', formData.name);
-  console.log('All approved therapists:', approvedTherapists);
-  console.log('Filtered therapists:', filteredTherapists);
-  
   const [selectedTherapists, setSelectedTherapists] = useState<string[]>(
     formData.therapists && Array.isArray(formData.therapists) 
       ? formData.therapists.filter((id: string | null | undefined) => id != null && id !== '') 
@@ -82,7 +45,6 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
       }
 
       // Find the expertise ID that corresponds to the selected service name
-      // We need to normalize both strings for comparison
       const normalizedServiceName = formData.name.trim().toLowerCase();
       const matchedExpertise = EXPERTISE_OPTIONS.find(expertise => 
         expertise.label.trim().toLowerCase() === normalizedServiceName
@@ -91,22 +53,20 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
       if (matchedExpertise) {
         // Filter therapists whose expertise includes the matched expertise
         return approvedTherapists.filter(therapist => {
-          // Log therapist data for debugging
-          console.log('Checking therapist:', therapist._id, 'Expertise:', therapist.areaOfExpertise);
-          
-          return therapist.areaOfExpertise && 
-          Array.isArray(therapist.areaOfExpertise) && 
-          therapist.areaOfExpertise.includes(matchedExpertise.id);
+          // Check therapist.areaOfExpertise field from API response (which is what the API returns)
+          const therapistExpertise = therapist.areaOfExpertise || [];
+          return Array.isArray(therapistExpertise) && 
+                 therapistExpertise.includes(matchedExpertise.id);
         });
       } else {
-        // If no exact match found, return all approved therapists
-        console.log("No expertise match found for:", formData.name, "Available options:", EXPERTISE_OPTIONS.map(e => e.label));
+        // If no match found, return all approved therapists
         return approvedTherapists;
       }
     };
 
-    setFilteredTherapists(getFilteredTherapists());
-  }, [formData.name, approvedTherapists]);
+    const result = getFilteredTherapists();
+    setFilteredTherapists(result);
+  }, [formData.name, approvedTherapists, EXPERTISE_OPTIONS]);
 
   // Update form data when selected therapists change
   useEffect(() => {
@@ -121,10 +81,10 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
   };
 
   const formatTherapistName = (therapist: any) => {
-    console.log(therapist)
-    return therapist.fullName || `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 
+    return therapist.fullName || therapist.fullname || 
+           `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 
            therapist.email || 
-           `Therapist ${therapist._id}`;
+           `Therapist ${(therapist.id || therapist._id || therapist.therapistId)}`;
   };
 
   return (
@@ -139,14 +99,6 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
             <Text>Loading approved therapists...</Text>
           </div>
         </div>
-      ) : filteredTherapists.length === 0 ? (
-        <Alert
-          message="No Matching Therapists"
-          description={`There are no approved therapists with expertise matching "${formData.name || 'the selected service'}". Please select a different service or assign therapists from the general list.`}
-          type="warning"
-          showIcon
-          style={{ marginTop: 16 }}
-        />
       ) : (
         <div className="mt-4">
           <Card>
@@ -154,7 +106,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
               <Form.Item 
                 label="Select Therapists" 
                 required={false}
-                help="Choose one or more therapists whose expertise matches the selected service"
+                help={`Choose one or more therapists whose expertise matches the selected service (${formData.name || 'no service selected'})`}
               >
                 <Select
                   mode="multiple"
@@ -163,39 +115,35 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                   onChange={handleTherapistChange}
                   optionLabelProp="label"
                   style={{ width: '100%' }}
-                  popupRender={(menu) => (
-                    <div>
-                      {menu}
-                      {filteredTherapists.length > 0 && (
-                        <div style={{ padding: '8px 12px', borderTop: '1px solid #f0f0f0', color: '#666' }}>
-                          {filteredTherapists.length} matching therapist{filteredTherapists.length !== 1 ? 's' : ''} available
-                        </div>
-                      )}
-                    </div>
-                  )}
                 >
-                  {filteredTherapists
-                    .filter(therapist => therapist._id && therapist._id !== '')
-                    .map((therapist) => (
-                      <Option 
-                        key={therapist._id} 
-                        value={therapist._id}
-                        label={formatTherapistName(therapist)}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <UserOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-                          <div>
-                            <div>{formatTherapistName(therapist)}</div>
-                            <div style={{ fontSize: '12px', color: '#888' }}>
-                              {therapist.email}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#888' }}>
-                              Experience: {therapist.experience || 0} years
+                  {filteredTherapists.length === 0 ? (
+                    <Option key="no-match" value="" disabled>
+                      No matching therapists found for "{formData.name || 'the selected service'}"
+                    </Option>
+                  ) : (
+                    filteredTherapists
+                      .filter(therapist => (therapist.id || therapist._id || therapist.therapistId) && (therapist.id || therapist._id || therapist.therapistId) !== '')
+                      .map((therapist, index) => (
+                        <Option 
+                          key={`${therapist.id || therapist._id || therapist.therapistId}-${index}`} 
+                          value={therapist.id || therapist._id || therapist.therapistId}
+                          label={formatTherapistName(therapist)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <UserOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                            <div>
+                              <div>{formatTherapistName(therapist)}</div>
+                              <div style={{ fontSize: '12px', color: '#888' }}>
+                                {therapist.email || (therapist.user && therapist.user.email) || therapist.firstName + ' ' + therapist.lastName || 'No email'}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#888' }}>
+                                Experience: {therapist.experience || 0} years
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </Option>
-                    ))}
+                        </Option>
+                      ))
+                  )}
                 </Select>
               </Form.Item>
             </Form>
@@ -204,8 +152,9 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
           {selectedTherapists.length > 0 && (
             <Card title="Selected Therapists" style={{ marginTop: 16 }}>
               {selectedTherapists.map((therapistId) => {
-                console.log('therapistId', therapistId)
-                const therapist = filteredTherapists.find(t => t._id === therapistId);
+                const therapist = filteredTherapists.find(t => 
+                  (t.id === therapistId) || (t._id === therapistId) || (t.therapistId === therapistId)
+                );
                 return (
                   <div key={therapistId} style={{ 
                     display: 'flex', 
@@ -218,7 +167,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                       <strong>{therapist ? formatTherapistName(therapist) : 'Unknown Therapist'}</strong>
                       {therapist && (
                         <div style={{ fontSize: '12px', color: '#888' }}>
-                          {therapist.email} • {therapist.experience || 0} years experience
+                          {therapist.email || (therapist.user && therapist.user.email) || therapist.firstName + ' ' + therapist.lastName || 'No email'} • {therapist.experience || 0} years experience
                         </div>
                       )}
                     </div>

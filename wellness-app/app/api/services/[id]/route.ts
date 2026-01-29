@@ -4,6 +4,12 @@ import ServiceModel from '@/models/Service';
 import ServiceCategoryModel from '@/models/ServiceCategory';
 import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
+import TherapistModel from '@/models/Therapist';
+
+// Import models to ensure they're registered with Mongoose
+// This is needed for populate() to work with references
+ServiceCategoryModel;
+TherapistModel;
 
 // Simple JWT verification (for demo purposes)
 // In production, use a proper JWT library like 'jsonwebtoken'
@@ -184,6 +190,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       { 
         service: {
           id: service._id.toString(),
+          name: service.name, // Add the specific service name
           serviceCategory: service.serviceCategory ? {
             id: service.serviceCategory._id.toString(),
             name: service.serviceCategory.name
@@ -254,7 +261,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Parse request body
     const body = await req.json();
-    const { serviceCategoryId, price, duration, description, therapists } = body;
+    console.log('Received service update data:', body);
+    const { serviceCategoryId, name, price, duration, description, therapists, teamMembers } = body;
 
     // Find the business associated with the user
     const business = await BusinessModel.findOne({ owner: user._id });
@@ -295,7 +303,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-
+    if (name !== undefined && typeof name !== 'string') {
+      return NextResponse.json(
+        { error: 'Name must be a string' },
+        { status: 400 }
+      );
+    }
 
     if (therapists !== undefined && !Array.isArray(therapists)) {
       return NextResponse.json(
@@ -304,8 +317,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
+    if (teamMembers !== undefined && !Array.isArray(teamMembers)) {
+      return NextResponse.json(
+        { error: 'Team members must be an array' },
+        { status: 400 }
+      );
+    }
+
     const updateData: any = {};
 
+    // Add name to update data if provided
+    if (name !== undefined) updateData.name = name;
+    
     // Verify service category exists and is active if provided
     if (serviceCategoryId !== undefined) {
       const serviceCategory = await ServiceCategoryModel.findById(serviceCategoryId);
@@ -335,15 +358,35 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-    // Populate service category name
+    // Populate service category name and therapists
     const populatedService = await ServiceModel.findById(updatedService._id)
-      .populate('serviceCategory', 'name');
+      .populate('serviceCategory', 'name')
+      .populate('therapists', 'fullName professionalTitle firstName lastName')
+      .populate('teamMembers', 'fullName professionalTitle firstName lastName');
+
+    // Format therapists and team members for response
+    const formattedTherapists = populatedService.therapists ? (populatedService.therapists as any[]).map(therapist => ({
+      id: therapist._id.toString(),
+      fullName: therapist.fullName,
+      professionalTitle: therapist.professionalTitle,
+      firstName: therapist.firstName,
+      lastName: therapist.lastName
+    })) : [];
+    
+    const formattedTeamMembers = populatedService.teamMembers ? (populatedService.teamMembers as any[]).map(member => ({
+      id: member._id.toString(),
+      fullName: member.fullName,
+      professionalTitle: member.professionalTitle,
+      firstName: member.firstName,
+      lastName: member.lastName
+    })) : [];
 
     return NextResponse.json(
       { 
         message: 'Service updated successfully',
         service: {
           id: populatedService._id.toString(),
+          name: populatedService.name, // Add the specific service name
           serviceCategory: populatedService.serviceCategory ? {
             id: populatedService.serviceCategory._id.toString(),
             name: populatedService.serviceCategory.name
@@ -351,7 +394,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           price: populatedService.price,
           duration: populatedService.duration,
           description: populatedService.description,
-          therapists: populatedService.therapists || [],
+          therapists: formattedTherapists,
+          teamMembers: formattedTeamMembers,
           createdAt: populatedService.createdAt,
         }
       },

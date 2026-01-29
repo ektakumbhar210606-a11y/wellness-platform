@@ -4,6 +4,12 @@ import ServiceModel, { IService } from '@/models/Service';
 import ServiceCategoryModel from '@/models/ServiceCategory';
 import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
+import TherapistModel from '@/models/Therapist';
+
+// Import models to ensure they're registered with Mongoose
+// This is needed for populate() to work with references
+ServiceCategoryModel;
+TherapistModel;
 
 // Simple JWT verification (for demo purposes)
 // In production, use a proper JWT library like 'jsonwebtoken'
@@ -72,12 +78,13 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { serviceCategoryId, price, duration, description, images, teamMembers, therapists } = body;
+    console.log('Received service creation data:', body);
+    const { serviceCategoryId, name, price, duration, description, images, teamMembers, therapists } = body;
 
     // Validate required fields
-    if (!serviceCategoryId || !price || !duration || !description) {
+    if (!serviceCategoryId || !name || !price || !duration || !description) {
       return NextResponse.json(
-        { error: 'Missing required fields: serviceCategoryId, price, duration, and description are required' },
+        { error: 'Missing required fields: serviceCategoryId, name, price, duration, and description are required' },
         { status: 400 }
       );
     }
@@ -123,6 +130,7 @@ export async function POST(req: NextRequest) {
     const newService = new ServiceModel({
       business: business._id,
       serviceCategory: serviceCategoryId,
+      name, // Add the service name
       price,
       duration,
       description,
@@ -132,15 +140,35 @@ export async function POST(req: NextRequest) {
 
     const createdService = await newService.save();
 
-    // Populate service category name
+    // Populate service category name and therapists
     const populatedService = await ServiceModel.findById(createdService._id)
-      .populate('serviceCategory', 'name');
+      .populate('serviceCategory', 'name')
+      .populate('therapists', 'fullName professionalTitle firstName lastName')
+      .populate('teamMembers', 'fullName professionalTitle firstName lastName');
+
+    // Format therapists and team members for response
+    const formattedTherapists = populatedService.therapists ? (populatedService.therapists as any[]).map(therapist => ({
+      id: therapist._id.toString(),
+      fullName: therapist.fullName,
+      professionalTitle: therapist.professionalTitle,
+      firstName: therapist.firstName,
+      lastName: therapist.lastName
+    })) : [];
+    
+    const formattedTeamMembers = populatedService.teamMembers ? (populatedService.teamMembers as any[]).map(member => ({
+      id: member._id.toString(),
+      fullName: member.fullName,
+      professionalTitle: member.professionalTitle,
+      firstName: member.firstName,
+      lastName: member.lastName
+    })) : [];
 
     return NextResponse.json(
       { 
         message: 'Service created successfully', 
         service: {
           id: populatedService._id.toString(),
+          name: populatedService.name, // Add the specific service name
           serviceCategory: {
             id: populatedService.serviceCategory._id.toString(),
             name: populatedService.serviceCategory.name
@@ -148,7 +176,8 @@ export async function POST(req: NextRequest) {
           price: populatedService.price,
           duration: populatedService.duration,
           description: populatedService.description,
-          therapists: populatedService.therapists || [],
+          therapists: formattedTherapists,
+          teamMembers: formattedTeamMembers,
           createdAt: populatedService.createdAt,
         }
       },

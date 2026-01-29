@@ -8,7 +8,7 @@ const { Text, Paragraph } = Typography;
 interface ServiceCardProps {
   service: {
     id: string;
-    name: string;
+    name?: string;  // Make name optional for backward compatibility
     price: number;
     duration: number;
     description: string;
@@ -43,7 +43,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, de
       cover={
         service.image ? (
           <img 
-            alt={service.name} 
+            alt={service.name || service.serviceCategory?.name || 'Service'} 
             src={service.image} 
             style={{ height: 160, objectFit: 'cover' }} 
           />
@@ -91,11 +91,15 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, de
       <div style={{ flexGrow: 1 }}>
         <Meta
           title={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text strong ellipsis={{ tooltip: service.name }}>{service.name}</Text>
-              <Tag icon={<DollarOutlined />} color="green">
-                ${service.price.toFixed(2)}
-              </Tag>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <Text strong style={{ fontSize: '16px' }} ellipsis={{ tooltip: service.name || service.serviceCategory?.name || 'Service' }}>
+                  {service.name || service.serviceCategory?.name || 'Service Name Not Set'}
+                </Text>
+                <Tag icon={<DollarOutlined />} color="green">
+                  ${service.price.toFixed(2)}
+                </Tag>
+              </div>
             </div>
           }
           description={
@@ -126,17 +130,37 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, de
         
         <div className="mt-3 pt-3 border-t">
           {service.teamMembers && service.teamMembers.length > 0 && (
-            <div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Team: {service.teamMembers.length} member{service.teamMembers.length !== 1 ? 's' : ''}
+            <div className="mb-1">
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                Team: 
               </Text>
+              {service.teamMembers.slice(0, 2).map((member, index) => (
+                <Tag key={member.id} color="blue" style={{ margin: '2px' }}>
+                  {member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || 'Team Member'}
+                </Tag>
+              ))}
+              {service.teamMembers.length > 2 && (
+                <Tag color="default" style={{ margin: '2px' }}>
+                  +{service.teamMembers.length - 2} more
+                </Tag>
+              )}
             </div>
           )}
           {service.therapists && service.therapists.length > 0 && (
-            <div className="mt-1">
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Therapists: {service.therapists.length} assigned
+            <div>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                Therapists: 
               </Text>
+              {service.therapists.slice(0, 2).map((therapist, index) => (
+                <Tag key={therapist.id} color="geekblue" style={{ margin: '2px' }}>
+                  {therapist.fullName || `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 'Therapist'}
+                </Tag>
+              ))}
+              {service.therapists.length > 2 && (
+                <Tag color="default" style={{ margin: '2px' }}>
+                  +{service.therapists.length - 2} more
+                </Tag>
+              )}
             </div>
           )}
         </div>

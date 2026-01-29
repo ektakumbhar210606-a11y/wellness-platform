@@ -4,10 +4,15 @@ import ServiceModel from '@/models/Service';
 import ServiceCategoryModel from '@/models/ServiceCategory';
 import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
+import TherapistModel from '@/models/Therapist';
 
 // Import ServiceCategoryModel to ensure it's registered with Mongoose
 // This is needed for populate() to work with serviceCategory references
 ServiceCategoryModel;
+
+// Import TherapistModel to ensure it's registered with Mongoose
+// This is needed for populate() to work with therapists references
+TherapistModel;
 
 // Simple JWT verification (for demo purposes)
 // In production, use a proper JWT library like 'jsonwebtoken'
@@ -88,23 +93,54 @@ export async function GET(req: NextRequest) {
     // This ensures Mongoose knows about the ServiceCategory schema for populate()
     await ServiceCategoryModel.findOne({});
     
-    // Fetch all services for the user's business with populated service categories
+    // Fetch all services for the user's business with populated service categories and therapists
     const services = await ServiceModel.find({ business: business._id })
       .populate('serviceCategory', 'name')
+      .populate('therapists', 'fullName professionalTitle firstName lastName')
+      .populate('teamMembers', 'fullName professionalTitle firstName lastName')
       .sort({ createdAt: -1 });
 
     // Format the services for the response
-    const formattedServices = services.map(service => ({
-      id: service._id.toString(),
-      serviceCategory: service.serviceCategory ? {
-        id: service.serviceCategory._id.toString(),
-        name: service.serviceCategory.name
-      } : null,
-      price: service.price,
-      duration: service.duration,
-      description: service.description,
-      createdAt: service.createdAt,
-    }));
+    const formattedServices = services.map(service => {
+      console.log('Service data from DB:', {
+        id: service._id.toString(),
+        name: service.name,
+        serviceCategory: service.serviceCategory?.name,
+        price: service.price,
+        duration: service.duration
+      });
+      // Type the therapists and team members properly
+      const therapists = service.therapists ? (service.therapists as any[]).map(therapist => ({
+        id: therapist._id.toString(),
+        fullName: therapist.fullName,
+        professionalTitle: therapist.professionalTitle,
+        firstName: therapist.firstName,
+        lastName: therapist.lastName
+      })) : [];
+      
+      const teamMembers = service.teamMembers ? (service.teamMembers as any[]).map(member => ({
+        id: member._id.toString(),
+        fullName: member.fullName,
+        professionalTitle: member.professionalTitle,
+        firstName: member.firstName,
+        lastName: member.lastName
+      })) : [];
+      
+      return {
+        id: service._id.toString(),
+        name: service.name, // Add the specific service name
+        serviceCategory: service.serviceCategory ? {
+          id: service.serviceCategory._id.toString(),
+          name: service.serviceCategory.name
+        } : null,
+        price: service.price,
+        duration: service.duration,
+        description: service.description,
+        createdAt: service.createdAt,
+        therapists,
+        teamMembers
+      };
+    });
 
     return NextResponse.json(
       { 
