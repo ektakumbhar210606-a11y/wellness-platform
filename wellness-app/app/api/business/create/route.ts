@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, address, openingTime, closingTime } = body;
+    const { name, description, serviceType, address, openingTime, closingTime } = body;
 
     // Validate required fields
     if (!name || !address || !openingTime || !closingTime) {
@@ -116,6 +116,8 @@ export async function POST(request: NextRequest) {
     const newBusiness = new Business({
       owner: user._id,
       name,
+      description,
+      serviceType,
       address,
       openingTime,
       closingTime,
@@ -133,6 +135,8 @@ export async function POST(request: NextRequest) {
           id: savedBusiness._id,
           owner: savedBusiness.owner,
           name: savedBusiness.name,
+          description: savedBusiness.description,
+          serviceType: savedBusiness.serviceType,
           address: savedBusiness.address,
           openingTime: savedBusiness.openingTime,
           closingTime: savedBusiness.closingTime,

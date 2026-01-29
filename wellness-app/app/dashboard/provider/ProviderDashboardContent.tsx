@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal } from 'antd';
+import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal, Tag } from 'antd';
 import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -508,6 +508,21 @@ const ProviderDashboardContent = () => {
                             <Text strong style={{ fontSize: '16px' }}>{business.business_name}</Text>
                             <br />
                             <Text type="secondary">{business.description}</Text>
+                            {business.serviceType && (
+                              <div style={{ marginTop: '5px' }}>
+                                <Tag color="blue">
+                                  {(() => {
+                                    switch(business.serviceType) {
+                                      case 'massage': return 'Massage Therapy';
+                                      case 'spa': return 'Spa Services';
+                                      case 'wellness': return 'Wellness Program';
+                                      case 'corporate': return 'Corporate Wellness';
+                                      default: return business.serviceType;
+                                    }
+                                  })()}
+                                </Tag>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </Col>
@@ -918,6 +933,24 @@ const ProviderDashboardContent = () => {
                                 <Text strong>Description:</Text>
                                 <br />
                                 <Text type="secondary">{business.description}</Text>
+                              </div>
+                            )}
+                            
+                            {business.serviceType && (
+                              <div style={{ marginBottom: '15px' }}>
+                                <Text strong>Service Type:</Text>
+                                <br />
+                                <Tag color="blue">
+                                  {(() => {
+                                    switch(business.serviceType) {
+                                      case 'massage': return 'Massage Therapy';
+                                      case 'spa': return 'Spa Services';
+                                      case 'wellness': return 'Wellness Program';
+                                      case 'corporate': return 'Corporate Wellness';
+                                      default: return business.serviceType;
+                                    }
+                                  })()}
+                                </Tag>
                               </div>
                             )}
                             
