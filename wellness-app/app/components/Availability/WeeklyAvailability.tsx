@@ -33,7 +33,7 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
       const existing = initialAvailability.find(a => a.day === day);
       return {
         day,
-        available: existing?.available ?? false,
+        available: existing ? (existing.available !== undefined ? existing.available : !!(existing.startTime && existing.endTime)) : false,
         startTime: existing?.startTime,
         endTime: existing?.endTime,
       };
@@ -47,19 +47,14 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
       [field]: value,
     };
     
-    // Ensure proper structure when toggling availability
-    if (field === 'available' && value === false) {
-      // If setting to not available, remove startTime and endTime
-      delete updatedAvailability[dayIndex].startTime;
-      delete updatedAvailability[dayIndex].endTime;
-    }
-    
+    // When availability changes, only send days that are available
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      // Send all days with their availability status to match backend expectations
-      console.log('Sending availability data:', updatedAvailability);
-      onChange(updatedAvailability);
+      // Filter to only send days that are available with start and end times
+      const availableDays = updatedAvailability.filter(day => day.available === true && day.startTime && day.endTime);
+      console.log('Sending availability data:', availableDays);
+      onChange(availableDays);
     }
     
     if (getCurrentAvailability) {
@@ -84,9 +79,10 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({
     setAvailability(updatedAvailability);
     
     if (onChange) {
-      // Send all days with their availability status to match backend expectations
-      console.log('Sending availability data:', updatedAvailability);
-      onChange(updatedAvailability);
+      // Filter to only send days that are available with start and end times
+      const availableDays = updatedAvailability.filter(day => day.available === true && day.startTime && day.endTime);
+      console.log('Sending availability data:', availableDays);
+      onChange(availableDays);
     }
     
     if (getCurrentAvailability) {

@@ -17,6 +17,10 @@ const TherapistProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [skillsOptions, setSkillsOptions] = useState<{id: string, label: string}[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(true);
+  const [serviceCategories, setServiceCategories] = useState<{id: string, label: string}[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -46,7 +50,43 @@ const TherapistProfilePage = () => {
       }
     };
 
+    // Fetch skills and expertise options
+    const fetchOptions = async () => {
+      try {
+        // Fetch skills
+        const skillsResponse = await fetch('/api/master/skills');
+        const skillsResult = await skillsResponse.json();
+        
+        if (skillsResult.success && Array.isArray(skillsResult.data)) {
+          setSkillsOptions(skillsResult.data);
+        } else {
+          console.error('Failed to fetch skills options:', skillsResult.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch skills options:', error);
+      } finally {
+        setSkillsLoading(false);
+      }
+      
+      try {
+        // Fetch expertise
+        const expertiseResponse = await fetch('/api/master/expertise');
+        const expertiseResult = await expertiseResponse.json();
+        
+        if (expertiseResult.success && Array.isArray(expertiseResult.data)) {
+          setServiceCategories(expertiseResult.data);
+        } else {
+          console.error('Failed to fetch expertise options:', expertiseResult.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch expertise options:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
     checkAccess();
+    fetchOptions();
   }, [user, router]);
 
   if (loading) {
@@ -62,30 +102,32 @@ const TherapistProfilePage = () => {
   }
 
   // Render the form content only after profile is loaded to avoid form connection warnings
-  return <TherapistProfileFormContent profile={profile} user={user} router={router} saving={saving} setSaving={setSaving} />;
+  return <TherapistProfileFormContent profile={profile} user={user} router={router} saving={saving} setSaving={setSaving} skillsOptions={skillsOptions} skillsLoading={skillsLoading} serviceCategories={serviceCategories} categoriesLoading={categoriesLoading} />;
 };
 
 // Child component to ensure forms are only created when they will be used
-const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving }: { profile: any; user: any; router: any; saving: boolean; setSaving: React.Dispatch<React.SetStateAction<boolean>> }) => {
+const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving, skillsOptions, skillsLoading, serviceCategories, categoriesLoading }: { profile: any; user: any; router: any; saving: boolean; setSaving: React.Dispatch<React.SetStateAction<boolean>>; skillsOptions: {id: string, label: string}[]; skillsLoading: boolean; serviceCategories: {id: string, label: string}[]; categoriesLoading: boolean }) => {
   const [profileForm] = Form.useForm();
   const [availabilityForm] = Form.useForm();
   const [currentAvailability, setCurrentAvailability] = useState<any[]>(profile?.weeklyAvailability || []);
 
   // Set initial form values after forms are created
   useEffect(() => {
-    profileForm.setFieldsValue({
-      fullName: profile.fullName,
-      email: profile.email,
-      phoneNumber: profile.phoneNumber,
-      professionalTitle: profile.professionalTitle,
-      bio: profile.bio,
-      experience: profile.experience,
-      location: profile.location,
-      skills: profile.skills,
-      certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
-      licenseNumber: profile.licenseNumber,
-    });
-  }, [profile]);
+    if (profile && skillsOptions.length > 0) {
+      profileForm.setFieldsValue({
+        fullName: profile.fullName,
+        email: profile.email,
+        phoneNumber: profile.phoneNumber,
+        professionalTitle: profile.professionalTitle,
+        bio: profile.bio,
+        experience: profile.experience,
+        location: profile.location,
+        skills: profile.skills,
+        certifications: Array.isArray(profile.certifications) ? profile.certifications.join(', ') : '',
+        licenseNumber: profile.licenseNumber,
+      });
+    }
+  }, [profile, skillsOptions]);
 
   const handleProfileSubmit = async (values: any) => {
     try {
@@ -130,24 +172,13 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
       console.log('Current availability state:', currentAvailability);
       
       // Clean up the availability data before sending to API
-      const cleanedAvailability = currentAvailability.map(avail => {
-        if (avail.available === false) {
-          // If day is not available, remove startTime and endTime
-          return {
-            day: avail.day,
-            available: avail.available,
-            // Don't include startTime and endTime when not available
-          };
-        } else {
-          // If day is available, ensure all required fields are present
-          return {
-            day: avail.day,
-            available: avail.available,
-            startTime: avail.startTime,
-            endTime: avail.endTime,
-          };
-        }
-      });
+      const cleanedAvailability = currentAvailability
+        .filter((avail: any) => avail.available === true && avail.startTime && avail.endTime) // Only include days that are available with start and end times
+        .map((avail: any) => ({
+          day: avail.day,
+          startTime: avail.startTime,
+          endTime: avail.endTime,
+        }));
       
       // Update profile with availability
       const response = await therapistApi.updateProfile({
@@ -272,23 +303,34 @@ const TherapistProfileFormContent = ({ profile, user, router, saving, setSaving 
 
                   <Form.Item name="skills" label="Skills">
                     <Select
-                      mode="tags"
+                      mode="multiple"
                       style={{ width: '100%' }}
-                      placeholder="Add your skills (press Enter to add)"
-                      tokenSeparators={[',']}
-                    >
-                    </Select>
+                      placeholder="Select your skills"
+                      options={skillsOptions}
+                      fieldNames={{ label: 'label', value: 'id' }}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="areaOfExpertise"
+                    label="Area of Expertise"
+                    rules={[{ required: true, message: 'Please select at least one area of expertise' }]}
+                  >
+                    <Select
+                      mode="multiple"
+                      style={{ width: '100%' }}
+                      placeholder="Select areas of expertise"
+                      loading={categoriesLoading}
+                      notFoundContent={categoriesLoading ? 'Loading...' : 'No expertise options found'}
+                      options={serviceCategories}
+                      fieldNames={{ label: 'label', value: 'id' }}
+                      showSearch
+                      optionFilterProp="label"
+                    />
                   </Form.Item>
 
                   <Form.Item name="certifications" label="Certifications">
-                    <Select
-                      key="certifications-select"
-                      mode="tags"
-                      style={{ width: '100%' }}
-                      placeholder="Add your certifications (press Enter to add)"
-                      tokenSeparators={[',']}
-                    >
-                    </Select>
+                    <Input placeholder="Enter your certifications (comma separated)" />
                   </Form.Item>
 
                   <Form.Item

@@ -20,7 +20,7 @@ const TherapistOnboardingPage = () => {
   const [availabilityForm] = Form.useForm();
   const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [skillsOptions, setSkillsOptions] = useState<{id: string, name: string}[]>([]);
+  const [skillsOptions, setSkillsOptions] = useState<{id: string, label: string}[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(true);
 
   // Check if onboarding is already completed
@@ -170,24 +170,13 @@ const TherapistOnboardingPage = () => {
       
       // Clean up the availability data before sending to API
       const availabilityData = availabilityValues.weeklyAvailability || [];
-      const cleanedAvailability = availabilityData.map((avail: any) => {
-        if (avail.available === false) {
-          // If day is not available, remove startTime and endTime
-          return {
-            day: avail.day,
-            available: avail.available,
-            // Don't include startTime and endTime when not available
-          };
-        } else {
-          // If day is available, ensure all required fields are present
-          return {
-            day: avail.day,
-            available: avail.available,
-            startTime: avail.startTime,
-            endTime: avail.endTime,
-          };
-        }
-      });
+      const cleanedAvailability = availabilityData
+        .filter((avail: any) => avail.available === true && avail.startTime && avail.endTime) // Only include days that are available with start and end times
+        .map((avail: any) => ({
+          day: avail.day,
+          startTime: avail.startTime,
+          endTime: avail.endTime,
+        }));
       
       // Update profile with availability
       await therapistApi.updateProfile({
@@ -322,9 +311,9 @@ const TherapistOnboardingPage = () => {
               placeholder="Select skills"
               loading={skillsLoading}
               notFoundContent={skillsLoading ? 'Loading...' : 'No skills options found'}
-              options={skillsOptions.map((skill: {id: string, name: string}) => ({
+              options={skillsOptions.map((skill: {id: string, label: string}) => ({
                 value: skill.id,
-                label: skill.name
+                label: skill.label
               }))}
               showSearch
               optionFilterProp="label"
@@ -352,14 +341,7 @@ const TherapistOnboardingPage = () => {
           </Form.Item>
 
           <Form.Item name="certifications" label="Certifications">
-            <Select
-              key="certifications-select"
-              mode="tags"
-              style={{ width: '100%' }}
-              placeholder="Add your certifications (press Enter to add)"
-              tokenSeparators={[',']}
-            >
-            </Select>
+            <Input placeholder="Enter your certifications (comma separated)" />
           </Form.Item>
 
           <Form.Item

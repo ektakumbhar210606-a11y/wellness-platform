@@ -50,9 +50,8 @@ export interface ITherapist extends Document {
   licenseNumber?: string;
   weeklyAvailability?: Array<{
     day: string;
-    available: boolean;
-    startTime?: string;
-    endTime?: string;
+    startTime: string;
+    endTime: string;
   }>;
   
   // Expertise information
@@ -180,11 +179,17 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
   weeklyAvailability: [{
     day: {
       type: String,
-      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      required: true
     },
-    available: Boolean,
-    startTime: String,
-    endTime: String,
+    startTime: {
+      type: String,
+      required: true
+    },
+    endTime: {
+      type: String,
+      required: true
+    },
   }],
   
   // Expertise information

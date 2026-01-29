@@ -76,10 +76,10 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Only validate startTime and endTime if the day is marked as available
-        if (availability.available !== false && (!availability.startTime || !availability.endTime)) {
+        // Validate startTime and endTime are present
+        if (!availability.startTime || !availability.endTime) {
           return Response.json(
-            { success: false, error: 'Each available day must have startTime and endTime' },
+            { success: false, error: 'Each day must have startTime and endTime' },
             { status: 400 }
           );
         }
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       professionalTitle: professionalTitle,
       bio: bio,
       location: location,
-      certifications: certifications || [],
+      certifications: typeof certifications === 'string' ? certifications.split(',').map(cert => cert.trim()).filter(cert => cert) : certifications || [],
       licenseNumber: licenseNumber,
       weeklyAvailability: weeklyAvailability || [],
       areaOfExpertise: areaOfExpertise || []
