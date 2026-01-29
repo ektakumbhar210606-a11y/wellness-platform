@@ -53,6 +53,14 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
     ));
   };
 
+  // Format area of expertise display
+  const getAreaOfExpertiseDisplay = () => {
+    if (!profile.areaOfExpertise || profile.areaOfExpertise.length === 0) return 'None specified';
+    return profile.areaOfExpertise.map((expertise: string, index: number) => (
+      <Tag key={index} color="orange">{expertise}</Tag>
+    ));
+  };
+
   // Format availability display
   const getAvailabilityDisplay = () => {
     if (!profile.weeklyAvailability || profile.weeklyAvailability.length === 0) {
@@ -65,7 +73,7 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
           <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ClockCircleOutlined />
             <Text strong>{slot.day}:</Text>
-            {slot.available ? (
+            {slot.startTime && slot.endTime ? (
               <Text>{(() => { console.log(`${slot.day} availability data:`, { startTime: slot.startTime, endTime: slot.endTime }); return formatTimeRange(slot.startTime, slot.endTime); })()}</Text>
             ) : (
               <Text type="secondary">Not Available</Text>
@@ -168,6 +176,24 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
           <Text strong style={{ display: 'block', marginBottom: 8 }}>Certifications:</Text>
           <div>
             {getCertificationsDisplay()}
+          </div>
+        </div>
+      </Card>
+
+      {/* Area of Expertise Section */}
+      <Card 
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileTextOutlined />
+            <span>Area of Expertise</span>
+          </div>
+        }
+        style={{ marginBottom: 24 }}
+      >
+        <div>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>Expertise Areas:</Text>
+          <div>
+            {getAreaOfExpertiseDisplay()}
           </div>
         </div>
       </Card>
