@@ -81,10 +81,10 @@ interface BusinessHour {
 interface FormData {
   fullName: string;
   email: string;
-  password: string;
   phoneNumber: string;
   businessName: string;
   businessDescription: string;
+  serviceType: string;
   address: string;
   state: string;
   pincode: string;
@@ -116,10 +116,10 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       return {
         fullName: initialData.ownerName || userData?.name || '',
         email: initialData.email || userData?.email || '',
-        password: '',
         phoneNumber: initialData.phone || userData?.phone || '',
         businessName: initialData.name || initialData.business_name || '',
         businessDescription: initialData.description || '',
+        serviceType: initialData.serviceType || '',
         address: initialData.address?.street || '',
         state: initialData.address?.state || '',
         pincode: initialData.address?.zipCode || '',
@@ -131,10 +131,10 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
     return {
       fullName: '',
       email: '',
-      password: '',
       phoneNumber: '',
       businessName: '',
       businessDescription: '',
+      serviceType: '',
       address: '',
       state: '',
       pincode: '',
@@ -155,10 +155,10 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         const processedData = {
           fullName: initialData.ownerName || userData?.name || '',
           email: initialData.email || userData?.email || '',
-          password: '',
           phoneNumber: initialData.phone || userData?.phone || '',
           businessName: initialData.name || initialData.business_name || '',
           businessDescription: initialData.description || '',
+          serviceType: initialData.serviceType || '',
           address: initialData.address?.street || '',
           state: initialData.address?.state || '',
           pincode: initialData.address?.zipCode || '',
@@ -188,7 +188,6 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         fullName: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
-        password: formData.password,
       });
       
       // Set business form fields
@@ -367,7 +366,6 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
               ...prev,
               fullName: values.fullName,
               email: values.email,
-              password: values.password,
               phoneNumber: values.phoneNumber,
             }));
             setCurrentStep(prev => prev + 1);
@@ -384,6 +382,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
             ...prev,
             businessName: values.businessName,
             businessDescription: values.businessDescription,
+            serviceType: values.serviceType,
           }));
           setCurrentStep(prev => prev + 1);
         }).catch((errorInfo) => {
@@ -500,6 +499,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       const businessData = {
         business_name: formData.businessName,
         description: formData.businessDescription,
+        service_type: formData.serviceType,
         phone: formData.phoneNumber,
         email: formData.email,
         address: {
@@ -713,7 +713,6 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
               initialValues={{
                 fullName: formData.fullName,
                 email: formData.email,
-                password: formData.password,
                 phoneNumber: formData.phoneNumber,
               }}
             >
@@ -764,20 +763,6 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
                   readOnly={!!userData?.phone}
                 />
               </Form.Item>
-                      
-              <Form.Item
-                label="Password"
-                name="password"
-                rules={[
-                  { required: true, message: 'Please enter your password' },
-                  { min: 6, message: 'Password must be at least 6 characters' }
-                ]}
-              >
-                <Input.Password 
-                  placeholder="Enter your password" 
-                  size="large"
-                />
-              </Form.Item>
             </Form>
           )
         )}
@@ -820,6 +805,23 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
                 placeholder="Describe your business and services" 
                 rows={4}
                 maxLength={500}
+              />
+            </Form.Item>
+            
+            <Form.Item
+              label="Service Type"
+              name="serviceType"
+              rules={[{ required: true, message: 'Please select a service type' }]}
+            >
+              <Select 
+                placeholder="Select your service type" 
+                size="large"
+                options={[
+                  { value: 'massage', label: 'Massage Therapy' },
+                  { value: 'spa', label: 'Spa Services' },
+                  { value: 'wellness', label: 'Wellness Program' },
+                  { value: 'corporate', label: 'Corporate Wellness' }
+                ]}
               />
             </Form.Item>
           </Form>

@@ -8,6 +8,14 @@ export enum BusinessStatus {
   Suspended = 'suspended'
 }
 
+// Define the possible service types for a business
+export enum ServiceType {
+  Massage = 'massage',
+  Spa = 'spa',
+  Wellness = 'wellness',
+  Corporate = 'corporate'
+}
+
 // Define the possible therapist association status values
 export enum TherapistAssociationStatus {
   Pending = 'pending',
@@ -35,6 +43,7 @@ export interface IBusiness extends Document {
   owner: IUser['_id'] | IUser; // Reference to User model
   name: string;
   description?: string; // Business description
+  serviceType?: ServiceType; // Service type of the business
   address: IAddress;
   phone?: string; // Business phone number
   email?: string; // Business email
@@ -84,6 +93,13 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
     type: String,
     trim: true,
     maxlength: [500, 'Business description cannot exceed 500 characters']
+  },
+  serviceType: {
+    type: String,
+    enum: {
+      values: Object.values(ServiceType),
+      message: 'Service type must be one of: massage, spa, wellness, corporate'
+    }
   },
   phone: {
     type: String,
@@ -224,6 +240,7 @@ BusinessSchema.index({ owner: 1 }); // Index on owner for quick lookups
 BusinessSchema.index({ name: 'text' }); // Text index for business name search
 BusinessSchema.index({ 'address.city': 1 }); // Index on city for location-based queries
 BusinessSchema.index({ status: 1 }); // Index on status for filtering
+BusinessSchema.index({ serviceType: 1 }); // Index on service type for filtering
 BusinessSchema.index({ 'therapists.therapistId': 1 }); // Index on therapist associations for marketplace queries
 
 // Create and export the Business model
