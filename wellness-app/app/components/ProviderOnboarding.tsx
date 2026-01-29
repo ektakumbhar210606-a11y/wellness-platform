@@ -29,6 +29,44 @@ import { apiPostAuth, apiPutAuth } from '@/lib/api';
 import dayjs from 'dayjs';
 import { formatTimeRange } from '../utils/timeUtils';
 
+// Utility function to ensure valid dayjs objects for time values
+const ensureValidTime = (timeValue: any, defaultHour: number = 9, defaultMinute: number = 0): dayjs.Dayjs => {
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('ensureValidTime called with:', { 
+      timeValue, 
+      type: typeof timeValue, 
+      isDayjs: dayjs.isDayjs(timeValue),
+      isValid: dayjs.isDayjs(timeValue) ? timeValue.isValid() : 'not dayjs'
+    });
+  }
+  
+  // If it's already a valid dayjs object, return it
+  if (dayjs.isDayjs(timeValue) && timeValue.isValid()) {
+    return timeValue;
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof timeValue === 'string') {
+    const parsed = dayjs(timeValue, 'HH:mm');
+    if (parsed.isValid()) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Parsed string time successfully:', parsed.format('HH:mm'));
+      }
+      return parsed;
+    } else {
+      console.warn('Failed to parse time string:', timeValue);
+    }
+  }
+  
+  // If it's invalid or undefined, create a new valid dayjs object
+  const defaultValue = dayjs().hour(defaultHour).minute(defaultMinute).second(0).millisecond(0);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Creating default time value:', defaultValue.format('HH:mm'));
+  }
+  return defaultValue;
+};
+
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
@@ -61,13 +99,11 @@ interface ProviderOnboardingProps {
     phone?: string;
   };
   initialData?: any;
+  showOnlyBusinessHours?: boolean;
 }
 
-const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, userData, initialData }) => {
-  // Step management
-  const [currentStep, setCurrentStep] = useState<number>(0);
-  
-  // Form instances for each step
+const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, userData, initialData, showOnlyBusinessHours = false }) => {
+  // Form instances for each step - Initialize only when component mounts
   const [basicForm] = Form.useForm();
   const [businessForm] = Form.useForm();
   const [locationForm] = Form.useForm();
@@ -82,7 +118,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         email: initialData.email || userData?.email || '',
         password: '',
         phoneNumber: initialData.phone || userData?.phone || '',
-        businessName: initialData.business_name || initialData.name || '',
+        businessName: initialData.name || initialData.business_name || '',
         businessDescription: initialData.description || '',
         address: initialData.address?.street || '',
         state: initialData.address?.state || '',
@@ -109,68 +145,237 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
   // Loading state for submission
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Auto-fill form data when userData is provided
+  // Initialize form data only once when component mounts
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  
   React.useEffect(() => {
-    if (userData) {
-      // Set initial form data with user information
-      setFormData(prev => ({
-        ...prev,
-        fullName: userData.name || prev.fullName,
-        email: userData.email || prev.email,
-        phoneNumber: userData.phone || prev.phoneNumber,
-      }));
+    if (!isInitialized) {
+      // Process initial data once
+      if (initialData) {
+        const processedData = {
+          fullName: initialData.ownerName || userData?.name || '',
+          email: initialData.email || userData?.email || '',
+          password: '',
+          phoneNumber: initialData.phone || userData?.phone || '',
+          businessName: initialData.name || initialData.business_name || '',
+          businessDescription: initialData.description || '',
+          address: initialData.address?.street || '',
+          state: initialData.address?.state || '',
+          pincode: initialData.address?.zipCode || '',
+          businessHours: initialData.businessHours || [],
+        };
+        
+        setFormData(processedData);
+      } else if (userData) {
+        // If only user data is available, use that
+        setFormData(prev => ({
+          ...prev,
+          fullName: userData.name || prev.fullName,
+          email: userData.email || prev.email,
+          phoneNumber: userData.phone || prev.phoneNumber,
+        }));
+      }
       
-      // Set form field values
+      setIsInitialized(true);
+    }
+  }, [initialData, userData, isInitialized]);
+  
+  // After initialization and formData is set, populate the forms
+  React.useEffect(() => {
+    if (isInitialized && formData) {
+      // Set basic form fields
       basicForm.setFieldsValue({
-        fullName: userData.name,
-        email: userData.email,
-        phoneNumber: userData.phone,
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        password: formData.password,
+      });
+      
+      // Set business form fields
+      businessForm.setFieldsValue({
+        businessName: formData.businessName,
+        businessDescription: formData.businessDescription,
+      });
+      
+      // Set location form fields
+      locationForm.setFieldsValue({
+        address: formData.address,
+        state: formData.state,
+        pincode: formData.pincode,
       });
     }
-  }, [userData, basicForm]);
+  }, [isInitialized, formData, basicForm, businessForm, locationForm]);
 
-  const steps = [
-    {
-      title: 'Basic Info',
-      icon: <UserOutlined />,
-    },
-    {
-      title: 'Business Info',
-      icon: <ShopOutlined />,
-    },
-    {
-      title: 'Location',
-      icon: <EnvironmentOutlined />,
-    },
-    {
-      title: 'Business Hours',
-      icon: <ClockCircleOutlined />,
-    },
-    {
-      title: 'Final Setup',
-      icon: <CheckCircleOutlined />,
-    },
-  ];
+  // Initialize business hours from initialData
+  const [hourRows, setHourRows] = useState<BusinessHour[]>(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Initializing hourRows with initialData:', initialData);
+    }
+    if (initialData && initialData.businessHours) {
+      // Convert businessHours object to array format
+      const hoursArray: BusinessHour[] = [];
+      const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      
+      daysOfWeek.forEach(day => {
+        const dayHours = initialData.businessHours?.[day];
+        if (dayHours && !dayHours.closed) {
+          hoursArray.push({
+            id: `hour-${day.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            day,
+            openingTime: ensureValidTime(dayHours.open, 9, 0),
+            closingTime: ensureValidTime(dayHours.close, 17, 0),
+          });
+        }
+      });
+      
+      return hoursArray;
+    }
+    
+    // Default to Monday-Sunday 9am-5pm if no initial data
+    return [
+      {
+        id: `hour-monday-${Date.now()}`,
+        day: 'Monday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+      {
+        id: `hour-tuesday-${Date.now()}`,
+        day: 'Tuesday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+      {
+        id: `hour-wednesday-${Date.now()}`,
+        day: 'Wednesday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+      {
+        id: `hour-thursday-${Date.now()}`,
+        day: 'Thursday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+      {
+        id: `hour-friday-${Date.now()}`,
+        day: 'Friday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+      {
+        id: `hour-saturday-${Date.now()}`,
+        day: 'Saturday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+      {
+        id: `hour-sunday-${Date.now()}`,
+        day: 'Sunday',
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
+      },
+    ];
+  });
+
+  // Monitor hourRows changes for debugging
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('hourRows updated:', hourRows.map(row => ({
+        day: row.day,
+        openingTime: dayjs.isDayjs(row.openingTime) ? row.openingTime.format('HH:mm') : 'INVALID',
+        closingTime: dayjs.isDayjs(row.closingTime) ? row.closingTime.format('HH:mm') : 'INVALID',
+        isValid: dayjs.isDayjs(row.openingTime) && row.openingTime.isValid() && dayjs.isDayjs(row.closingTime) && row.closingTime.isValid()
+      })));
+    }
+  }, [hourRows]);
+
+  // Filter steps based on showOnlyBusinessHours prop
+  const steps = showOnlyBusinessHours 
+    ? [
+        {
+          title: 'Business Hours',
+          icon: <ClockCircleOutlined />,
+        }
+      ]
+    : [
+        {
+          title: 'Basic Info',
+          icon: <UserOutlined />,
+        },
+        {
+          title: 'Business Info',
+          icon: <ShopOutlined />,
+        },
+        {
+          title: 'Location',
+          icon: <EnvironmentOutlined />,
+        },
+        {
+          title: 'Business Hours',
+          icon: <ClockCircleOutlined />,
+        },
+        {
+          title: 'Final Setup',
+          icon: <CheckCircleOutlined />,
+        },
+      ];
+
+  // Set initial step based on mode
+  const initialStep = showOnlyBusinessHours ? 0 : 0;
+  
+  // Step management
+  const [currentStep, setCurrentStep] = useState<number>(initialStep);
 
   const handleNext = () => {
+    // In business hours only mode, go directly to submission
+    if (showOnlyBusinessHours) {
+      // Validate that there's at least one business hour set
+      if (hourRows.length === 0) {
+        message.error('Please configure at least one business hour');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        businessHours: hourRows,
+      }));
+      // In business hours only mode, next button becomes submit
+      handleSubmit();
+      return;
+    }
+    
     let isValid = true;
     
-    // Validate current step based on index
+    // Validate current step based on index and mode
     switch(currentStep) {
-      case 0: // Basic Information
-        basicForm.validateFields().then(values => {
+      case 0: // Basic Information or Business Hours depending on mode
+        if (showOnlyBusinessHours) {
+          // Business Hours validation
+          if (hourRows.length === 0) {
+            message.error('Please configure at least one business hour');
+            return;
+          }
           setFormData(prev => ({
             ...prev,
-            fullName: values.fullName,
-            email: values.email,
-            password: values.password,
-            phoneNumber: values.phoneNumber,
+            businessHours: hourRows,
           }));
           setCurrentStep(prev => prev + 1);
-        }).catch(() => {
-          isValid = false;
-          message.error('Please fill in all required fields');
-        });
+        } else {
+          // Basic Information validation
+          basicForm.validateFields().then(values => {
+            setFormData(prev => ({
+              ...prev,
+              fullName: values.fullName,
+              email: values.email,
+              password: values.password,
+              phoneNumber: values.phoneNumber,
+            }));
+            setCurrentStep(prev => prev + 1);
+          }).catch((errorInfo) => {
+            console.log('Basic form validation failed:', errorInfo);
+            message.error('Please fill in all required fields in the Basic Information step');
+          });
+        }
         break;
         
       case 1: // Business Information
@@ -181,9 +386,9 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
             businessDescription: values.businessDescription,
           }));
           setCurrentStep(prev => prev + 1);
-        }).catch(() => {
-          isValid = false;
-          message.error('Please fill in all required fields');
+        }).catch((errorInfo) => {
+          console.log('Business form validation failed:', errorInfo);
+          message.error('Please fill in all required fields in the Business Information step');
         });
         break;
         
@@ -196,23 +401,24 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
             pincode: values.pincode,
           }));
           setCurrentStep(prev => prev + 1);
-        }).catch(() => {
-          isValid = false;
-          message.error('Please fill in all required fields');
+        }).catch((errorInfo) => {
+          console.log('Location form validation failed:', errorInfo);
+          message.error('Please fill in all required fields in the Location Information step');
         });
         break;
         
       case 3: // Business Hours
-        hoursForm.validateFields().then(values => {
-          setFormData(prev => ({
-            ...prev,
-            businessHours: values.businessHours,
-          }));
-          setCurrentStep(prev => prev + 1);
-        }).catch(() => {
-          isValid = false;
-          message.error('Please configure your business hours');
-        });
+        // For business hours, we don't need to validate the form separately since we already manage the state
+        // Just ensure there's at least one business hour set
+        if (hourRows.length === 0) {
+          message.error('Please configure at least one business hour');
+          return;
+        }
+        setFormData(prev => ({
+          ...prev,
+          businessHours: hourRows,
+        }));
+        setCurrentStep(prev => prev + 1);
         break;
         
       default:
@@ -222,22 +428,30 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
   };
 
   const handlePrev = () => {
+    // In business hours only mode, there's no previous step
+    if (showOnlyBusinessHours) {
+      return;
+    }
+    
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
 
-  // Add business hour row
-  const [hourRows, setHourRows] = useState<BusinessHour[]>([]);
-  
+  // Add business hour row - this function is now using the existing hourRows state
   const addHourRow = () => {
+    // Find the first day that doesn't have hours configured yet
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const configuredDays = hourRows.map(row => row.day);
+    const nextAvailableDay = daysOfWeek.find(day => !configuredDays.includes(day)) || 'Monday';
+    
     setHourRows(prev => [
       ...prev,
       {
         id: `hour-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        day: 'Monday',
-        openingTime: dayjs().hour(9).minute(0),
-        closingTime: dayjs().hour(17).minute(0),
+        day: nextAvailableDay,
+        openingTime: ensureValidTime(undefined, 9, 0),
+        closingTime: ensureValidTime(undefined, 17, 0),
       }
     ]);
   };
@@ -248,9 +462,16 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
 
   const updateHourRow = (index: number, field: keyof BusinessHour, value: any) => {
     setHourRows(prev => 
-      prev.map((row, i) => 
-        i === index ? { ...row, [field]: value } : row
-      )
+      prev.map((row, i) => {
+        if (i === index) {
+          // Ensure time values remain valid dayjs objects
+          if (field === 'openingTime' || field === 'closingTime') {
+            return { ...row, [field]: ensureValidTime(value) };
+          }
+          return { ...row, [field]: value };
+        }
+        return row;
+      })
     );
   };
 
@@ -258,15 +479,32 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
     setSubmitting(true);
     
     try {
+      // Validate forms before submission - only validate fields that exist in current mode
+      if (!showOnlyBusinessHours) {
+        // Full onboarding mode - validate all fields
+        if (!formData.fullName || !formData.email || !formData.phoneNumber || !formData.businessName || !formData.businessDescription || !formData.address || !formData.state || !formData.pincode) {
+          message.error('Please fill in all required fields');
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        // Business hours only mode - only validate business hours exist
+        if (hourRows.length === 0) {
+          message.error('Please configure at least one business hour');
+          setSubmitting(false);
+          return;
+        }
+      }
+      
       // Transform the form data to match API expectations
       const businessData = {
         business_name: formData.businessName,
         description: formData.businessDescription,
-        phone: formData.phoneNumber,  // Changed from phone_number to phone
-        email: formData.email,      // Add email field
+        phone: formData.phoneNumber,
+        email: formData.email,
         address: {
           street: formData.address,
-          city: 'Default City', // Provide a default city value
+          city: formData.address.split(',')[0] || 'Default City', // Extract city from address or provide default
           state: formData.state,
           zipCode: formData.pincode,
           country: 'USA' // Default or add to form
@@ -280,13 +518,6 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           closingTime: hour.closingTime.format('HH:mm'),
         }))
       };
-
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
 
       // Submit to backend API - use update if initialData exists, otherwise create
       let response;
@@ -306,7 +537,14 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       }
     } catch (error: any) {
       console.error('Error submitting provider onboarding:', error);
-      message.error(error.message || 'Failed to create provider profile. Please try again.');
+      // More specific error handling
+      if (error.status === 401) {
+        message.error('Session expired. Please log in again.');
+      } else if (error.status === 409) {
+        message.error('A business profile already exists for this account.');
+      } else {
+        message.error(error.message || 'Failed to create/update provider profile. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -318,9 +556,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       title: 'Day',
       dataIndex: 'day',
       key: 'day',
-      render: (_: any, record: BusinessHour) => {
-        // Find the index based on the record's id
-        const index = hourRows.findIndex(row => row.id === record.id);
+      render: (_: any, record: BusinessHour, index: number) => {
         return (
           <Select 
             value={record.day} 
@@ -342,13 +578,29 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       title: 'Opening Time',
       dataIndex: 'openingTime',
       key: 'openingTime',
-      render: (_: any, record: BusinessHour) => {
-        // Find the index based on the record's id
-        const index = hourRows.findIndex(row => row.id === record.id);
+      render: (_: any, record: BusinessHour, index: number) => {
+        // Debug logging for opening time
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Opening TimePicker render for ${record.day} (index ${index}):`, {
+            value: record.openingTime,
+            isValid: dayjs.isDayjs(record.openingTime) ? record.openingTime.isValid() : false,
+            formatted: dayjs.isDayjs(record.openingTime) && record.openingTime.isValid() ? record.openingTime.format('HH:mm') : 'invalid'
+          });
+        }
+        
+        // Only pass valid dayjs objects to TimePicker
+        const validOpeningTime = dayjs.isDayjs(record.openingTime) && record.openingTime.isValid() 
+          ? record.openingTime 
+          : null;
+        
         return (
           <TimePicker
-            value={record.openingTime}
-            onChange={(value) => updateHourRow(index, 'openingTime', value)}
+            value={validOpeningTime}
+            onChange={(value) => {
+              if (value) {
+                updateHourRow(index, 'openingTime', value);
+              }
+            }}
             format="HH:mm"
             style={{ width: '100%' }}
           />
@@ -359,13 +611,29 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       title: 'Closing Time',
       dataIndex: 'closingTime',
       key: 'closingTime',
-      render: (_: any, record: BusinessHour) => {
-        // Find the index based on the record's id
-        const index = hourRows.findIndex(row => row.id === record.id);
+      render: (_: any, record: BusinessHour, index: number) => {
+        // Debug logging for closing time
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Closing TimePicker render for ${record.day} (index ${index}):`, {
+            value: record.closingTime,
+            isValid: dayjs.isDayjs(record.closingTime) ? record.closingTime.isValid() : false,
+            formatted: dayjs.isDayjs(record.closingTime) && record.closingTime.isValid() ? record.closingTime.format('HH:mm') : 'invalid'
+          });
+        }
+        
+        // Only pass valid dayjs objects to TimePicker
+        const validClosingTime = dayjs.isDayjs(record.closingTime) && record.closingTime.isValid() 
+          ? record.closingTime 
+          : null;
+        
         return (
           <TimePicker
-            value={record.closingTime}
-            onChange={(value) => updateHourRow(index, 'closingTime', value)}
+            value={validClosingTime}
+            onChange={(value) => {
+              if (value) {
+                updateHourRow(index, 'closingTime', value);
+              }
+            }}
             format="HH:mm"
             style={{ width: '100%' }}
           />
@@ -375,9 +643,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: any, record: BusinessHour) => {
-        // Find the index based on the record's id
-        const index = hourRows.findIndex(row => row.id === record.id);
+      render: (_: any, record: BusinessHour, index: number) => {
         return (
           <Button 
             type="link" 
@@ -414,84 +680,110 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         
         <Divider />
         
-        {/* Step 1: Basic Information */}
+        {/* Step 1: Basic Information or Business Hours */}
         {currentStep === 0 && (
-          <Form
-            form={basicForm}
-            layout="vertical"
-            initialValues={{
-              fullName: formData.fullName,
-              email: formData.email,
-              password: formData.password,
-              phoneNumber: formData.phoneNumber,
-            }}
-          >
-            <Form.Item
-              label="Full Name"
-              name="fullName"
-              rules={[
-                { required: true, message: 'Please enter your full name' },
-                { min: 2, message: 'Name must be at least 2 characters' },
-                { max: 50, message: 'Name must not exceed 50 characters' }
-              ]}
-            >
-              <Input 
-                placeholder="Enter your full name" 
-                prefix={<UserOutlined />}
-                size="large"
-                readOnly={!!userData?.name}
+          showOnlyBusinessHours ? (
+            // Business Hours Form (when in business hours only mode)
+            <div>
+              <Paragraph>
+                Set your business hours for each day of the week
+              </Paragraph>
+              
+              <Table
+                dataSource={hourRows}
+                columns={columns}
+                pagination={false}
+                rowKey="id"
+                footer={() => (
+                  <Button 
+                    type="dashed" 
+                    onClick={addHourRow}
+                    block
+                  >
+                    + Add Business Hour
+                  </Button>
+                )}
               />
-            </Form.Item>
-                    
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[
-                { required: true, message: 'Please enter your email' },
-                { type: 'email', message: 'Please enter a valid email address' }
-              ]}
+            </div>
+          ) : (
+            // Basic Information Form (when in full onboarding mode)
+            <Form
+              form={basicForm}
+              layout="vertical"
+              initialValues={{
+                fullName: formData.fullName,
+                email: formData.email,
+                password: formData.password,
+                phoneNumber: formData.phoneNumber,
+              }}
             >
-              <Input 
-                placeholder="Enter your email" 
-                type="email"
-                size="large"
-                readOnly={!!userData?.email}
-              />
-            </Form.Item>
-                    
-            <Form.Item
-              label="Phone Number"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: 'Please enter your phone number' },
-                { pattern: /^\+?[1-9]\d{1,14}$/, message: 'Please enter a valid phone number' }
-              ]}
-            >
-              <Input 
-                placeholder="Enter your phone number" 
-                size="large"
-                readOnly={!!userData?.phone}
-              />
-            </Form.Item>
-                    
-            <Form.Item
-              label="Password"
-              name="password"
-              rules={[
-                { required: true, message: 'Please enter your password' },
-                { min: 6, message: 'Password must be at least 6 characters' }
-              ]}
-            >
-              <Input.Password 
-                placeholder="Enter your password" 
-                size="large"
-              />
-            </Form.Item>
-          </Form>
+              <Form.Item
+                label="Full Name"
+                name="fullName"
+                rules={[
+                  { required: true, message: 'Please enter your full name' },
+                  { min: 2, message: 'Name must be at least 2 characters' },
+                  { max: 50, message: 'Name must not exceed 50 characters' }
+                ]}
+              >
+                <Input 
+                  placeholder="Enter your full name" 
+                  prefix={<UserOutlined />}
+                  size="large"
+                  readOnly={!!userData?.name}
+                />
+              </Form.Item>
+                      
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: 'Please enter your email' },
+                  { type: 'email', message: 'Please enter a valid email address' }
+                ]}
+              >
+                <Input 
+                  placeholder="Enter your email" 
+                  type="email"
+                  size="large"
+                  readOnly={!!userData?.email}
+                />
+              </Form.Item>
+                      
+              <Form.Item
+                label="Phone Number"
+                name="phoneNumber"
+                rules={[
+                  { required: true, message: 'Please enter your phone number' },
+                  { pattern: /^\+?[1-9]\d{1,14}$/, message: 'Please enter a valid phone number' }
+                ]}
+              >
+                <Input 
+                  placeholder="Enter your phone number" 
+                  size="large"
+                  readOnly={!!userData?.phone}
+                />
+              </Form.Item>
+                      
+              <Form.Item
+                label="Password"
+                name="password"
+                rules={[
+                  { required: true, message: 'Please enter your password' },
+                  { min: 6, message: 'Password must be at least 6 characters' }
+                ]}
+              >
+                <Input.Password 
+                  placeholder="Enter your password" 
+                  size="large"
+                />
+              </Form.Item>
+            </Form>
+          )
         )}
         
-        {/* Step 2: Business Information */}
-        {currentStep === 1 && (
+        {/* Step 2: Business Information (only shown in full onboarding mode) */}
+        {!showOnlyBusinessHours && currentStep === 1 && (
           <Form
             form={businessForm}
             layout="vertical"
@@ -533,8 +825,8 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           </Form>
         )}
         
-        {/* Step 3: Location Information */}
-        {currentStep === 2 && (
+        {/* Step 3: Location Information (only shown in full onboarding mode) */}
+        {!showOnlyBusinessHours && currentStep === 2 && (
           <Form
             form={locationForm}
             layout="vertical"
@@ -596,41 +888,34 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           </Form>
         )}
         
-        {/* Step 4: Business Hours */}
-        {currentStep === 3 && (
-          <Form
-            form={hoursForm}
-            layout="vertical"
-            initialValues={{
-              businessHours: formData.businessHours,
-            }}
-          >
+        {/* Step 4: Business Hours (moved to step 1 in business hours only mode) */}
+        {/* This step is now handled in the currentStep === 0 conditional above */}
+        {!showOnlyBusinessHours && currentStep === 3 && (
+          <div>
             <Paragraph>
               Set your business hours for each day of the week
             </Paragraph>
             
-            <Form.Item>
-              <Table
-                dataSource={hourRows}
-                columns={columns}
-                pagination={false}
-                rowKey="id"
-                footer={() => (
-                  <Button 
-                    type="dashed" 
-                    onClick={addHourRow}
-                    block
-                  >
-                    + Add Business Hour
-                  </Button>
-                )}
-              />
-            </Form.Item>
-          </Form>
+            <Table
+              dataSource={hourRows}
+              columns={columns}
+              pagination={false}
+              rowKey="id"
+              footer={() => (
+                <Button 
+                  type="dashed" 
+                  onClick={addHourRow}
+                  block
+                >
+                  + Add Business Hour
+                </Button>
+              )}
+            />
+          </div>
         )}
         
-        {/* Step 5: Final Setup */}
-        {currentStep === 4 && (
+        {/* Step 5: Final Setup (only shown in full onboarding mode) */}
+        {!showOnlyBusinessHours && currentStep === 4 && (
           <div>
             <Title level={4} style={{ marginBottom: '24px' }}>
               Review Your Information
@@ -640,6 +925,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
               <Title level={5}>Basic Information</Title>
               <Paragraph><strong>Name:</strong> {formData.fullName}</Paragraph>
               <Paragraph><strong>Email:</strong> {formData.email}</Paragraph>
+              <Paragraph><strong>Phone:</strong> {formData.phoneNumber}</Paragraph>
             </Card>
             
             <Card style={{ marginBottom: '16px' }}>
@@ -676,15 +962,28 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         <Divider />
         
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button 
-            disabled={currentStep === 0} 
-            onClick={handlePrev}
-            size="large"
-          >
-            Previous
-          </Button>
+          {/* Show Previous button only in full onboarding mode */}
+          {!showOnlyBusinessHours && (
+            <Button 
+              disabled={currentStep === 0} 
+              onClick={handlePrev}
+              size="large"
+            >
+              Previous
+            </Button>
+          )}
           
-          {currentStep < 4 ? (
+          {/* In business hours only mode, show Save button */}
+          {showOnlyBusinessHours ? (
+            <Button 
+              type="primary" 
+              onClick={handleNext}
+              size="large"
+              loading={submitting}
+            >
+              Save Business Hours
+            </Button>
+          ) : currentStep < 4 ? (
             <Button 
               type="primary" 
               onClick={handleNext}

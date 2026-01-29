@@ -1,6 +1,6 @@
 require('dotenv').config({ path: '.env.local' });
 const mongoose = require('mongoose');
-const User = require('./models/User');
+const User = require('./models/User.ts');
 const bcrypt = require('bcryptjs');
 
 async function createTestUser() {

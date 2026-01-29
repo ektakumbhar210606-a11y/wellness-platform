@@ -32,6 +32,7 @@ const ProviderDashboardContent = () => {
   const [editingService, setEditingService] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState(false);
+  const [editingBusinessHours, setEditingBusinessHours] = useState(false);
 
   // Fetch dashboard statistics
   const fetchDashboardStats = React.useCallback(async () => {
@@ -271,6 +272,11 @@ const ProviderDashboardContent = () => {
     fetchBusinessProfile();
   }, [isAuthenticated, user, router, searchParams]);
   
+  // Effect to log business data when it changes
+  useEffect(() => {
+    console.log('Business data changed:', business);
+  }, [business]);
+  
   // Effect to update active tab when URL parameters change
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
@@ -394,12 +400,30 @@ const ProviderDashboardContent = () => {
   
   // Handle opening business profile edit
   const handleEditBusinessProfile = () => {
-    setEditingBusiness(true);
+    if (business) {
+      setEditingBusiness(true);
+    } else {
+      message.warning('Business profile data is not available yet. Please try again.');
+    }
   };
   
   // Handle closing business profile edit
   const handleCloseBusinessEdit = () => {
     setEditingBusiness(false);
+  };
+  
+  // Handle opening business hours edit
+  const handleEditBusinessHours = () => {
+    if (business) {
+      setEditingBusinessHours(true);
+    } else {
+      message.warning('Business profile data is not available yet. Please try again.');
+    }
+  };
+  
+  // Handle closing business hours edit
+  const handleCloseBusinessHoursEdit = () => {
+    setEditingBusinessHours(false);
   };
   
   // Handle submitting business profile update
@@ -566,19 +590,9 @@ const ProviderDashboardContent = () => {
               </Row>
 
               <Row gutter={[16, 16]}>
-                <Col span={16}>
+                <Col span={24}>
                   <Card title="Recent Bookings" style={{ height: '300px' }}>
                     <Text>No recent bookings. Keep promoting your services!</Text>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card title="Quick Actions">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <Button type="primary">View Calendar</Button>
-                      <Button onClick={() => setModalVisible(true)} icon={<PlusOutlined />}>Manage Services</Button>
-                      <Button>Update Profile</Button>
-                      <Button>View Earnings</Button>
-                    </div>
                   </Card>
                 </Col>
               </Row>
@@ -998,7 +1012,7 @@ const ProviderDashboardContent = () => {
                         )}
                         
                         <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                          <Button type="primary">Update Business Hours</Button>
+                          <Button type="primary" onClick={handleEditBusinessHours}>Update Business Hours</Button>
                         </div>
                       </div>
                     ) : (
@@ -1036,7 +1050,7 @@ const ProviderDashboardContent = () => {
         onCancel={handleCloseBusinessEdit}
         footer={null}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         <ProviderOnboarding 
           onComplete={() => {
@@ -1059,6 +1073,37 @@ const ProviderDashboardContent = () => {
             phone: business?.phone || '',
           }}
           initialData={business}
+        />
+      </Modal>
+      
+      {/* Business Hours Edit Modal */}
+      <Modal
+        title="Update Business Hours"
+        open={editingBusinessHours}
+        onCancel={handleCloseBusinessHoursEdit}
+        footer={null}
+        width={800}
+        destroyOnHidden
+      >
+        <ProviderOnboarding 
+          onComplete={(updatedData) => {
+            message.success('Business hours updated successfully!');
+            handleCloseBusinessHoursEdit();
+            // Refresh the business profile to show updated hours
+            const refreshProfile = async () => {
+              try {
+                const profile = await businessService.getBusinessProfile();
+                setBusiness(profile);
+              } catch (error) {
+                console.error('Error refreshing business profile:', error);
+                message.error('Failed to refresh business hours display');
+              }
+            };
+            refreshProfile();
+          }}
+          userData={undefined}
+          initialData={business}
+          showOnlyBusinessHours={true}
         />
       </Modal>
     </div>
