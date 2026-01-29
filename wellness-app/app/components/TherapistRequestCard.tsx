@@ -232,11 +232,18 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
       
       {request.status !== 'pending' && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-          <Text type="secondary">
-            {request.status === 'approved' 
-              ? `Approved on: ${request.approvedAt ? new Date(request.approvedAt).toLocaleDateString() : 'N/A'}` 
-              : 'Request rejected'}
-          </Text>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text type="secondary">
+              {request.status === 'approved' 
+                ? `Approved on: ${request.approvedAt ? new Date(request.approvedAt).toLocaleDateString() : 'N/A'}` 
+                : 'Request rejected'}
+            </Text>
+            {request.status === 'approved' && (
+              <Button type="primary" size="small">
+                Assign Task
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </Card>
