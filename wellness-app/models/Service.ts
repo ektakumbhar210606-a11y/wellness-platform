@@ -7,6 +7,7 @@ import { IServiceCategory } from './ServiceCategory'; // Import the ServiceCateg
 export interface IService extends Document {
   business: IBusiness['_id'] | IBusiness; // Reference to Business model
   serviceCategory: IServiceCategory['_id'] | IServiceCategory; // Reference to ServiceCategory model
+  name: string; // Service name
   price: number; // Service price
   duration: number; // Duration in minutes
   description?: string; // Optional service description
@@ -27,6 +28,12 @@ const ServiceSchema: Schema<IService> = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'ServiceCategory',
     required: [true, 'Service category is required'],
+  },
+  name: {
+    type: String,
+    required: [true, 'Service name is required'],
+    trim: true,
+    maxlength: [100, 'Service name cannot exceed 100 characters']
   },
   price: {
     type: Number,

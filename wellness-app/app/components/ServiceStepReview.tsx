@@ -26,6 +26,9 @@ const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({
       <div className="mt-6">
         <Title level={5}>Service Details</Title>
         <Descriptions bordered column={1}>
+          <Descriptions.Item label="Service Type">
+            {formData.serviceCategoryName || <Text type="secondary">Not provided</Text>}
+          </Descriptions.Item>
           <Descriptions.Item label="Service Name">
             {formData.name || <Text type="secondary">Not provided</Text>}
           </Descriptions.Item>
