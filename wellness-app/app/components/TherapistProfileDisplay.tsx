@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Card, Descriptions, Tag, Space, Typography, Divider } from 'antd';
+import { Card, Descriptions, Tag, Space, Typography, Divider, Button } from 'antd';
+import { useRouter } from 'next/navigation';
 import { 
   UserOutlined, 
   MailOutlined, 
@@ -21,6 +22,7 @@ interface TherapistProfileDisplayProps {
 }
 
 const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profile }) => {
+  const router = useRouter();
   console.log('TherapistProfileDisplay received profile:', {
     hasProfile: !!profile,
     fullName: profile?.fullName,
@@ -209,6 +211,17 @@ const TherapistProfileDisplay: React.FC<TherapistProfileDisplayProps> = ({ profi
       >
         {getAvailabilityDisplay()}
       </Card>
+
+      {/* Edit Profile Button */}
+      <div style={{ textAlign: 'center', marginTop: 24 }}>
+        <Button 
+          type="primary" 
+          size="large"
+          onClick={() => router.push('/dashboard/therapist/profile')}
+        >
+          Edit Profile
+        </Button>
+      </div>
     </div>
   );
 };

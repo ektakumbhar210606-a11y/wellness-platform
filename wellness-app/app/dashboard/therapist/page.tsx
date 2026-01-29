@@ -426,7 +426,7 @@ const TherapistDashboardPage = () => {
                     </Row>
 
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                      <Col xs={24} md={16}>
+                      <Col span={24}>
                         <Card title="Recent Activity" style={{ height: '100%' }}>
                           {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
                             <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
@@ -442,25 +442,6 @@ const TherapistDashboardPage = () => {
                               <p>No recent activity yet.</p>
                             </div>
                           )}
-                        </Card>
-                                      
-
-                      </Col>
-                      <Col xs={24} md={8}>
-                        <Card title="Quick Actions">
-                          <Space vertical style={{ width: '100%' }}>
-                            {therapistData && (
-                              <Button 
-                                type="primary" 
-                                block
-                                onClick={() => router.push('/dashboard/therapist/profile')}
-                              >
-                                Edit Profile
-                              </Button>
-                            )}
-                            <Button block onClick={() => router.push('/dashboard/therapist/schedule')}>View Schedule</Button>
-                            <Button block onClick={() => router.push('/dashboard/therapist/availability')}>Manage Availability</Button>
-                          </Space>
                         </Card>
                       </Col>
                     </Row>

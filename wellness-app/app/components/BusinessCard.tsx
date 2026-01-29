@@ -118,7 +118,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
           )}
           
           {/* Business Address */}
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Space>
               <EnvironmentOutlined />
               <Text className="responsive-caption" ellipsis>
@@ -128,7 +128,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
           </Space>
           
           {/* Contact Information */}
-          <Space wrap direction="vertical" style={{ width: '100%' }}>
+          <Space wrap orientation="vertical" style={{ width: '100%' }}>
             {business.phone && (
               <Space>
                 <PhoneOutlined />
@@ -154,7 +154,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
           </Space>
           
           {/* Business Hours */}
-          <Space direction="vertical" style={{ width: '100%' }} className="responsive-caption">
+          <Space orientation="vertical" style={{ width: '100%' }} className="responsive-caption">
             <Space>
               <ClockCircleOutlined />
               <Text className="responsive-caption" ellipsis>
