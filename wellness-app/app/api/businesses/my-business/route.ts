@@ -72,6 +72,8 @@ export async function GET(request: NextRequest) {
       id: business._id,
       business_name: business.name,
       description: business.description,
+      serviceType: business.serviceType,
+      serviceName: business.serviceName,
       address: business.address,
       phone: business.phone,
       email: business.email,

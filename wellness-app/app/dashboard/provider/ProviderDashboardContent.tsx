@@ -508,6 +508,12 @@ const ProviderDashboardContent = () => {
                             <Text strong style={{ fontSize: '16px' }}>{business.business_name}</Text>
                             <br />
                             <Text type="secondary">{business.description}</Text>
+                            {business.serviceName && (
+                              <>
+                                <br />
+                                <Text><strong>Service:</strong> {business.serviceName}</Text>
+                              </>
+                            )}
                           </div>
                         </div>
                       </Col>
@@ -918,6 +924,14 @@ const ProviderDashboardContent = () => {
                                 <Text strong>Description:</Text>
                                 <br />
                                 <Text type="secondary">{business.description}</Text>
+                              </div>
+                            )}
+                            
+                            {business.serviceName && (
+                              <div style={{ marginBottom: '15px' }}>
+                                <Text strong>Service:</Text>
+                                <br />
+                                <Text>{business.serviceName}</Text>
                               </div>
                             )}
                             

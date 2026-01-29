@@ -305,6 +305,8 @@ export interface BusinessProfile {
   id?: string;
   business_name: string;
   description?: string;
+  serviceType?: string;
+  serviceName?: string;
   address: {
     street: string;
     city: string;
