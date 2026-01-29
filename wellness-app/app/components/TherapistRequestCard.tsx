@@ -25,6 +25,7 @@ interface TherapistRequestProps {
     availability?: string | object;
     experience?: number;
     skills?: string[];
+    areaOfExpertise?: string[];
   };
   onApprove: (therapistId: string) => void;
   onReject: (therapistId: string) => void;
@@ -216,6 +217,19 @@ const TherapistRequestCard: React.FC<TherapistRequestProps> = ({
                 {request.specialties.map((specialty, index) => (
                   <Tag key={index} color="blue">
                     {specialty}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+          )}
+          
+          {request.areaOfExpertise && request.areaOfExpertise.length > 0 && (
+            <div>
+              <Text strong>Area of Expertise: </Text>
+              <Space wrap={true}>
+                {request.areaOfExpertise.map((expertise, index) => (
+                  <Tag key={index} color="geekblue">
+                    {expertise.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Tag>
                 ))}
               </Space>

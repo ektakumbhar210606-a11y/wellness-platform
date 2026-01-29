@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     }).populate({
       path: 'user',
       select: 'firstName lastName email phone'
-    }).select('+fullName +professionalTitle +bio +location +certifications +licenseNumber +weeklyAvailability')
+    }).select('+fullName +professionalTitle +bio +location +certifications +licenseNumber +weeklyAvailability +areaOfExpertise')
     .lean();
 
     // Separate and organize therapists by status
@@ -146,7 +146,8 @@ export async function GET(req: NextRequest) {
           location: therapist.location,
           certifications: therapist.certifications,
           licenseNumber: therapist.licenseNumber,
-          weeklyAvailability: therapist.weeklyAvailability
+          weeklyAvailability: therapist.weeklyAvailability,
+          areaOfExpertise: therapist.areaOfExpertise
         };
 
         if (businessAssociation.status === 'approved') {
