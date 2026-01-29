@@ -825,7 +825,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
                 options={[
                   { value: 'massage', label: 'Massage Therapy' },
                   { value: 'spa', label: 'Spa Services' },
-                  { value: 'wellness', label: 'Wellness Program' },
+                  { value: 'wellness', label: 'Wellness Programs' }, // Updated to match requirement
                   { value: 'corporate', label: 'Corporate Wellness' }
                 ]}
               />

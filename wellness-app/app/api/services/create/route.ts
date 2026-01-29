@@ -72,22 +72,22 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { serviceCategoryId, name, price, duration, description, images, teamMembers, therapists } = body;
+    const { serviceCategoryId, price, duration, description, images, teamMembers, therapists } = body;
 
     // Validate required fields
-    if (!serviceCategoryId || !name || !price || !duration || !description) {
+    if (!serviceCategoryId || !price || !duration || !description) {
       return NextResponse.json(
-        { error: 'Missing required fields: serviceCategoryId, name, price, duration, and description are required' },
+        { error: 'Missing required fields: serviceCategoryId, price, duration, and description are required' },
         { status: 400 }
       );
     }
 
     // Validate data types
-    if (typeof serviceCategoryId !== 'string' || typeof name !== 'string' || typeof description !== 'string' || 
+    if (typeof serviceCategoryId !== 'string' || typeof description !== 'string' || 
         typeof price !== 'number' || typeof duration !== 'number' ||
         (therapists && !Array.isArray(therapists))) {
       return NextResponse.json(
-        { error: 'Invalid data types: serviceCategoryId, name and description must be strings; price and duration must be numbers; therapists must be an array' },
+        { error: 'Invalid data types: serviceCategoryId and description must be strings; price and duration must be numbers; therapists must be an array' },
         { status: 400 }
       );
     }
@@ -123,7 +123,6 @@ export async function POST(req: NextRequest) {
     const newService = new ServiceModel({
       business: business._id,
       serviceCategory: serviceCategoryId,
-      name,
       price,
       duration,
       description,
@@ -146,7 +145,6 @@ export async function POST(req: NextRequest) {
             id: populatedService.serviceCategory._id.toString(),
             name: populatedService.serviceCategory.name
           },
-          name: populatedService.name,
           price: populatedService.price,
           duration: populatedService.duration,
           description: populatedService.description,

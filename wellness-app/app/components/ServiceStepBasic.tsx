@@ -6,7 +6,6 @@ const { Title } = Typography;
 
 interface ServiceFormData {
   serviceCategoryId?: string;
-  serviceCategoryName?: string;
   price?: number;
   duration?: number;
   description?: string;
@@ -38,43 +37,8 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   const [form] = Form.useForm();
   const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  
-  // Define service names based on service type
-  const serviceNamesByType: Record<string, string[]> = {
-    "Massage Therapy": [
-      "Swedish Massage",
-      "Deep Tissue Massage",
-      "Aromatherapy Massage",
-      "Hot Stone Massage",
-      "Thai Massage",
-      "Reflexology (Foot Massage)",
-      "Head, Neck & Shoulder Massage"
-    ],
-    "Spa Services": [
-      "Facial Treatments (Basic / Advanced)",
-      "Body Scrub & Body Polishing",
-      "Body Wrap Therapy",
-      "Manicure & Pedicure",
-      "Hair Spa Treatment"
-    ],
-    "Wellness Programs": [
-      "Meditation & Mindfulness Programs",
-      "Weight Management Programs",
-      "Stress Management Therapy",
-      "Detox & Lifestyle Improvement Programs",
-      "Mental Wellness Counseling",
-      "Sleep Improvement Programs"
-    ],
-    "Corporate Wellness": [
-      "Stress Management Therapy",
-      "Mental Wellness Counseling",
-      "Workplace Ergonomics Programs",
-      "Team Building Wellness Activities",
-      "Corporate Fitness Programs",
-      "Workplace Stress Management",
-      "Meditation & Mindfulness Programs"
-    ]
-  };
+  const [serviceNameOptions, setServiceNameOptions] = useState<{value: string, label: string}[]>([]);
+  const [selectedServiceType, setSelectedServiceType] = useState<string>('');
 
   // Fetch service categories
   useEffect(() => {
@@ -84,7 +48,19 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
         const result = await response.json();
         
         if (result.success && Array.isArray(result.data)) {
-          setServiceCategories(result.data);
+          // Filter to only include the four required service types
+          const requiredCategories = [
+            'Massage Therapy',
+            'Spa Services', 
+            'Wellness Programs',
+            'Corporate Wellness'
+          ];
+          
+          const filteredCategories = result.data.filter((category: {id: string, name: string}) => 
+            requiredCategories.includes(category.name)
+          );
+          
+          setServiceCategories(filteredCategories);
         }
       } catch (error) {
         console.error('Failed to fetch service categories:', error);
@@ -103,34 +79,89 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   
   // Handle field changes and update parent state
   const handleFieldChange = (field: string, value: any) => {
-    // Handle field changes and update parent state
-    let newData = {
-      ...formData,
-      [field]: value,
-    };
-    
-    // If changing service category, reset the service name as it will be filtered differently
-    if (field === 'serviceCategoryId') {
-      newData = {
-        ...newData,
-        name: undefined, // Reset name when category changes
-      };
-    }
-    
-    setFormData(newData);
-    
-    // Also update the form's internal state to keep it in sync
-    form.setFieldsValue(newData);
-    
-    // Store the service category name for display purposes
+    // Special handling for serviceCategoryId - update service name options
     if (field === 'serviceCategoryId') {
       const selectedCategory = serviceCategories.find(cat => cat.id === value);
-      if (selectedCategory) {
-        setFormData((prev: ServiceFormData) => ({
-          ...prev,
-          serviceCategoryName: selectedCategory.name
-        }));
+      const serviceTypeName = selectedCategory ? selectedCategory.name : '';
+      
+      // Update the selected service type state
+      setSelectedServiceType(serviceTypeName);
+      
+      // Set the service name options based on the selected service type
+      let options: {value: string, label: string}[] = [];
+      switch(serviceTypeName) {
+        case 'Massage Therapy':
+          options = [
+            { value: 'Swedish Massage', label: 'Swedish Massage' },
+            { value: 'Deep Tissue Massage', label: 'Deep Tissue Massage' },
+            { value: 'Aromatherapy Massage', label: 'Aromatherapy Massage' },
+            { value: 'Hot Stone Massage', label: 'Hot Stone Massage' },
+            { value: 'Thai Massage', label: 'Thai Massage' },
+            { value: 'Reflexology (Foot Massage)', label: 'Reflexology (Foot Massage)' },
+            { value: 'Head, Neck & Shoulder Massage', label: 'Head, Neck & Shoulder Massage' }
+          ];
+          break;
+        case 'Spa Services':
+          options = [
+            { value: 'Facial Treatments (Basic / Advanced)', label: 'Facial Treatments (Basic / Advanced)' },
+            { value: 'Body Scrub & Body Polishing', label: 'Body Scrub & Body Polishing' },
+            { value: 'Body Wrap Therapy', label: 'Body Wrap Therapy' },
+            { value: 'Manicure & Pedicure', label: 'Manicure & Pedicure' },
+            { value: 'Hair Spa Treatment', label: 'Hair Spa Treatment' }
+          ];
+          break;
+        case 'Wellness Programs':
+          options = [
+            { value: 'Meditation & Mindfulness Programs', label: 'Meditation & Mindfulness Programs' },
+            { value: 'Weight Management Programs', label: 'Weight Management Programs' },
+            { value: 'Stress Management Therapy', label: 'Stress Management Therapy' },
+            { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
+            { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
+            { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' }
+          ];
+          break;
+        case 'Corporate Wellness':
+          options = [
+            { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
+            { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
+            { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' },
+            { value: 'Workplace Ergonomics Programs', label: 'Workplace Ergonomics Programs' }
+          ];
+          break;
+        default:
+          options = [];
       }
+      setServiceNameOptions(options);
+      
+      setFormData({
+        ...formData,
+        serviceCategoryId: value,
+        name: '', // Reset service name when service type changes
+      });
+      
+      // Update form's internal state
+      form.setFieldsValue({ 
+        serviceCategoryId: value,
+        name: '' // Reset service name when service type changes
+      });
+    } else if (field === 'name') { // Handle service name selection
+      setFormData({
+        ...formData,
+        name: value,
+      });
+      
+      // Update form's internal state
+      form.setFieldsValue({ 
+        name: value
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [field]: value,
+      });
+      
+      // Also update the form's internal state to keep it in sync
+      form.setFieldsValue({ [field]: value });
     }
   };
 
@@ -165,20 +196,76 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
           const fieldName = Object.keys(changedValues)[0];
           const fieldValue = changedValues[fieldName];
           
-          let newData = {
-            ...formData,
-            [fieldName]: fieldValue,
-          };
-          
-          // If changing service category, reset the service name as it will be filtered differently
+          // Special handling for serviceCategoryId to update service name options
           if (fieldName === 'serviceCategoryId') {
-            newData = {
-              ...newData,
-              name: undefined, // Reset name when category changes
-            };
+            const selectedCategory = serviceCategories.find(cat => cat.id === fieldValue);
+            const serviceTypeName = selectedCategory ? selectedCategory.name : '';
+            
+            // Update the selected service type state
+            setSelectedServiceType(serviceTypeName);
+            
+            // Set the service name options based on the selected service type
+            let options: {value: string, label: string}[] = [];
+            switch(serviceTypeName) {
+              case 'Massage Therapy':
+                options = [
+                  { value: 'Swedish Massage', label: 'Swedish Massage' },
+                  { value: 'Deep Tissue Massage', label: 'Deep Tissue Massage' },
+                  { value: 'Aromatherapy Massage', label: 'Aromatherapy Massage' },
+                  { value: 'Hot Stone Massage', label: 'Hot Stone Massage' },
+                  { value: 'Thai Massage', label: 'Thai Massage' },
+                  { value: 'Reflexology (Foot Massage)', label: 'Reflexology (Foot Massage)' },
+                  { value: 'Head, Neck & Shoulder Massage', label: 'Head, Neck & Shoulder Massage' }
+                ];
+                break;
+              case 'Spa Services':
+                options = [
+                  { value: 'Facial Treatments (Basic / Advanced)', label: 'Facial Treatments (Basic / Advanced)' },
+                  { value: 'Body Scrub & Body Polishing', label: 'Body Scrub & Body Polishing' },
+                  { value: 'Body Wrap Therapy', label: 'Body Wrap Therapy' },
+                  { value: 'Manicure & Pedicure', label: 'Manicure & Pedicure' },
+                  { value: 'Hair Spa Treatment', label: 'Hair Spa Treatment' }
+                ];
+                break;
+              case 'Wellness Programs':
+                options = [
+                  { value: 'Meditation & Mindfulness Programs', label: 'Meditation & Mindfulness Programs' },
+                  { value: 'Weight Management Programs', label: 'Weight Management Programs' },
+                  { value: 'Stress Management Therapy', label: 'Stress Management Therapy' },
+                  { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
+                  { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
+                  { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' }
+                ];
+                break;
+              case 'Corporate Wellness':
+                options = [
+                  { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
+                  { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
+                  { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' },
+                  { value: 'Workplace Ergonomics Programs', label: 'Workplace Ergonomics Programs' }
+                ];
+                break;
+              default:
+                options = [];
+            }
+            setServiceNameOptions(options);
+            
+            setFormData((prev: ServiceFormData) => ({
+              ...prev,
+              serviceCategoryId: fieldValue,
+              name: '', // Reset service name when service type changes
+            }));
+          } else if (fieldName === 'name') { // Handle service name selection
+            setFormData((prev: ServiceFormData) => ({
+              ...prev,
+              name: fieldValue,
+            }));
+          } else {
+            setFormData((prev: ServiceFormData) => ({
+              ...prev,
+              [fieldName]: fieldValue
+            }));
           }
-          
-          setFormData(newData);
         }}
         className="form-responsive"
       >
@@ -212,20 +299,16 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
           rules={[
             { 
               required: true, 
-              message: 'Service name is required' 
+              message: 'Please select a service name' 
             }
           ]}
         >
           <Select
+            showSearch
             placeholder="Select a service name"
-            disabled={!formData.serviceCategoryId}
-            options={
-              formData.serviceCategoryId 
-                ? serviceNamesByType[
-                    serviceCategories.find(cat => cat.id === formData.serviceCategoryId)?.name || ""
-                  ]?.map(name => ({ value: name, label: name })) || []
-                : [{ value: '', label: 'Please select a service type first' }]
-            }
+            optionFilterProp="label"
+            disabled={!selectedServiceType} // Disable when no service type is selected
+            options={serviceNameOptions}
             onChange={(value) => handleFieldChange('name', value)}
           />
         </Form.Item>
