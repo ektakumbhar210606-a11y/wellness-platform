@@ -9,6 +9,24 @@ const defaultCategories = [
     isActive: true
   },
   {
+    name: "Spa Services",
+    slug: "spa-services",
+    description: "Comprehensive spa treatments including facials, body scrubs, and relaxation therapies",
+    isActive: true
+  },
+  {
+    name: "Wellness Programs",
+    slug: "wellness-programs",
+    description: "Holistic wellness programs including meditation, mindfulness, and lifestyle coaching",
+    isActive: true
+  },
+  {
+    name: "Corporate Wellness",
+    slug: "corporate-wellness",
+    description: "Corporate wellness solutions including workplace stress management and team building activities",
+    isActive: true
+  },
+  {
     name: "Physiotherapy",
     slug: "physiotherapy",
     description: "Physical therapy and rehabilitation services for injury recovery and mobility improvement",

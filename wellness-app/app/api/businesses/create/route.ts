@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { business_name, description, service_type, address, opening_time, closing_time, businessHours, status, phone, email } = body;
+    const { business_name, description, service_type, service_name, address, opening_time, closing_time, businessHours, status, phone, email } = body;
 
     // Validate required fields
     if (!business_name || !address) {
@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
       name: business_name.trim(),
       description: description || '', // Use description if provided
       serviceType: service_type || 'massage', // Default to massage if not provided
+      serviceName: service_name || '', // Use service name if provided
       phone: phone || '',
       email: email || '',
       address: address, // Assuming address is an object with street, city, state, zipCode, country
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
         owner: savedBusiness.owner,
         name: savedBusiness.name,
         serviceType: savedBusiness.serviceType,
+        serviceName: savedBusiness.serviceName,
         address: savedBusiness.address,
         openingTime: savedBusiness.openingTime,
         closingTime: savedBusiness.closingTime,

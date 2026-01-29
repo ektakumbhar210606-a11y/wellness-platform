@@ -306,6 +306,7 @@ export interface BusinessProfile {
   business_name: string;
   description?: string;
   serviceType?: 'massage' | 'spa' | 'wellness' | 'corporate';
+  serviceName?: string;
   address: {
     street: string;
     city: string;

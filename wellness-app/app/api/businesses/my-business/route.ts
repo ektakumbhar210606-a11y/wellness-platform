@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
       business_name: business.name,
       description: business.description,
       serviceType: business.serviceType,
+      serviceName: business.serviceName,
       address: business.address,
       phone: business.phone,
       email: business.email,

@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { business_name, description, service_type, address, opening_time, closing_time, businessHours, status, phone, email, website } = body;
+    const { business_name, description, service_type, service_name, address, opening_time, closing_time, businessHours, status, phone, email, website } = body;
 
     // Import Business model
     const businessModule = await import('@/models/Business');
@@ -77,6 +77,7 @@ export async function PUT(request: NextRequest) {
     if (business_name) updateData.name = business_name.trim();
     if (description !== undefined) updateData.description = description;
     if (service_type !== undefined) updateData.serviceType = service_type;
+    if (service_name !== undefined) updateData.serviceName = service_name;
     if (address) updateData.address = address;
     if (opening_time) updateData.openingTime = opening_time;
     if (closing_time) updateData.closingTime = closing_time;
@@ -122,6 +123,7 @@ export async function PUT(request: NextRequest) {
       name: updatedBusiness.name,
       description: updatedBusiness.description,
       serviceType: updatedBusiness.serviceType,
+      serviceName: updatedBusiness.serviceName,
       phone: updatedBusiness.phone,
       email: updatedBusiness.email,
       website: updatedBusiness.website,

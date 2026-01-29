@@ -44,6 +44,7 @@ export interface IBusiness extends Document {
   name: string;
   description?: string; // Business description
   serviceType?: ServiceType; // Service type of the business
+  serviceName?: string; // Specific service name
   address: IAddress;
   phone?: string; // Business phone number
   email?: string; // Business email
@@ -100,6 +101,11 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
       values: Object.values(ServiceType),
       message: 'Service type must be one of: massage, spa, wellness, corporate'
     }
+  },
+  serviceName: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Service name cannot exceed 100 characters']
   },
   phone: {
     type: String,

@@ -85,6 +85,7 @@ interface FormData {
   businessName: string;
   businessDescription: string;
   serviceType: string;
+  serviceName: string;
   address: string;
   state: string;
   pincode: string;
@@ -120,6 +121,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         businessName: initialData.name || initialData.business_name || '',
         businessDescription: initialData.description || '',
         serviceType: initialData.serviceType || '',
+        serviceName: initialData.serviceName || '',
         address: initialData.address?.street || '',
         state: initialData.address?.state || '',
         pincode: initialData.address?.zipCode || '',
@@ -135,6 +137,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       businessName: '',
       businessDescription: '',
       serviceType: '',
+      serviceName: '',
       address: '',
       state: '',
       pincode: '',
@@ -159,6 +162,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           businessName: initialData.name || initialData.business_name || '',
           businessDescription: initialData.description || '',
           serviceType: initialData.serviceType || '',
+          serviceName: initialData.serviceName || '',
           address: initialData.address?.street || '',
           state: initialData.address?.state || '',
           pincode: initialData.address?.zipCode || '',
@@ -383,6 +387,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
             businessName: values.businessName,
             businessDescription: values.businessDescription,
             serviceType: values.serviceType,
+            serviceName: values.serviceName,
           }));
           setCurrentStep(prev => prev + 1);
         }).catch((errorInfo) => {
@@ -500,6 +505,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         business_name: formData.businessName,
         description: formData.businessDescription,
         service_type: formData.serviceType,
+        service_name: formData.serviceName,
         phone: formData.phoneNumber,
         email: formData.email,
         address: {
@@ -821,6 +827,39 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
                   { value: 'spa', label: 'Spa Services' },
                   { value: 'wellness', label: 'Wellness Program' },
                   { value: 'corporate', label: 'Corporate Wellness' }
+                ]}
+              />
+            </Form.Item>
+            
+            <Form.Item
+              label="Service Name"
+              name="serviceName"
+              rules={[{ required: true, message: 'Please select a service name' }]}
+            >
+              <Select 
+                placeholder="Select your service" 
+                size="large"
+                showSearch
+                optionFilterProp="children"
+                options={[
+                  { value: 'Swedish Massage', label: 'Swedish Massage' },
+                  { value: 'Deep Tissue Massage', label: 'Deep Tissue Massage' },
+                  { value: 'Aromatherapy Massage', label: 'Aromatherapy Massage' },
+                  { value: 'Hot Stone Massage', label: 'Hot Stone Massage' },
+                  { value: 'Thai Massage', label: 'Thai Massage' },
+                  { value: 'Reflexology (Foot Massage)', label: 'Reflexology (Foot Massage)' },
+                  { value: 'Head, Neck & Shoulder Massage', label: 'Head, Neck & Shoulder Massage' },
+                  { value: 'Facial Treatments (Basic / Advanced)', label: 'Facial Treatments (Basic / Advanced)' },
+                  { value: 'Body Scrub & Body Polishing', label: 'Body Scrub & Body Polishing' },
+                  { value: 'Body Wrap Therapy', label: 'Body Wrap Therapy' },
+                  { value: 'Manicure & Pedicure', label: 'Manicure & Pedicure' },
+                  { value: 'Hair Spa Treatment', label: 'Hair Spa Treatment' },
+                  { value: 'Meditation & Mindfulness Programs', label: 'Meditation & Mindfulness Programs' },
+                  { value: 'Weight Management Programs', label: 'Weight Management Programs' },
+                  { value: 'Stress Management Therapy', label: 'Stress Management Therapy' },
+                  { value: 'Detox & Lifestyle Improvement Programs', label: 'Detox & Lifestyle Improvement Programs' },
+                  { value: 'Mental Wellness Counseling', label: 'Mental Wellness Counseling' },
+                  { value: 'Sleep Improvement Programs', label: 'Sleep Improvement Programs' }
                 ]}
               />
             </Form.Item>
