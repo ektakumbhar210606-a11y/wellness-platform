@@ -6,6 +6,7 @@ const { Title } = Typography;
 
 interface ServiceFormData {
   serviceCategoryId?: string;
+  serviceCategoryName?: string;
   price?: number;
   duration?: number;
   description?: string;
@@ -37,6 +38,43 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   const [form] = Form.useForm();
   const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  
+  // Define service names based on service type
+  const serviceNamesByType: Record<string, string[]> = {
+    "Massage Therapy": [
+      "Swedish Massage",
+      "Deep Tissue Massage",
+      "Aromatherapy Massage",
+      "Hot Stone Massage",
+      "Thai Massage",
+      "Reflexology (Foot Massage)",
+      "Head, Neck & Shoulder Massage"
+    ],
+    "Spa Services": [
+      "Facial Treatments (Basic / Advanced)",
+      "Body Scrub & Body Polishing",
+      "Body Wrap Therapy",
+      "Manicure & Pedicure",
+      "Hair Spa Treatment"
+    ],
+    "Wellness Programs": [
+      "Meditation & Mindfulness Programs",
+      "Weight Management Programs",
+      "Stress Management Therapy",
+      "Detox & Lifestyle Improvement Programs",
+      "Mental Wellness Counseling",
+      "Sleep Improvement Programs"
+    ],
+    "Corporate Wellness": [
+      "Stress Management Therapy",
+      "Mental Wellness Counseling",
+      "Workplace Ergonomics Programs",
+      "Team Building Wellness Activities",
+      "Corporate Fitness Programs",
+      "Workplace Stress Management",
+      "Meditation & Mindfulness Programs"
+    ]
+  };
 
   // Fetch service categories
   useEffect(() => {
@@ -65,30 +103,34 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   
   // Handle field changes and update parent state
   const handleFieldChange = (field: string, value: any) => {
-    // Special handling for serviceCategoryId - also set the service name
+    // Handle field changes and update parent state
+    let newData = {
+      ...formData,
+      [field]: value,
+    };
+    
+    // If changing service category, reset the service name as it will be filtered differently
+    if (field === 'serviceCategoryId') {
+      newData = {
+        ...newData,
+        name: undefined, // Reset name when category changes
+      };
+    }
+    
+    setFormData(newData);
+    
+    // Also update the form's internal state to keep it in sync
+    form.setFieldsValue(newData);
+    
+    // Store the service category name for display purposes
     if (field === 'serviceCategoryId') {
       const selectedCategory = serviceCategories.find(cat => cat.id === value);
-      const serviceName = selectedCategory ? selectedCategory.name : '';
-      
-      setFormData({
-        ...formData,
-        serviceCategoryId: value,
-        name: serviceName, // Auto-populate service name from category
-      });
-      
-      // Update form's internal state
-      form.setFieldsValue({ 
-        serviceCategoryId: value,
-        name: serviceName
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [field]: value,
-      });
-      
-      // Also update the form's internal state to keep it in sync
-      form.setFieldsValue({ [field]: value });
+      if (selectedCategory) {
+        setFormData((prev: ServiceFormData) => ({
+          ...prev,
+          serviceCategoryName: selectedCategory.name
+        }));
+      }
     }
   };
 
@@ -123,22 +165,20 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
           const fieldName = Object.keys(changedValues)[0];
           const fieldValue = changedValues[fieldName];
           
-          // Special handling for serviceCategoryId to auto-set service name
+          let newData = {
+            ...formData,
+            [fieldName]: fieldValue,
+          };
+          
+          // If changing service category, reset the service name as it will be filtered differently
           if (fieldName === 'serviceCategoryId') {
-            const selectedCategory = serviceCategories.find(cat => cat.id === fieldValue);
-            const serviceName = selectedCategory ? selectedCategory.name : '';
-            
-            setFormData((prev: ServiceFormData) => ({
-              ...prev,
-              serviceCategoryId: fieldValue,
-              name: serviceName,
-            }));
-          } else {
-            setFormData((prev: ServiceFormData) => ({
-              ...prev,
-              [fieldName]: fieldValue
-            }));
+            newData = {
+              ...newData,
+              name: undefined, // Reset name when category changes
+            };
           }
+          
+          setFormData(newData);
         }}
         className="form-responsive"
       >
@@ -163,6 +203,30 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
               label: category.name
             }))}
             onChange={(value) => handleFieldChange('serviceCategoryId', value)}
+          />
+        </Form.Item>
+
+        <Form.Item 
+          label="Service Name" 
+          name="name"
+          rules={[
+            { 
+              required: true, 
+              message: 'Service name is required' 
+            }
+          ]}
+        >
+          <Select
+            placeholder="Select a service name"
+            disabled={!formData.serviceCategoryId}
+            options={
+              formData.serviceCategoryId 
+                ? serviceNamesByType[
+                    serviceCategories.find(cat => cat.id === formData.serviceCategoryId)?.name || ""
+                  ]?.map(name => ({ value: name, label: name })) || []
+                : [{ value: '', label: 'Please select a service type first' }]
+            }
+            onChange={(value) => handleFieldChange('name', value)}
           />
         </Form.Item>
 

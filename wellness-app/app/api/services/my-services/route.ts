@@ -100,6 +100,7 @@ export async function GET(req: NextRequest) {
         id: service.serviceCategory._id.toString(),
         name: service.serviceCategory.name
       } : null,
+      name: service.name,
       price: service.price,
       duration: service.duration,
       description: service.description,

@@ -188,6 +188,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             id: service.serviceCategory._id.toString(),
             name: service.serviceCategory.name
           } : null,
+          name: service.name,
           price: service.price,
           duration: service.duration,
           description: service.description,
@@ -254,7 +255,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Parse request body
     const body = await req.json();
-    const { serviceCategoryId, price, duration, description, therapists } = body;
+    const { serviceCategoryId, name, price, duration, description, therapists } = body;
 
     // Find the business associated with the user
     const business = await BusinessModel.findOne({ owner: user._id });
@@ -295,6 +296,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
+    if (name !== undefined && typeof name !== 'string') {
+      return NextResponse.json(
+        { error: 'Name must be a string' },
+        { status: 400 }
+      );
+    }
+
 
 
     if (therapists !== undefined && !Array.isArray(therapists)) {
@@ -320,6 +328,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (price !== undefined) updateData.price = price;
     if (duration !== undefined) updateData.duration = duration;
     if (description !== undefined) updateData.description = description;
+    if (name !== undefined) updateData.name = name;
     if (therapists !== undefined) updateData.therapists = therapists;
     
     const updatedService = await ServiceModel.findOneAndUpdate(
@@ -348,6 +357,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             id: populatedService.serviceCategory._id.toString(),
             name: populatedService.serviceCategory.name
           } : null,
+          name: populatedService.name,
           price: populatedService.price,
           duration: populatedService.duration,
           description: populatedService.description,

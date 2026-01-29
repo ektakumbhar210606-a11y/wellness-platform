@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Service Categories API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .category { margin: 5px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .missing { background-color: #f8d7da; border-color: #f5c6cb; }
+        .verification { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Service Categories Verification</h1>
+    <div id="loading">Loading categories from API...</div>
+    <div id="results"></div>
+    <div id="verification" class="verification"></div>
+
+    <script>
+        async function testServiceCategories() {
+            const loadingDiv = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            const verificationDiv = document.getElementById('verification');
+            
+            try {
+                const response = await fetch('/api/service-categories');
+                const data = await response.json();
+                
+                loadingDiv.style.display = 'none';
+                
+                if (data.success && data.data) {
+                    resultsDiv.innerHTML = `<h2>All Categories (${data.data.length}):</h2>`;
+                    
+                    data.data.forEach((category, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'category';
+                        div.innerHTML = `<strong>${index + 1}.</strong> ${category.name} <em>(${category.slug})</em>`;
+                        resultsDiv.appendChild(div);
+                    });
+                    
+                    // Verify required categories
+                    const requiredCategories = [
+                        'Massage Therapy',
+                        'Spa Services', 
+                        'Wellness Programs',
+                        'Corporate Wellness'
+                    ];
+                    
+                    let verificationHTML = '<h2>Required Categories Verification:</h2><ul>';
+                    let allFound = true;
+                    
+                    requiredCategories.forEach(categoryName => {
+                        const found = data.data.some(cat => cat.name === categoryName);
+                        const statusClass = found ? 'success' : 'missing';
+                        const statusText = found ? '✅ Found' : '❌ Missing';
+                        
+                        verificationHTML += `<li class="${statusClass}"><strong>${categoryName}:</strong> ${statusText}</li>`;
+                        
+                        if (!found) allFound = false;
+                    });
+                    
+                    verificationHTML += '</ul>';
+                    
+                    if (allFound) {
+                        verificationHTML += '<div class="success" style="padding: 10px; margin-top: 10px;"><strong>✅ All required categories are present!</strong></div>';
+                    } else {
+                        verificationHTML += '<div class="missing" style="padding: 10px; margin-top: 10px;"><strong>❌ Some required categories are missing. Database may need re-seeding.</strong></div>';
+                    }
+                    
+                    verificationDiv.innerHTML = verificationHTML;
+                } else {
+                    resultsDiv.innerHTML = `<p style="color: red;">API Error: ${data.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<p style="color: red;">Network Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run the test when page loads
+        testServiceCategories();
+    </script>
+</body>
+</html>
