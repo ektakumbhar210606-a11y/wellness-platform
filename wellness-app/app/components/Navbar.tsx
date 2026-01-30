@@ -15,7 +15,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
-  const { isAuthenticated, logout, user, login, authModalOpen, authModalView, openAuthModal, closeAuthModal } = useAuth();
+  const { isAuthenticated, isHydrated, logout, user, login, authModalOpen, authModalView, openAuthModal, closeAuthModal } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -268,7 +268,10 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
 
           {/* Desktop Action Buttons */}
           <div className={styles.desktopActions}>
-            {!isAuthenticated ? (
+            {!isHydrated ? (
+              // Show loading state while authentication state is initializing
+              <div className={styles.authButton} style={{ width: '80px', height: '32px', backgroundColor: '#f0f0f0' }}></div>
+            ) : !isAuthenticated ? (
               <button 
                 className={styles.authButton}
                 onClick={() => openAuthModal('login')}
@@ -369,7 +372,12 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
 
         <div className={styles.mobileActions}>
           <ul className={styles.mobileActionsList}>
-            {!isAuthenticated ? (
+            {!isHydrated ? (
+              // Show loading state while authentication state is initializing
+              <li>
+                <div className={styles.mobileActionButton} style={{ width: '100%', height: '40px', backgroundColor: '#f0f0f0' }}></div>
+              </li>
+            ) : !isAuthenticated ? (
               <li>
                 <button 
                   className={styles.mobileActionButton}

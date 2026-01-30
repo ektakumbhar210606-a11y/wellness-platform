@@ -39,7 +39,10 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
-        const options = await getFilterOptions();
+        // If a country is already selected in the filters, load country-specific options
+        const options = currentFilters.country 
+          ? await getFilterOptions({ country: currentFilters.country })
+          : await getFilterOptions();
         setFilterOptions(options);
         
         // Set initial country if one is already selected
@@ -88,7 +91,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
       
       // Reload filter options to get states and cities specific to this country
       try {
-        const options = await getFilterOptions();
+        const options = await getFilterOptions({ country: value });
         setFilterOptions(options);
         setFilteredStates(options.states);
         setFilteredCities(options.cities);
@@ -131,7 +134,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
       
       // Reload filter options to get cities specific to this state
       try {
-        const options = await getFilterOptions();
+        const options = await getFilterOptions({ country: selectedCountry });
         setFilterOptions(options);
         setFilteredCities(options.cities);
       } catch (error) {
@@ -147,7 +150,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
       
       // Reload filter options to get all cities for the selected country
       try {
-        const options = await getFilterOptions();
+        const options = selectedCountry 
+          ? await getFilterOptions({ country: selectedCountry })
+          : await getFilterOptions();
         setFilterOptions(options);
         setFilteredCities(options.cities);
       } catch (error) {
@@ -177,16 +182,32 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
 
   // Clear all filters
   const handleClearFilters = () => {
+    // Reset local state
     setSelectedCountry('');
     setSelectedState('');
+    
+    // Reset filtered options to show all available options
     setFilteredStates(filterOptions.states);
     setFilteredCities(filterOptions.cities);
-    onFilterChange({
+    
+    // Clear all filter values from currentFilters and reset to default search parameters
+    // We need to explicitly clear all filter fields to ensure they're removed
+    const clearedFilters: BusinessSearchParams = {
       page: 1,
       limit: 12,
       sortBy: 'createdAt',
-      sortOrder: 'desc'
-    });
+      sortOrder: 'desc',
+      // Explicitly clear all filter fields
+      search: undefined,
+      location: undefined,
+      country: undefined,
+      state: undefined,
+      city: undefined,
+      serviceType: undefined,
+      minRating: undefined
+    };
+    
+    onFilterChange(clearedFilters);
   };
 
   return (

@@ -97,8 +97,9 @@ export const searchBusinesses = async (
 
 /**
  * Fetch all available filter options
+ * @param params Optional parameters to filter the results
  */
-export const getFilterOptions = async (): Promise<{
+export const getFilterOptions = async (params: { country?: string } = {}): Promise<{
   locations: string[];
   countries: string[];
   states: string[];
@@ -106,7 +107,17 @@ export const getFilterOptions = async (): Promise<{
   serviceTypes: string[];
 }> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/search`);
+    const queryParams = new URLSearchParams();
+    if (params.country) {
+      queryParams.append('country', params.country);
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/search?${queryString}`
+      : `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/search`;
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

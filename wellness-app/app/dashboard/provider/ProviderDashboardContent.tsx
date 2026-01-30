@@ -6,6 +6,7 @@ import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutli
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { businessService, BusinessProfile, BusinessDashboardStats } from '@/app/services/businessService';
+import { formatAddress } from '../../utils/addressUtils';
 import ServiceModal from '@/app/components/ServiceModal';
 import ProviderOnboarding from '@/app/components/ProviderOnboarding';
 import ServiceCard from '@/app/components/ServiceCard';
@@ -536,7 +537,7 @@ const ProviderDashboardContent = () => {
                       <Col span={12}>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
                           <EnvironmentOutlined style={{ fontSize: '20px', marginRight: '10px', color: '#667eea' }} />
-                          <Text>{business.address.street}, {business.address.city}, {business.address.state} {business.address.zipCode}</Text>
+                          <Text>{formatAddress(business.address)}</Text>
                         </div>
                       </Col>
                     </Row>
@@ -926,10 +927,7 @@ const ProviderDashboardContent = () => {
                               <div>
                                 <Text strong>Address:</Text>
                                 <br />
-                                <Text>
-                                  {business.address.street}, {business.address.city}<br />
-                                  {business.address.state} {business.address.zipCode}
-                                </Text>
+                                <Text>{formatAddress(business.address)}</Text>
                               </div>
                             </div>
                           </Col>

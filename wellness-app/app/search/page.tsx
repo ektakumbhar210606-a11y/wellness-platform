@@ -72,11 +72,22 @@ const SearchPage = () => {
 
   // Handle filter changes
   const handleFilterChange = (newFilters: BusinessSearchParams) => {
-    setSearchParams(prev => ({
-      ...prev,
-      ...newFilters,
-      page: 1 // Reset to first page when filters change
-    }));
+    setSearchParams(prev => {
+      const updatedParams = {
+        ...prev,
+        ...newFilters,
+        page: 1 // Reset to first page when filters change
+      };
+      
+      // Remove undefined values to properly clear filters
+      Object.keys(updatedParams).forEach(key => {
+        if (updatedParams[key as keyof BusinessSearchParams] === undefined) {
+          delete updatedParams[key as keyof BusinessSearchParams];
+        }
+      });
+      
+      return updatedParams;
+    });
   };
 
   // Handle search term change

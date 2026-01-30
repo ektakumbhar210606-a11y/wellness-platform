@@ -4,6 +4,7 @@ import React from 'react';
 import { Card, Button, Tag, Space, Typography, Divider } from 'antd';
 import { ShopOutlined, EnvironmentOutlined, ClockCircleOutlined, PhoneOutlined, MailOutlined, GlobalOutlined } from '@ant-design/icons';
 import { formatTimeRange } from '../utils/timeUtils';
+import { formatAddress } from '../utils/addressUtils';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -122,7 +123,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
             <Space>
               <EnvironmentOutlined />
               <Text className="responsive-caption" ellipsis>
-                {business.address.street}, {business.address.city}, {business.address.state} {business.address.zipCode}, {business.address.country}
+                {formatAddress(business.address, true)}
               </Text>
             </Space>
           </Space>

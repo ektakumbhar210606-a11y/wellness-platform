@@ -6,6 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   role: string | null;
   loading: boolean;
+  isHydrated: boolean;
   login: (userData: any) => void;
   loginWithRedirect: (userData: any) => void;
   logout: () => void;
@@ -29,8 +30,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'register' | 'roleSelection'>('roleSelection');
 
+  // Initialize with a default loading state to prevent hydration mismatch
+  const [isHydrated, setIsHydrated] = useState<boolean>(false);
+
   // Check for stored authentication state on initial load
   useEffect(() => {
+    // Set hydrated state first
+    setIsHydrated(true);
+    
     const initializeAuth = () => {
       setLoading(true);
       try {
@@ -142,6 +149,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAuthenticated, 
       role,
       loading,
+      isHydrated,
       login, 
       loginWithRedirect,
       logout, 
