@@ -288,7 +288,7 @@ const CustomerOnboardingPage = () => {
         description: 'Customer profile created successfully!',
       });
       
-      router.push('/dashboard/customer');
+      router.push('/search');
     } catch (error: any) {
       console.error('Error completing onboarding:', error);
       notification.error({

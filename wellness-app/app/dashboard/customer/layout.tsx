@@ -42,18 +42,8 @@ export default function CustomerDashboardLayout({
         return;
       }
 
-      // In a real app, you would check if customer profile exists
-      // If it doesn't, redirect to onboarding
-      // For now, we'll assume they have completed onboarding
-      // const response = await customerApi.getProfile();
-      // if (!response.success || !response.data) {
-      //   // Profile doesn't exist, redirect to onboarding
-      //   router.push('/onboarding/customer');
-      //   setAuthorized(false);
-      //   return;
-      // }
-
-      // User is authenticated, has customer role, and has profile
+      // If user is authenticated and has customer role, 
+      // let the CustomerRedirectHandler component handle the onboarding check
       setAuthorized(true);
     };
 
