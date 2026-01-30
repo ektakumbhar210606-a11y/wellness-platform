@@ -156,8 +156,8 @@ const CustomerDashboardContent = () => {
     },
     {
       key: 'profile',
-      icon: <UserOutlined />,
-      label: <Link href="/dashboard/customer/profile">My Profile</Link>,
+      icon: <EditOutlined />,
+      label: <Link href="/dashboard/customer/profile">Edit Profile</Link>,
     },
   ];
 
@@ -228,14 +228,13 @@ const CustomerDashboardContent = () => {
                 fontSize: '16px',
                 width: 64,
                 height: 64,
-                padding: '16px',
               }}
             />
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
-              <Title level={3} style={{ margin: 0, lineHeight: '1.2' }}>
+            <div>
+              <Title level={3} style={{ margin: 0 }}>
                 Welcome back, {user?.name || 'Customer'}!
               </Title>
-              <Text type="secondary" style={{ margin: 0 }}>
+              <Text type="secondary">
                 Here's what's happening with your wellness journey
               </Text>
             </div>
@@ -381,6 +380,42 @@ const CustomerDashboardContent = () => {
                   </Empty>
                 )}
               </Card>
+            </Col>
+
+            {/* Profile Section */}
+            <Col xs={24} md={12} lg={8}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Profile Card */}
+                <Card 
+                  title={
+                    <Space>
+                      <UserOutlined />
+                      <span>Your Profile</span>
+                    </Space>
+                  }
+                >
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <Avatar 
+                      size={64} 
+                      icon={<UserOutlined />} 
+                      style={{ backgroundColor: '#667eea', marginBottom: '12px' }}
+                    />
+                    <div>
+                      <Text strong>{user?.name || 'Customer'}</Text>
+                    </div>
+                    <div>
+                      <Text type="secondary">{user?.email || ''}</Text>
+                    </div>
+                  </div>
+                  <Link href="/dashboard/customer/profile">
+                    <Button block icon={<ProfileOutlined />}>
+                      View Full Profile
+                    </Button>
+                  </Link>
+                </Card>
+
+
+              </div>
             </Col>
           </Row>
         </div>

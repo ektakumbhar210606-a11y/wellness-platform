@@ -1,17 +1,28 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import ServiceModel from '../../../../../../../models/Service';
-import TherapistModel from '../../../../../../../models/Therapist';
-import BusinessModel from '../../../../../../../models/Business';
+import ServiceModel from '@/models/Service';
+import TherapistModel from '@/models/Therapist';
+import BusinessModel from '@/models/Business';
 import jwt from 'jsonwebtoken';
-import UserModel from '../../../../../../../models/User';
+import UserModel from '@/models/User';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { businessId: string; serviceId: string } }
+  { params }: { params: Promise<{ businessId: string; serviceId: string }> }
 ) {
   try {
+    console.log('API Route - Raw params promise:', params);
+    const awaitedParams = await params;
+    console.log('API Route - Awaited params:', awaitedParams);
+    const { businessId, serviceId } = awaitedParams;
+    
     await connectToDatabase();
+    
+    // Force model registration by accessing them
+    console.log('Registering models...');
+    console.log('ServiceModel name:', ServiceModel.modelName);
+    console.log('TherapistModel name:', TherapistModel.modelName);
+    console.log('BusinessModel name:', BusinessModel.modelName);
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -42,12 +53,63 @@ export async function GET(
       );
     }
 
-    const { businessId, serviceId } = params;
+    // Log the received parameters for debugging
+    console.log('API Route - Received params:', { businessId, serviceId });
+    console.log('API Route - businessId:', businessId);
+    console.log('API Route - serviceId:', serviceId);
+    
+    // Log the extracted parameters
+    console.log('API Route - Extracted businessId:', businessId);
+    console.log('API Route - Extracted serviceId:', serviceId);
 
     // Validate businessId and serviceId
+    console.log('API Route - Pre-validation check:');
+    console.log('  businessId:', businessId);
+    console.log('  serviceId:', serviceId);
+    console.log('  businessId type:', typeof businessId);
+    console.log('  serviceId type:', typeof serviceId);
+    console.log('  businessId length:', businessId ? businessId.length : 'undefined');
+    console.log('  serviceId length:', serviceId ? serviceId.length : 'undefined');
+    console.log('  businessId is truthy:', !!businessId);
+    console.log('  serviceId is truthy:', !!serviceId);
+    
     if (!businessId || !serviceId) {
+      console.log('API Route - Validation failed: businessId=', businessId, 'serviceId=', serviceId);
       return Response.json(
-        { message: 'Business ID and Service ID are required' },
+        { 
+          message: 'Business ID and Service ID are required',
+          businessId: businessId,
+          serviceId: serviceId,
+          businessIdType: typeof businessId,
+          serviceIdType: typeof serviceId,
+          businessIdLength: businessId ? businessId.length : undefined,
+          serviceIdLength: serviceId ? serviceId.length : undefined
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Additional validation for string types and empty values
+    if (typeof businessId !== 'string' || businessId.trim() === '') {
+      console.log('API Route - Business ID validation failed');
+      return Response.json(
+        { 
+          message: 'Business ID must be a non-empty string',
+          businessId: businessId,
+          businessIdType: typeof businessId
+        },
+        { status: 400 }
+      );
+    }
+    
+    if (typeof serviceId !== 'string' || serviceId.trim() === '') {
+      console.log('API Route - Service ID validation failed');
+      return Response.json(
+        { 
+          message: 'Service ID must be a non-empty string',
+          serviceId: serviceId,
+          serviceIdType: typeof serviceId
+        },
         { status: 400 }
       );
     }
@@ -77,28 +139,41 @@ export async function GET(
     // Get therapist IDs from the service
     const therapistIds = service.therapists || [];
     
+    console.log('API Route - Service therapist IDs:', therapistIds);
+    console.log('API Route - Service therapist IDs type:', Array.isArray(therapistIds) ? 'array' : typeof therapistIds);
+    console.log('API Route - Service therapist IDs length:', therapistIds.length);
+    
     if (!therapistIds || therapistIds.length === 0) {
+      console.log('API Route - No therapists assigned to this service');
       // Return empty array if no therapists are assigned to this service
       return Response.json([], { status: 200 });
     }
 
     // Fetch the therapists that are assigned to this service
+    console.log('API Route - Fetching therapists with IDs:', therapistIds);
     const therapists = await TherapistModel.find({
       '_id': { $in: therapistIds }
-    }).select('firstName lastName specialty expertise availability status profileImage');
+    }).select('fullName user business experience skills availabilityStatus email phoneNumber professionalTitle bio certifications licenseNumber weeklyAvailability areaOfExpertise');
+    
+    console.log('API Route - Found therapists:', therapists.map((t: any) => ({
+      id: t._id,
+      fullName: t.fullName,
+      professionalTitle: t.professionalTitle
+    })));
+    console.log('API Route - Found therapists count:', therapists.length);
 
     // Return the therapists
     return Response.json(
-      therapists.map(therapist => ({
+      therapists.map((therapist: any) => ({
         _id: therapist._id,
-        firstName: therapist.firstName,
-        lastName: therapist.lastName,
-        name: `${therapist.firstName} ${therapist.lastName}`,
-        specialty: therapist.specialty || 'General Therapist',
-        expertise: therapist.expertise || [],
-        availability: therapist.availability || {},
-        status: therapist.status || 'active',
-        profileImage: therapist.profileImage
+        firstName: therapist.fullName || '',
+        lastName: '',
+        name: therapist.fullName || 'Unknown Therapist',
+        specialty: therapist.professionalTitle || 'General Therapist',
+        expertise: therapist.areaOfExpertise || [],
+        availability: therapist.weeklyAvailability || {},
+        status: therapist.availabilityStatus || 'active',
+        profileImage: null
       })),
       { status: 200 }
     );

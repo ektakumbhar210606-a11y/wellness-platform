@@ -449,6 +449,23 @@ export const businessService = {
           // If response is not JSON, use the default error message
         }
         
+        // Enhanced error logging for debugging
+        console.error('API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          errorMessage: errorMessage,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        
+        // Try to get raw response body for better debugging
+        try {
+          const rawBody = await response.text();
+          console.error('Raw response body:', rawBody);
+        } catch (bodyError) {
+          console.error('Could not read response body:', bodyError);
+        }
+        
         const error = new Error(errorMessage) as Error & { status: number };
         error.status = response.status;
         throw error;

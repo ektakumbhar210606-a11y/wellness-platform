@@ -15,9 +15,6 @@ export async function GET(req: NextRequest) {
     // Extract query parameters
     const searchTerm = searchParams.get('search') || '';
     const location = searchParams.get('location') || '';
-    const country = searchParams.get('country') || '';
-    const state = searchParams.get('state') || '';
-    const city = searchParams.get('city') || '';
     const serviceType = searchParams.get('serviceType') || '';
     const minRatingStr = searchParams.get('minRating') || '';
     const minRating = minRatingStr ? parseFloat(minRatingStr) : 0;
@@ -38,28 +35,13 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Add location filters
+    // Add location filter
     if (location) {
       query.$or = [
         { 'address.city': { $regex: location, $options: 'i' } },
         { 'address.state': { $regex: location, $options: 'i' } },
         { 'address.zipCode': { $regex: location, $options: 'i' } }
       ];
-    }
-    
-    // Add country filter
-    if (country) {
-      query['address.country'] = country;
-    }
-    
-    // Add state filter
-    if (state) {
-      query['address.state'] = state;
-    }
-    
-    // Add city filter
-    if (city) {
-      query['address.city'] = city;
     }
 
     // Add service type filter
@@ -225,53 +207,11 @@ export async function GET(req: NextRequest) {
       total = filteredBusinessesWithRatings.length;
     }
 
-    // Get unique locations, countries, and service types for filter options
-    const [locations, countries, serviceTypes] = await Promise.all([
+    // Get unique locations and service types for filter options
+    const [locations, serviceTypes] = await Promise.all([
       BusinessModel.distinct('address.city', { status: 'active' }),
-      BusinessModel.distinct('address.country', { status: 'active' }),
       BusinessModel.distinct('serviceType', { status: 'active' })
     ]);
-
-    // Remove duplicates from countries
-    const uniqueCountries = Array.from(new Set(countries)).filter(Boolean).sort();
-    
-    // Get unique states based on the selected country if provided
-    let uniqueStates: string[] = [];
-    if (country) {
-      // If a country is specified, only get states from that country
-      const statesInCountry = await BusinessModel.distinct('address.state', { 
-        status: 'active', 
-        'address.country': country 
-      });
-      uniqueStates = Array.from(new Set(statesInCountry)).filter(Boolean).sort();
-    } else {
-      // Otherwise, get all states
-      const allStates = await BusinessModel.distinct('address.state', { status: 'active' });
-      uniqueStates = Array.from(new Set(allStates)).filter(Boolean).sort();
-    }
-    
-    // Get unique cities based on the selected country and state if provided
-    let uniqueCities: string[] = [];
-    if (country && state) {
-      // If both country and state are specified, only get cities from that state
-      const citiesInState = await BusinessModel.distinct('address.city', { 
-        status: 'active', 
-        'address.country': country,
-        'address.state': state
-      });
-      uniqueCities = Array.from(new Set(citiesInState)).filter(Boolean).sort();
-    } else if (country) {
-      // If only country is specified, get cities from that country
-      const citiesInCountry = await BusinessModel.distinct('address.city', { 
-        status: 'active', 
-        'address.country': country 
-      });
-      uniqueCities = Array.from(new Set(citiesInCountry)).filter(Boolean).sort();
-    } else {
-      // Otherwise, get all cities
-      const allCities = await BusinessModel.distinct('address.city', { status: 'active' });
-      uniqueCities = Array.from(new Set(allCities)).filter(Boolean).sort();
-    }
 
     return Response.json({
       success: true,
@@ -286,9 +226,6 @@ export async function GET(req: NextRequest) {
         },
         filters: {
           locations: locations.sort(),
-          countries: uniqueCountries,
-          states: uniqueStates,
-          cities: uniqueCities,
           serviceTypes: serviceTypes.filter(Boolean).sort()
         }
       }
