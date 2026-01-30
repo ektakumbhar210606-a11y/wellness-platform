@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Layout, Row, Col, Typography, Spin, Empty, Button, Pagination } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,7 @@ const { Content } = Layout;
 const { Title, Text } = Typography;
 
 const SearchPage = () => {
+  const router = useRouter();
   const { user } = useAuth();
   const [businesses, setBusinesses] = useState<ISearchedBusiness[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -170,8 +172,7 @@ const SearchPage = () => {
                           business={business} 
                           onViewServices={(businessId) => {
                             // Navigate to services page for this business
-                            console.log('View services for business:', businessId);
-                            // In a real implementation, this would navigate to the business services page
+                            router.push(`/business/${businessId}/services`);
                           }}
                         />
                       </Col>
