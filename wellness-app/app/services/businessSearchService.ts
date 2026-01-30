@@ -4,9 +4,6 @@ export type { BusinessInterface as IBusiness };
 export interface BusinessSearchParams {
   search?: string;
   location?: string;
-  country?: string;
-  state?: string;
-  city?: string;
   serviceType?: string;
   minRating?: number;
   sortBy?: string;
@@ -69,9 +66,6 @@ export const searchBusinesses = async (
     
     if (params.search) queryParams.append('search', params.search);
     if (params.location) queryParams.append('location', params.location);
-    if (params.country) queryParams.append('country', params.country);
-    if (params.state) queryParams.append('state', params.state);
-    if (params.city) queryParams.append('city', params.city);
     if (params.serviceType) queryParams.append('serviceType', params.serviceType);
     if (params.minRating !== undefined) queryParams.append('minRating', params.minRating.toString());
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
@@ -100,9 +94,6 @@ export const searchBusinesses = async (
  */
 export const getFilterOptions = async (): Promise<{
   locations: string[];
-  countries: string[];
-  states: string[];
-  cities: string[];
   serviceTypes: string[];
 }> => {
   try {
