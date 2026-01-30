@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import ServiceModel from '../../../../../models/Service';
-import BusinessModel from '../../../../../models/Business';
+import ServiceModel from '@/models/Service';
+import BusinessModel from '@/models/Business';
+import TherapistModel from '@/models/Therapist';
 import jwt from 'jsonwebtoken';
-import UserModel from '../../../../../models/User';
+import UserModel from '@/models/User';
 
 export async function GET(
   request: NextRequest,
@@ -14,6 +15,12 @@ export async function GET(
     console.log('API called with businessId:', businessId);
     await connectToDatabase();
     console.log('Connected to database');
+    
+    // Force model registration by accessing them
+    console.log('Registering models...');
+    console.log('ServiceModel name:', ServiceModel.modelName);
+    console.log('TherapistModel name:', TherapistModel.modelName);
+    console.log('BusinessModel name:', BusinessModel.modelName);
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -64,8 +71,10 @@ export async function GET(
       );
     }
 
-    // Fetch services for this business
-    const services = await ServiceModel.find({ business: businessId }).select('-__v');
+    // Fetch services for this business with therapists populated
+    const services = await ServiceModel.find({ business: businessId })
+      .populate('therapists', 'fullName user business experience skills availabilityStatus email phoneNumber professionalTitle bio certifications licenseNumber weeklyAvailability areaOfExpertise')
+      .select('-__v');
 
     // Return the services
     return Response.json(
@@ -76,7 +85,20 @@ export async function GET(
         price: service.price,
         duration: service.duration,
         category: service.serviceCategory,
-        status: service.status
+        status: service.status,
+        therapists: service.therapists ? (service.therapists as any[]).map((therapist: any) => {
+          return {
+            _id: therapist._id,
+            firstName: therapist.fullName || '',
+            lastName: '',
+            name: therapist.fullName || 'Unknown Therapist',
+            specialty: therapist.professionalTitle || 'General Therapist',
+            expertise: therapist.areaOfExpertise || [],
+            availability: therapist.weeklyAvailability || {},
+            status: therapist.availabilityStatus || 'active',
+            profileImage: null
+          };
+        }) : []
       })),
       { status: 200 }
     );
