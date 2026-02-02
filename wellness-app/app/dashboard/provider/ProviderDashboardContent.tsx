@@ -11,6 +11,7 @@ import ServiceModal from '@/app/components/ServiceModal';
 import ProviderOnboarding from '@/app/components/ProviderOnboarding';
 import ServiceCard from '@/app/components/ServiceCard';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
+import BookingManagement from '@/app/components/BookingManagement';
 
 const { Title, Text } = Typography;
 
@@ -28,6 +29,10 @@ const ProviderDashboardContent = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestActionLoading, setRequestActionLoading] = useState<string | null>(null);
+  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
+  const [confirmedBookings, setConfirmedBookings] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingActionLoading, setBookingActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
@@ -790,26 +795,7 @@ const ProviderDashboardContent = () => {
           ),
           children: (
             <div style={{ marginTop: 16 }}>
-              <Row gutter={[16, 16]}>
-                <Col span={24}>
-                  <Title level={3}>Booking Management</Title>
-                  <Text type="secondary">
-                    View and manage your bookings
-                  </Text>
-                </Col>
-                
-                <Col span={24}>
-                  <Card>
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                      <BookOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
-                      <Title level={4}>No Bookings Yet</Title>
-                      <Text type="secondary">
-                        Your bookings will appear here once customers start booking your services.
-                      </Text>
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
+              <BookingManagement />
             </div>
           ),
         }, {

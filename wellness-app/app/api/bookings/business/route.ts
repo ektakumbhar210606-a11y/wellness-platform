@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import BookingModel from '../../../../models/Booking';
 import BusinessModel from '../../../../models/Business';
+import ServiceModel from '../../../../models/Service';
 import UserModel from '../../../../models/User';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
@@ -110,8 +111,12 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    // Build query
-    const query: any = { business: business._id };
+    // First get all services for this business
+    const services = await ServiceModel.find({ business: business._id });
+    const serviceIds = services.map((service: any) => service._id);
+    
+    // Build query for bookings of these services
+    const query: any = { service: { $in: serviceIds } };
     
     // Add status filter if provided
     if (status && ['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
