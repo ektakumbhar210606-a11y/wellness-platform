@@ -157,7 +157,7 @@ const CustomerDashboardContent = () => {
     {
       key: 'profile',
       icon: <EditOutlined />,
-      label: <Link href="/dashboard/customer/profile">Edit Profile</Link>,
+      label: <Link href="/dashboard/customer/profile">Profile</Link>,
     },
   ];
 
@@ -207,19 +207,21 @@ const CustomerDashboardContent = () => {
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ 
         background: '#fff', 
-        padding: '0 24px', 
+        padding: '0 20px', 
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         position: 'sticky',
         top: 0,
-        zIndex: 100
+        zIndex: 100,
+        height: '64px'
       }}>
         <div style={{ 
           display: 'flex', 
-          justifyContent: 'space-between', 
+          justifyContent: 'flex-start', 
           alignItems: 'center',
-          height: '100%'
+          height: '100%',
+          width: '100%'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
             <Button
               type="text"
               icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -230,11 +232,26 @@ const CustomerDashboardContent = () => {
                 height: 64,
               }}
             />
-            <div>
-              <Title level={3} style={{ margin: 0 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Title level={3} style={{ 
+                margin: 0, 
+                fontSize: '20px',
+                lineHeight: '1.3',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
                 Welcome back, {user?.name || 'Customer'}!
               </Title>
-              <Text type="secondary">
+              <Text type="secondary" style={{
+                fontSize: '14px',
+                lineHeight: '1.4',
+                marginTop: '4px',
+                display: 'block',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
                 Here's what's happening with your wellness journey
               </Text>
             </div>
@@ -382,41 +399,6 @@ const CustomerDashboardContent = () => {
               </Card>
             </Col>
 
-            {/* Profile Section */}
-            <Col xs={24} md={12} lg={8}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* Profile Card */}
-                <Card 
-                  title={
-                    <Space>
-                      <UserOutlined />
-                      <span>Your Profile</span>
-                    </Space>
-                  }
-                >
-                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                    <Avatar 
-                      size={64} 
-                      icon={<UserOutlined />} 
-                      style={{ backgroundColor: '#667eea', marginBottom: '12px' }}
-                    />
-                    <div>
-                      <Text strong>{user?.name || 'Customer'}</Text>
-                    </div>
-                    <div>
-                      <Text type="secondary">{user?.email || ''}</Text>
-                    </div>
-                  </div>
-                  <Link href="/dashboard/customer/profile">
-                    <Button block icon={<ProfileOutlined />}>
-                      View Full Profile
-                    </Button>
-                  </Link>
-                </Card>
-
-
-              </div>
-            </Col>
           </Row>
         </div>
       </Content>
