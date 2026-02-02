@@ -3,6 +3,13 @@ import { Select, Slider, Row, Col, Typography, Rate, Divider } from 'antd';
 import { SearchOutlined, StarFilled } from '@ant-design/icons';
 import { getFilterOptions } from '../services/businessSearchService';
 import { BusinessSearchParams } from '../services/businessSearchService';
+import { 
+  getAllCountries, 
+  getStatesForCountry, 
+  getCitiesForState, 
+  getCountryCode,
+  getCountryName
+} from '../utils/locationData';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -15,21 +22,28 @@ interface SearchFiltersProps {
 const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFilters }) => {
   const [filterOptions, setFilterOptions] = useState({
     locations: [] as string[],
+    states: [] as string[],
+    cities: [] as string[],
     serviceTypes: [] as string[]
   });
   const [loading, setLoading] = useState(true);
-  const [selectedCountry, setSelectedCountry] = useState(currentFilters.country || '');
+  const [selectedCountry, setSelectedCountry] = useState(currentFilters.country ? getCountryName(currentFilters.country) : '');
   const [selectedState, setSelectedState] = useState(currentFilters.state || '');
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
 
   // Load filter options
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
-        // If a country is already selected in the filters, load country-specific options
-        const options = currentFilters.country 
-          ? await getFilterOptions({ country: currentFilters.country })
-          : await getFilterOptions();
-        setFilterOptions(options);
+        // Load basic filter options (service types, locations)
+        const options = await getFilterOptions();
+        setFilterOptions({
+          locations: options.locations || [],
+          states: options.states || [],
+          cities: options.cities || [],
+          serviceTypes: options.serviceTypes || []
+        });
       } catch (error) {
         console.error('Error loading filter options:', error);
       } finally {
@@ -40,30 +54,76 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
     loadFilterOptions();
   }, []);
 
+  // Update available states when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      const states = getStatesForCountry(selectedCountry);
+      setAvailableStates(states);
+      
+      // If current state is not in available states, clear it
+      if (selectedState && !states.includes(selectedState)) {
+        setSelectedState('');
+        const newFilters = { ...currentFilters };
+        delete newFilters.state;
+        delete newFilters.city;
+        onFilterChange(newFilters);
+      }
+    } else {
+      setAvailableStates([]);
+      setSelectedState('');
+      setAvailableCities([]);
+      
+      // Clear state and city from filters
+      const newFilters = { ...currentFilters };
+      delete newFilters.country;
+      delete newFilters.state;
+      delete newFilters.city;
+      onFilterChange(newFilters);
+    }
+  }, [selectedCountry]);
+
+  // Update available cities when state changes
+  useEffect(() => {
+    if (selectedCountry && selectedState) {
+      const cities = getCitiesForState(selectedCountry, selectedState);
+      setAvailableCities(cities);
+      
+      // If current city is not in available cities, clear it
+      if (currentFilters.city && !cities.includes(currentFilters.city)) {
+        const newFilters = { ...currentFilters };
+        delete newFilters.city;
+        onFilterChange(newFilters);
+      }
+    } else {
+      setAvailableCities([]);
+      
+      // Clear city from filters
+      if (currentFilters.city) {
+        const newFilters = { ...currentFilters };
+        delete newFilters.city;
+        onFilterChange(newFilters);
+      }
+    }
+  }, [selectedCountry, selectedState]);
+
   // Handle filter changes
   const handleLocationChange = (value: string[]) => {
     onFilterChange({ ...currentFilters, location: value.join(',') });
   };
 
-  const handleCountryChange = async (value: string) => {
+  const handleCountryChange = (value: string) => {
+    console.log('Selected country:', value);
     setSelectedCountry(value);
     setSelectedState(''); // Clear state selection when country changes
     
-    // When country changes, update the state and city dropdown options
+    // When country changes, update the filters
     if (value) {
-      // Update filters to include the selected country and clear state/city
-      const newFilters = { ...currentFilters, country: value, state: undefined, city: undefined };
+      // Convert country name to code for API compatibility
+      const countryCode = getCountryCode(value);
+      const newFilters = { ...currentFilters, country: countryCode, state: undefined, city: undefined };
       delete newFilters.state; // Remove state from filters
       delete newFilters.city; // Remove city from filters
       onFilterChange(newFilters);
-      
-      // Reload filter options for this country
-      try {
-        const options = await getFilterOptions({ country: value });
-        setFilterOptions(options);
-      } catch (error) {
-        console.error('Error reloading filter options:', error);
-      }
     } else {
       // If country is cleared, clear country, state, and city
       const newFilters = { ...currentFilters };
@@ -71,54 +131,30 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
       delete newFilters.state;
       delete newFilters.city;
       onFilterChange(newFilters);
-      
-      // Reload filter options to get all locations again
-      try {
-        const options = await getFilterOptions();
-        setFilterOptions(options);
-      } catch (error) {
-        console.error('Error reloading filter options:', error);
-      }
     }
   };
 
-  const handleStateChange = async (value: string) => {
+  const handleStateChange = (value: string) => {
+    console.log('Selected state:', value);
     setSelectedState(value);
     
-    // When state changes, update the city dropdown options
+    // When state changes, update the filters
     if (value && selectedCountry) {
       // Update filters to include the selected state and clear city
       const newFilters = { ...currentFilters, state: value, city: undefined };
       delete newFilters.city; // Remove city from filters
       onFilterChange(newFilters);
-      
-      // Reload filter options for this country
-      try {
-        const options = await getFilterOptions({ country: selectedCountry });
-        setFilterOptions(options);
-      } catch (error) {
-        console.error('Error reloading filter options:', error);
-      }
     } else if (!value) {
       // If state is cleared, clear state and city
       const newFilters = { ...currentFilters };
       delete newFilters.state;
       delete newFilters.city;
       onFilterChange(newFilters);
-      
-      // Reload filter options for the selected country
-      try {
-        const options = selectedCountry 
-          ? await getFilterOptions({ country: selectedCountry })
-          : await getFilterOptions();
-        setFilterOptions(options);
-      } catch (error) {
-        console.error('Error reloading filter options:', error);
-      }
     }
   };
 
   const handleCityChange = (value: string) => {
+    console.log('Selected city:', value);
     onFilterChange({ ...currentFilters, city: value });
   };
 
@@ -138,18 +174,22 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
 
   // Clear all filters
   const handleClearFilters = () => {
+    console.log('Clearing all filters');
     // Reset local state
     setSelectedCountry('');
     setSelectedState('');
+    setAvailableStates([]);
+    setAvailableCities([]);
     
     // Reset filtered options to show all available options
     setFilterOptions({
       locations: [],
+      states: [],
+      cities: [],
       serviceTypes: []
     });
     
     // Clear all filter values from currentFilters and reset to default search parameters
-    // We need to explicitly clear all filter fields to ensure they're removed
     const clearedFilters: BusinessSearchParams = {
       page: 1,
       limit: 12,
@@ -186,11 +226,12 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
             onChange={handleCountryChange}
             loading={loading}
             allowClear
+            showSearch
+            optionFilterProp="children"
           >
-            <Option value="USA">United States</Option>
-            <Option value="India">India</Option>
-            <Option value="Canada">Canada</Option>
-            <Option value="UK">United Kingdom</Option>
+            {getAllCountries().map(country => (
+              <Option key={country} value={country}>{country}</Option>
+            ))}
           </Select>
         </Col>
         
@@ -205,24 +246,12 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
             loading={loading}
             disabled={!selectedCountry}
             allowClear
+            showSearch
+            optionFilterProp="children"
           >
-            {selectedCountry === 'USA' && (
-              <>
-                <Option value="California">California</Option>
-                <Option value="Florida">Florida</Option>
-                <Option value="New York">New York</Option>
-                <Option value="Texas">Texas</Option>
-              </>
-            )}
-            {selectedCountry === 'India' && (
-              <Option value="Maharashtra">Maharashtra</Option>
-            )}
-            {selectedCountry === 'Canada' && (
-              <Option value="Ontario">Ontario</Option>
-            )}
-            {selectedCountry === 'UK' && (
-              <Option value="England">England</Option>
-            )}
+            {availableStates.map(state => (
+              <Option key={state} value={state}>{state}</Option>
+            ))}
           </Select>
         </Col>
         
@@ -237,28 +266,12 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
             loading={loading}
             disabled={!selectedState}
             allowClear
+            showSearch
+            optionFilterProp="children"
           >
-            {selectedCountry === 'USA' && selectedState === 'California' && (
-              <Option value="Los Angeles">Los Angeles</Option>
-            )}
-            {selectedCountry === 'USA' && selectedState === 'Florida' && (
-              <Option value="Miami">Miami</Option>
-            )}
-            {selectedCountry === 'USA' && selectedState === 'New York' && (
-              <Option value="New York">New York</Option>
-            )}
-            {selectedCountry === 'USA' && selectedState === 'Texas' && (
-              <Option value="Houston">Houston</Option>
-            )}
-            {selectedCountry === 'India' && selectedState === 'Maharashtra' && (
-              <Option value="Mumbai">Mumbai</Option>
-            )}
-            {selectedCountry === 'Canada' && selectedState === 'Ontario' && (
-              <Option value="Toronto">Toronto</Option>
-            )}
-            {selectedCountry === 'UK' && selectedState === 'England' && (
-              <Option value="London">London</Option>
-            )}
+            {availableCities.map(city => (
+              <Option key={city} value={city}>{city}</Option>
+            ))}
           </Select>
         </Col>
         

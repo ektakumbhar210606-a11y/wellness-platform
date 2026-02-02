@@ -53,6 +53,8 @@ export interface BusinessSearchResponse {
     };
     filters: {
       locations: string[];
+      states: string[];
+      cities: string[];
       serviceTypes: string[];
     };
   };
@@ -69,6 +71,9 @@ export const searchBusinesses = async (
     
     if (params.search) queryParams.append('search', params.search);
     if (params.location) queryParams.append('location', params.location);
+    if (params.country) queryParams.append('country', params.country);
+    if (params.state) queryParams.append('state', params.state);
+    if (params.city) queryParams.append('city', params.city);
     if (params.serviceType) queryParams.append('serviceType', params.serviceType);
     if (params.minRating !== undefined) queryParams.append('minRating', params.minRating.toString());
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
@@ -98,6 +103,8 @@ export const searchBusinesses = async (
  */
 export const getFilterOptions = async (params: { country?: string } = {}): Promise<{
   locations: string[];
+  states: string[];
+  cities: string[];
   serviceTypes: string[];
 }> => {
   try {

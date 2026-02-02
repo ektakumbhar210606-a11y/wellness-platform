@@ -9,6 +9,7 @@ import ClientNavbar from '../components/ClientNavbar';
 import { searchBusinesses, BusinessSearchParams, ISearchedBusiness } from '../services/businessSearchService';
 import CustomerBusinessCard from '../components/CustomerBusinessCard';
 import SearchFilters from '../components/SearchFilters';
+import { getCountryName } from '../utils/locationData';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -57,6 +58,12 @@ const SearchPage = () => {
     loadBusinesses();
   }, []);
 
+  // Log current search parameters for debugging
+  useEffect(() => {
+    console.log('Current search params:', searchParams);
+    console.log('Business count:', businesses.length);
+  }, [searchParams, businesses]);
+
   // Handle search param changes
   useEffect(() => {
     loadBusinesses();
@@ -72,6 +79,7 @@ const SearchPage = () => {
 
   // Handle filter changes
   const handleFilterChange = (newFilters: BusinessSearchParams) => {
+    console.log('Filter change received:', newFilters);
     setSearchParams(prev => {
       const updatedParams = {
         ...prev,
@@ -86,6 +94,7 @@ const SearchPage = () => {
         }
       });
       
+      console.log('Updated search params:', updatedParams);
       return updatedParams;
     });
   };

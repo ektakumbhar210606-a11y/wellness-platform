@@ -15,6 +15,9 @@ export async function GET(req: NextRequest) {
     // Extract query parameters
     const searchTerm = searchParams.get('search') || '';
     const location = searchParams.get('location') || '';
+    const country = searchParams.get('country') || '';
+    const state = searchParams.get('state') || '';
+    const city = searchParams.get('city') || '';
     const serviceType = searchParams.get('serviceType') || '';
     const minRatingStr = searchParams.get('minRating') || '';
     const minRating = minRatingStr ? parseFloat(minRatingStr) : 0;
@@ -42,6 +45,21 @@ export async function GET(req: NextRequest) {
         { 'address.state': { $regex: location, $options: 'i' } },
         { 'address.zipCode': { $regex: location, $options: 'i' } }
       ];
+    }
+    
+    // Add country filter
+    if (country) {
+      query['address.country'] = country;
+    }
+    
+    // Add state filter
+    if (state) {
+      query['address.state'] = state;
+    }
+    
+    // Add city filter
+    if (city) {
+      query['address.city'] = city;
     }
 
     // Add service type filter
@@ -208,10 +226,41 @@ export async function GET(req: NextRequest) {
     }
 
     // Get unique locations and service types for filter options
-    const [locations, serviceTypes] = await Promise.all([
-      BusinessModel.distinct('address.city', { status: 'active' }),
-      BusinessModel.distinct('serviceType', { status: 'active' })
-    ]);
+    // If country is specified, get states and cities for that country only
+    let locations: string[] = [];
+    let states: string[] = [];
+    let cities: string[] = [];
+    
+    if (country) {
+      // Get states and cities for the specified country
+      const [countryStates, countryCities] = await Promise.all([
+        BusinessModel.distinct('address.state', { 
+          status: 'active', 
+          'address.country': country 
+        }),
+        BusinessModel.distinct('address.city', { 
+          status: 'active', 
+          'address.country': country 
+        })
+      ]);
+      states = countryStates.sort();
+      cities = countryCities.sort();
+      
+      // Get all locations (cities) for this country
+      locations = countryCities.sort();
+    } else {
+      // Get all locations and states
+      const [allLocations, allStates, allCities] = await Promise.all([
+        BusinessModel.distinct('address.city', { status: 'active' }),
+        BusinessModel.distinct('address.state', { status: 'active' }),
+        BusinessModel.distinct('address.city', { status: 'active' })
+      ]);
+      locations = allLocations.sort();
+      states = allStates.sort();
+      cities = allCities.sort();
+    }
+    
+    const serviceTypes = await BusinessModel.distinct('serviceType', { status: 'active' });
 
     return Response.json({
       success: true,
@@ -225,7 +274,9 @@ export async function GET(req: NextRequest) {
           itemsPerPage: limit
         },
         filters: {
-          locations: locations.sort(),
+          locations: locations,
+          states: states,
+          cities: cities,
           serviceTypes: serviceTypes.filter(Boolean).sort()
         }
       }
