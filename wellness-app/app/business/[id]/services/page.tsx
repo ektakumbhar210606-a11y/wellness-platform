@@ -367,8 +367,8 @@ export default function BusinessServicesPage() {
                       size="large" 
                       style={{ padding: '0 32px', height: '40px', fontSize: '16px' }}
                       onClick={() => {
-                        if (selectedServiceId && selectedTherapist?._id) {
-                          router.push(`/services/${selectedServiceId}/book?therapist=${selectedTherapist._id}`);
+                        if (businessId && selectedServiceId && selectedTherapist?._id) {
+                          router.push(`/booking/slots?businessId=${businessId}&serviceId=${selectedServiceId}&therapistId=${selectedTherapist._id}`);
                         }
                       }}
                     >
