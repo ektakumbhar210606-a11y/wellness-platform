@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Layout, Typography, Row, Col, Card, Button, Spin, Alert, message } from 'antd';
+import { Layout, Typography, Row, Col, Card, Button, Spin, Alert, message, DatePicker } from 'antd';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import moment from 'moment';
+import type { Dayjs } from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -20,6 +21,7 @@ export default function BookingSlotSelectorPage() {
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   // Define type for selected slot
   type SelectedSlotType = {
     id?: string;
@@ -30,6 +32,19 @@ export default function BookingSlotSelectorPage() {
   
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlotType>(null);
   
+  // Function to validate date selection (30 days in advance max)
+  const disabledDate = (current: any) => {
+    if (!current) return false;
+    
+    // Convert current to moment if it's a dayjs object
+    const currentDate = current.$d ? moment(current.$d) : moment(current);
+    const today = moment().startOf('day');
+    const maxDate = moment().add(30, 'days').endOf('day');
+    
+    // Disable dates before today or after max date
+    return currentDate.isBefore(today, 'day') || currentDate.isAfter(maxDate, 'day');
+  };
+  
   const { user } = useAuth();
   
   useEffect(() => {
@@ -39,13 +54,21 @@ export default function BookingSlotSelectorPage() {
       return;
     }
     
-    fetchAvailableSlots();
-  }, [businessId, serviceId, therapistId]);
+    // Only fetch slots when a date is selected
+    if (selectedDate) {
+      fetchAvailableSlots();
+    }
+  }, [businessId, serviceId, therapistId, selectedDate]);
   
   const fetchAvailableSlots = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Validate that a date has been selected
+      if (!selectedDate) {
+        throw new Error('Please select a date first');
+      }
       
       // Get the token from localStorage
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -54,8 +77,11 @@ export default function BookingSlotSelectorPage() {
         throw new Error('Authentication token not found');
       }
       
-      // Fetch available slots from the new booking slots API
-      const response = await fetch(`/api/booking/slots?businessId=${businessId}&serviceId=${serviceId}`, {
+      // Format the selected date as YYYY-MM-DD
+      const formattedDate = selectedDate.format('YYYY-MM-DD');
+      
+      // Fetch available slots from the newer API with date support
+      const response = await fetch(`/api/bookings/available-slots?businessId=${businessId}&serviceId=${serviceId}&therapistId=${therapistId}&date=${formattedDate}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -71,22 +97,14 @@ export default function BookingSlotSelectorPage() {
       const result = await response.json();
       
       if (result.success) {
-        // Filter out past slots and format the slots
-        const today = new Date();
-        const todayFormatted = moment(today).format('YYYY-MM-DD');
-        
+        // Filter out only available slots and format them
         const filteredSlots = result.data
-          .filter((slot: any) => {
-            // For this implementation, we're assuming the API returns slots for today
-            // In a real implementation, you might have dates associated with each slot
-            return true; // Placeholder - in a real scenario, you'd filter past times
-          })
+          .filter((slot: any) => slot.isAvailable)
           .map((slot: any, index: number) => ({
-            id: `slot-${index}`,
+            id: `slot-${index}-${formattedDate}`,
             startTime: slot.startTime,
             endTime: slot.endTime,
-            // In a real implementation, you'd include date information
-            date: todayFormatted
+            date: formattedDate
           }));
         
         setAvailableSlots(filteredSlots);
@@ -127,9 +145,9 @@ export default function BookingSlotSelectorPage() {
       return;
     }
     
-    // Navigate to next booking confirmation/payment page
+    // Navigate to booking confirmation page
     // Pass: businessId, serviceId, therapistId, selectedSlot
-    router.push(`/booking/confirm-selection?businessId=${businessId}&serviceId=${serviceId}&therapistId=${therapistId}&startTime=${selectedSlot.startTime}&endTime=${selectedSlot.endTime}&date=${selectedSlot.date}`);
+    router.push(`/booking/confirmation?businessId=${businessId}&serviceId=${serviceId}&therapistId=${therapistId}&startTime=${selectedSlot.startTime}&endTime=${selectedSlot.endTime}&date=${selectedSlot.date}`);
   };
   
   if (!businessId || !serviceId || !therapistId) {
@@ -138,7 +156,7 @@ export default function BookingSlotSelectorPage() {
         <Layout.Content style={{ padding: '24px', marginTop: 64 }}>
           <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px' }}>
             <Alert
-              message="Missing Parameters"
+              title="Missing Parameters"
               description="Business ID, Service ID, and Therapist ID are required to view booking slots."
               type="error"
               showIcon
@@ -154,12 +172,12 @@ export default function BookingSlotSelectorPage() {
       <Layout.Content style={{ padding: '24px', marginTop: 64 }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
-            Select a Time Slot
+            Select Date and Time Slot
           </Title>
           
           {error && (
             <Alert
-              message="Error"
+              title="Error"
               description={error}
               type="error"
               showIcon
@@ -167,21 +185,58 @@ export default function BookingSlotSelectorPage() {
             />
           )}
           
-          {loading ? (
+          {/* Date Selection Section */}
+          <div style={{ marginBottom: 24 }}>
+            <Title level={4} style={{ marginBottom: 12 }}>Select Date</Title>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+              <DatePicker
+                value={selectedDate}
+                onChange={(date) => {
+                  // Use Day.js object directly
+                  setSelectedDate(date);
+                  // Reset selected slot when date changes
+                  setSelectedSlot(null);
+                }}
+                disabledDate={disabledDate}
+                placeholder="Select a date"
+                style={{ width: '100%', maxWidth: '300px' }}
+              />
+            </div>
+          </div>
+          
+          {/* Show message when no date is selected */}
+          {!selectedDate && (
+            <Alert
+              title="Date Required"
+              description="Please select a date to view available time slots"
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+          
+          {/* Loading state */}
+          {loading && selectedDate && (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <Spin size="large" />
-              <Text style={{ display: 'block', marginTop: 16 }}>Loading available time slots...</Text>
+              <Text style={{ display: 'block', marginTop: 16 }}>Loading available time slots for {selectedDate.format('MMMM D, YYYY')}...</Text>
             </div>
-          ) : (
+          )}
+          
+          {/* Slot selection section - only show when date is selected */}
+          {selectedDate && !loading && (
             <>
-              <Title level={4} style={{ marginBottom: 16 }}>Available Time Slots</Title>
+              <Title level={4} style={{ marginBottom: 16 }}>Available Time Slots for {selectedDate.format('MMMM D, YYYY')}</Title>
               
               <Row gutter={[16, 16]}>
                 {availableSlots.length > 0 ? (
                   availableSlots.map((slot) => {
                     const currentTime = moment();
                     const slotTime = moment(slot.startTime, 'HH:mm');
-                    const isPast = slotTime.isBefore(currentTime, 'minute');
+                    
+                    // For date-specific slots, we don't need to check if it's in the past
+                    // since the user selected the date
+                    const isPast = false;
                     
                     return (
                       <Col key={slot.id} xs={24} sm={12} md={8}>
@@ -213,8 +268,8 @@ export default function BookingSlotSelectorPage() {
                 ) : (
                   <Col span={24}>
                     <Alert
-                      message="No Available Slots"
-                      description="There are currently no available time slots for this service. Please check back later."
+                      title="No Available Slots"
+                      description={`There are currently no available time slots for ${selectedDate.format('MMMM D, YYYY')}. Please select another date.`}
                       type="info"
                       showIcon
                     />

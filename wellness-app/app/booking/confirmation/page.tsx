@@ -14,10 +14,12 @@ export default function BookingConfirmationPage() {
   
   // Get parameters from URL
   const bookingId = searchParams.get('id');
+  const businessId = searchParams.get('businessId');
   const serviceId = searchParams.get('serviceId');
   const therapistId = searchParams.get('therapistId');
   const dateParam = searchParams.get('date');
-  const time = searchParams.get('time');
+  const startTime = searchParams.get('startTime');
+  const endTime = searchParams.get('endTime');
   
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function BookingConfirmationPage() {
   const { user } = useAuth();
   
   useEffect(() => {
-    if (!bookingId || !serviceId || !therapistId || !dateParam || !time) {
+    if (!serviceId || !therapistId || !dateParam || !startTime || !endTime) {
       setError('Missing required booking parameters');
       setLoading(false);
       return;
@@ -35,14 +37,15 @@ export default function BookingConfirmationPage() {
     // In a real implementation, you would fetch the booking details from the API
     // For now, we'll just set the booking details from the parameters
     setBookingDetails({
-      id: bookingId,
+      id: bookingId || 'temp-id',
+      businessId,
       serviceId,
       therapistId,
       date: dateParam,
-      time,
+      time: `${startTime} - ${endTime}`,
     });
     setLoading(false);
-  }, [bookingId, serviceId, therapistId, dateParam, time]);
+  }, [bookingId, businessId, serviceId, therapistId, dateParam, startTime, endTime]);
   
   const handleBackToDashboard = () => {
     router.push('/dashboard/customer');
@@ -86,7 +89,7 @@ export default function BookingConfirmationPage() {
             <div style={{ textAlign: 'center', padding: '24px' }}>
               <div style={{ fontSize: '48px', marginBottom: 16 }}>✅</div>
               <Title level={3} style={{ color: '#52c41a' }}>Your appointment has been booked</Title>
-              <Text>Your booking confirmation number is <strong>{bookingId}</strong></Text>
+              <Text>Your booking confirmation number is <strong>{bookingId || 'TEMP-' + Date.now()}</strong></Text>
             </div>
           </Card>
           
@@ -99,6 +102,11 @@ export default function BookingConfirmationPage() {
                 <Col span={24}>
                   <Text strong>Time:</Text> <Text>{bookingDetails.time}</Text>
                 </Col>
+                {bookingDetails.businessId && (
+                  <Col span={24}>
+                    <Text strong>Business ID:</Text> <Text>{bookingDetails.businessId}</Text>
+                  </Col>
+                )}
                 <Col span={24}>
                   <Text strong>Service ID:</Text> <Text>{bookingDetails.serviceId}</Text>
                 </Col>
