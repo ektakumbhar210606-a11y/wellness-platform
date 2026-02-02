@@ -76,7 +76,9 @@ export default function BusinessServicesPage() {
         // Check if user is authenticated
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (!token) {
-          throw new Error('Unauthorized: Please log in to view business services');
+          // Redirect to login page if not authenticated
+          router.push('/login');
+          return; // Exit early to prevent further execution
         }
         
         if (!businessId) {
@@ -105,11 +107,7 @@ export default function BusinessServicesPage() {
         
         // Handle specific error cases
         if (err instanceof Error) {
-          if (err.message.includes('Unauthorized') || err.message.includes('401')) {
-            setError('Please log in to view business services');
-            // Optionally redirect to login page
-            // router.push('/login');
-          } else if (err.message.includes('Business not found') || err.message.includes('404')) {
+          if (err.message.includes('Business not found') || err.message.includes('404')) {
             setError('Business not found');
           } else {
             setError(err.message);
