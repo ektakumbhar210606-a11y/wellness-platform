@@ -67,9 +67,9 @@ const ProfileLayout: React.FC<{
 
   return (
     <Layout className={`min-h-screen ${className}`}>
-      <Header className="bg-white shadow-md px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="flex items-center space-x-4">
+      <Header className="bg-white shadow-sm px-6 py-3 flex items-center justify-between border-b border-gray-200" style={{ backgroundColor: '#ffffff' }}>
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2">
             <Button
               type="text"
               icon={<LeftOutlined />}
@@ -80,6 +80,8 @@ const ProfileLayout: React.FC<{
                   router.push(backHomeRoute);
                 }
               }}
+              className="flex items-center"
+              style={{ color: '#1f2937' }}
             >
               Back
             </Button>
@@ -88,21 +90,26 @@ const ProfileLayout: React.FC<{
                 type="text"
                 icon={<HomeOutlined />}
                 onClick={() => router.push(backHomeRoute)}
+                className="flex items-center"
+                style={{ color: '#1f2937' }}
               >
                 Home
               </Button>
             )}
           </div>
-          <div className="ml-6">
-            <Title level={4} className="mb-0">{headerText}</Title>
+          <div className="border-l border-gray-300 h-6 mx-2"></div>
+          <div>
+            <Title level={3} className="mb-0 text-gray-800 font-semibold" style={{ color: '#1f2937' }}>{headerText}</Title>
             {user && (
-              <Text type="secondary" className="text-sm">
+              <Text type="secondary" className="text-xs mt-1 block" style={{ color: '#6b7280' }}>
                 {user.name || 'User Profile'}
               </Text>
             )}
           </div>
         </div>
-        {extraContent}
+        <div className="flex items-center">
+          {extraContent}
+        </div>
       </Header>
       <Content className="p-6 bg-gray-50">
         {loading ? (
