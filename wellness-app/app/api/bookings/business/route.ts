@@ -167,8 +167,8 @@ export async function GET(req: NextRequest) {
         professionalTitle: (booking.therapist as any).professionalTitle
       },
       date: booking.date,
-      timeSlot: booking.timeSlot,
-      duration: booking.duration,
+      timeSlot: booking.time,
+      duration: (booking.service as any).duration,
       status: booking.status,
       notes: booking.notes,
       createdAt: booking.createdAt
@@ -254,18 +254,25 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Find and update the booking if it belongs to the business
-    const booking = await BookingModel.findOne({
-      _id: bookingId,
-      business: business._id
-    });
-
+    // Find the booking
+    const booking = await BookingModel.findById(bookingId);
     if (!booking) {
       return Response.json(
-        { success: false, error: 'Booking not found or does not belong to your business' },
+        { success: false, error: 'Booking not found' },
         { status: 404 }
       );
     }
+
+    // Check if the booking belongs to a service of this business
+    const service = await ServiceModel.findById(booking.service);
+    if (!service || service.business.toString() !== business._id.toString()) {
+      return Response.json(
+        { success: false, error: 'Booking does not belong to your business' },
+        { status: 403 }
+      );
+    }
+
+
 
     // Check if booking can be updated (only pending bookings can be confirmed/cancelled)
     if (booking.status !== 'pending') {

@@ -50,7 +50,7 @@ interface Booking {
     professionalTitle: string;
   };
   date: string;
-  timeSlot: string;
+  time: string;
   duration: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
   notes?: string;
@@ -216,6 +216,51 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
     }
   };
 
+  // Handle booking rescheduling
+  const handleRescheduleBooking = async (booking: Booking) => {
+    try {
+      setActionLoading(booking.id);
+      
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // For demonstration, we'll use today's date + 1 day and same time
+      // In a real implementation, this would come from a date/time picker
+      const newDate = new Date();
+      newDate.setDate(newDate.getDate() + 1);
+      const newTime = booking.time || '10:00';
+      
+      const response = await fetch(`/api/bookings/${booking.id}/reschedule`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          newDate: newDate.toISOString().split('T')[0],
+          newTime: newTime
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reschedule booking');
+      }
+      
+      message.success('Booking rescheduled successfully!');
+      // Refresh both lists
+      await Promise.all([fetchBookingRequests(), fetchConfirmedBookings()]);
+    } catch (error: any) {
+      console.error('Error rescheduling booking:', error);
+      message.error(error.message || 'Failed to reschedule booking');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Show booking details modal
   const showBookingDetails = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -292,7 +337,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         <div>
           <div><CalendarOutlined /> {new Date(record.date).toLocaleDateString()}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.timeSlot}
+            {record.time}
           </div>
         </div>
       ),
@@ -319,6 +364,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             onClick={() => handleConfirmBooking(record.id)}
           >
             Confirm
+          </Button>
+          <Button 
+            type="default"
+            size="small"
+            loading={actionLoading === record.id}
+            onClick={() => handleRescheduleBooking(record)}
+          >
+            Reschedule
           </Button>
           <Button 
             danger 
@@ -394,7 +447,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         <div>
           <div><CalendarOutlined /> {new Date(record.date).toLocaleDateString()}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.timeSlot}
+            {record.time}
           </div>
         </div>
       ),
@@ -559,7 +612,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
               {new Date(selectedBooking.date).toLocaleDateString()}
             </Descriptions.Item>
             <Descriptions.Item label="Booking Time">
-              {selectedBooking.timeSlot}
+              {selectedBooking.time}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
               <Tag 

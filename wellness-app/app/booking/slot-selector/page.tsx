@@ -151,6 +151,61 @@ export default function BookingSlotSelectorPage() {
     router.push(`/booking/confirmation?businessId=${businessId}&serviceId=${serviceId}&therapistId=${therapistId}&startTime=${selectedSlot.startTime}&endTime=${selectedSlot.endTime}&date=${selectedSlot.date}`);
   };
   
+  const handleSendBookingRequest = async () => {
+    if (!selectedSlot) {
+      message.warning('Please select a time slot first');
+      return;
+    }
+    
+    // Validate slot selection
+    if (!businessId || !serviceId || !therapistId) {
+      message.error('Missing required booking parameters');
+      return;
+    }
+    
+    try {
+      // Get the token from localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        message.error('Authentication required. Please login first.');
+        return;
+      }
+      
+      // Send booking request to the API
+      const response = await fetch('/api/bookings/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          businessId,
+          serviceId,
+          therapistId,
+          date: selectedSlot.date,
+          startTime: selectedSlot.startTime,
+          endTime: selectedSlot.endTime
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send booking request');
+      }
+      
+      if (result.success) {
+        message.success('Booking request sent successfully! The business will review your request.');
+        // Optionally clear the selected slot
+        setSelectedSlot(null);
+      }
+    } catch (error: any) {
+      console.error('Error sending booking request:', error);
+      message.error(error.message || 'Failed to send booking request. Please try again.');
+    }
+  };
+  
   if (!businessId || !serviceId || !therapistId) {
     return (
       <Layout style={{ minHeight: '100vh' }}>
@@ -281,13 +336,20 @@ export default function BookingSlotSelectorPage() {
               {selectedSlot && (
                 <div style={{ marginTop: 24, textAlign: 'center' }}>
                   <Text>Selected slot: {selectedSlot.date} from {selectedSlot.startTime} to {selectedSlot.endTime}</Text>
-                  <div style={{ marginTop: 16 }}>
+                  <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: '12px' }}>
                     <Button 
                       type="primary" 
                       size="large" 
                       onClick={handleConfirmSelection}
                     >
                       Confirm Slot
+                    </Button>
+                    <Button 
+                      type="default" 
+                      size="large" 
+                      onClick={handleSendBookingRequest}
+                    >
+                      Send Booking Request
                     </Button>
                   </div>
                 </div>
