@@ -107,9 +107,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
   }, [selectedCountry, selectedState]);
 
   // Handle filter changes
-  const handleLocationChange = (value: string[]) => {
-    onFilterChange({ ...currentFilters, location: value.join(',') });
-  };
+
 
   const handleCountryChange = (value: string) => {
     console.log('Selected country:', value);
@@ -275,22 +273,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onFilterChange, currentFi
           </Select>
         </Col>
         
-        {/* Location Filter (tags) */}
-        <Col xs={24} md={6}>
-          <Typography.Text strong>Location Tags</Typography.Text>
-          <Select
-            mode="tags"
-            style={{ width: '100%', marginTop: 8 }}
-            placeholder="Enter cities, states, or zip codes"
-            value={currentFilters.location ? currentFilters.location.split(',') : []}
-            onChange={handleLocationChange}
-            loading={loading}
-          >
-            {filterOptions.locations.map(location => (
-              <Option key={location} value={location}>{location}</Option>
-            ))}
-          </Select>
-        </Col>
+
         
         {/* Service Type Filter */}
         <Col xs={24} md={8}>
