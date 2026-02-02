@@ -120,12 +120,13 @@ export default function BookingSlotSelectorPage() {
   };
   
   const handleSlotSelect = (slot: any) => {
-    // Check if the slot is in the past (future-proofing)
+    // Check if the slot is in the past compared to the current date and time
+    // For slots on future dates, all times should be selectable
     const currentTime = moment();
-    const slotTime = moment(slot.startTime, 'HH:mm');
+    const slotDateTime = moment(`${slot.date} ${slot.startTime}`, 'YYYY-MM-DD HH:mm');
     
-    // If the slot time is before the current time, it's in the past
-    if (slotTime.isBefore(currentTime, 'minute')) {
+    // If the slot date/time is before the current date/time, it's in the past
+    if (slotDateTime.isBefore(currentTime, 'minute')) {
       message.warning('Cannot select past time slots');
       return;
     }
