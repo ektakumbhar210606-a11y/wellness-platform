@@ -39,6 +39,7 @@ export default function BusinessServicesPage() {
   const [therapists, setTherapists] = useState<any[]>([]);
   const [therapistsLoading, setTherapistsLoading] = useState(false);
   const [therapistsError, setTherapistsError] = useState<string | null>(null);
+  const [selectedTherapist, setSelectedTherapist] = useState<any | null>(null);
   const { user } = useAuth();
 
   // Create a map of service ID to therapists for quick lookup
@@ -274,6 +275,7 @@ export default function BusinessServicesPage() {
                             e.stopPropagation(); // Prevent triggering card click
                             setSelectedServiceId(null);
                             setTherapists([]); // Clear therapists list
+                            setSelectedTherapist(null); // Clear selected therapist
                           }}
                           style={{ float: 'right', padding: 0 }}
                         >
@@ -302,14 +304,20 @@ export default function BusinessServicesPage() {
                         hoverable
                         style={{ 
                           borderRadius: 8, 
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                          cursor: 'pointer'
+                          boxShadow: selectedTherapist?._id === therapist._id
+                            ? '0 4px 12px rgba(24, 144, 255, 0.3)' 
+                            : '0 2px 8px rgba(0,0,0,0.08)',
+                          cursor: 'pointer',
+                          border: selectedTherapist?._id === therapist._id
+                            ? '2px solid #1890ff' 
+                            : '1px solid #f0f0f0',
+                          backgroundColor: selectedTherapist?._id === therapist._id
+                            ? '#f0faff' 
+                            : '#ffffff'
                         }}
                         onClick={() => {
-                          // Navigate to book this service with the selected therapist
-                          if (selectedServiceId) {
-                            router.push(`/services/${selectedServiceId}/book?therapist=${therapist._id}`);
-                          }
+                          // Set the selected therapist
+                          setSelectedTherapist(therapist);
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -350,6 +358,24 @@ export default function BusinessServicesPage() {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description="Please select a service to see available therapists"
                     />
+                  </div>
+                )}
+                
+                {/* Book Now Button - appears when a therapist is selected */}
+                {selectedTherapist && (
+                  <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                    <Button 
+                      type="primary" 
+                      size="large" 
+                      style={{ padding: '0 32px', height: '40px', fontSize: '16px' }}
+                      onClick={() => {
+                        if (selectedServiceId && selectedTherapist?._id) {
+                          router.push(`/services/${selectedServiceId}/book?therapist=${selectedTherapist._id}`);
+                        }
+                      }}
+                    >
+                      Book Now
+                    </Button>
                   </div>
                 )}
               </Card>
