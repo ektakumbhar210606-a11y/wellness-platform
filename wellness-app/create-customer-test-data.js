@@ -164,6 +164,24 @@ async function createCustomerTestData() {
     await reviews.insertOne(review);
     console.log('✅ Created test review with rating:', review.rating);
     
+    // Create additional test bookings for different scenarios
+    const futureDate3 = new Date(today);
+    futureDate3.setDate(today.getDate() + 21);
+    
+    // Another pending booking
+    const booking4 = {
+      customer: customerResult.insertedId,
+      therapist: therapistResult.insertedId,
+      service: serviceResult.insertedId,
+      date: futureDate3,
+      time: '16:00',
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await bookings.insertOne(booking4);
+    console.log('✅ Created additional pending booking');
+    
     console.log('\n✅ Test data created successfully!');
     console.log('Customer email: test.customer@example.com');
     console.log('Customer password: password123');
