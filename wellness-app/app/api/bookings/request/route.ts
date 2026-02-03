@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     const populatedBooking = await BookingModel.findById(savedBooking._id)
       .populate({
         path: 'customer',
-        select: 'firstName lastName email phone'
+        select: 'name email phone'
       })
       .populate({
         path: 'service',
@@ -183,16 +183,26 @@ export async function POST(request: NextRequest) {
         path: 'therapist',
         select: 'fullName professionalTitle'
       });
+    
+    // If customer doesn't have phone, try to get from associated Customer profile
+    if (populatedBooking && !populatedBooking.customer.phone) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: populatedBooking.customer._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        (populatedBooking.customer as any).phone = customerProfile.phoneNumber;
+      }
+    }
 
     // Format the response
     const formattedBooking = {
       id: populatedBooking!._id.toString(),
       customer: {
         id: (populatedBooking!.customer as any)._id.toString(),
-        firstName: (populatedBooking!.customer as any).firstName,
-        lastName: (populatedBooking!.customer as any).lastName,
+        name: (populatedBooking!.customer as any).name,
         email: (populatedBooking!.customer as any).email,
-        phone: (populatedBooking!.customer as any).phone
+        phone: (populatedBooking!.customer as any).phone,
+        firstName: (populatedBooking!.customer as any).name.split(' ')[0] || (populatedBooking!.customer as any).name,
+        lastName: (populatedBooking!.customer as any).name.split(' ').slice(1).join(' ') || ''
       },
       service: {
         id: (populatedBooking!.service as any)._id.toString(),

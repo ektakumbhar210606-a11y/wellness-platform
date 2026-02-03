@@ -163,9 +163,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       bookingId,
       updateData,
       { new: true }
-    ).populate({
+    )
+    .populate({
       path: 'customer',
-      select: 'firstName lastName email phone'
+      select: 'name email phone'
     })
     .populate({
       path: 'service',
@@ -175,6 +176,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       path: 'therapist',
       select: 'fullName professionalTitle'
     });
+    
+    // If customer doesn't have phone, try to get from associated Customer profile
+    if (updatedBooking && !updatedBooking.customer.phone) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: updatedBooking.customer._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        (updatedBooking.customer as any).phone = customerProfile.phoneNumber;
+      }
+    }
 
     return Response.json({
       success: true,
@@ -183,10 +193,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
         id: updatedBooking!._id.toString(),
         customer: {
           id: (updatedBooking!.customer as any)._id.toString(),
-          firstName: (updatedBooking!.customer as any).firstName,
-          lastName: (updatedBooking!.customer as any).lastName,
+          name: (updatedBooking!.customer as any).name,
           email: (updatedBooking!.customer as any).email,
-          phone: (updatedBooking!.customer as any).phone
+          phone: (updatedBooking!.customer as any).phone,
+          firstName: (updatedBooking!.customer as any).name.split(' ')[0] || (updatedBooking!.customer as any).name,
+          lastName: (updatedBooking!.customer as any).name.split(' ').slice(1).join(' ') || ''
         },
         service: {
           id: (updatedBooking!.service as any)._id.toString(),

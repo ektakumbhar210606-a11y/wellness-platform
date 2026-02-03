@@ -32,10 +32,11 @@ interface Booking {
   id: string;
   customer: {
     id: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
     email: string;
-    phone: string;
+    phone?: string;
   };
   service: {
     id: string;
@@ -294,12 +295,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       key: 'customer',
       render: (_: any, record: Booking) => (
         <div>
-          <div><UserOutlined /> {record.customer.firstName} {record.customer.lastName}</div>
+          <div><UserOutlined /> {record.customer.firstName ? `${record.customer.firstName} ${record.customer.lastName || ''}` : (record.customer.name || 'N/A')}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
             <MailOutlined /> {record.customer.email}
           </div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            <PhoneOutlined /> {record.customer.phone}
+            <PhoneOutlined /> {record.customer.phone || 'N/A'}
           </div>
         </div>
       ),
@@ -407,9 +408,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       key: 'customer',
       render: (_: any, record: Booking) => (
         <div>
-          <div><UserOutlined /> {record.customer.firstName} {record.customer.lastName}</div>
+          <div><UserOutlined /> {record.customer.firstName ? `${record.customer.firstName} ${record.customer.lastName || ''}` : (record.customer.name || 'N/A')}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
             <MailOutlined /> {record.customer.email}
+          </div>
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            <PhoneOutlined /> {record.customer.phone || 'N/A'}
           </div>
         </div>
       ),
@@ -588,13 +592,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         {selectedBooking && (
           <Descriptions column={1} bordered>
             <Descriptions.Item label="Customer Name">
-              {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}
+              {selectedBooking.customer.firstName 
+                ? `${selectedBooking.customer.firstName} ${selectedBooking.customer.lastName || ''}`
+                : (selectedBooking.customer.name || 'N/A')}
             </Descriptions.Item>
             <Descriptions.Item label="Customer Email">
               {selectedBooking.customer.email}
             </Descriptions.Item>
             <Descriptions.Item label="Customer Phone">
-              {selectedBooking.customer.phone}
+              {selectedBooking.customer.phone || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Service">
               {selectedBooking.service.name}
