@@ -7,6 +7,7 @@ import { UserOutlined, CalendarOutlined, BookOutlined, MessageOutlined, ProfileO
 import TherapistProfileDisplay from '../../components/TherapistProfileDisplay';
 import BusinessCard from '../../components/BusinessCard';
 import TherapistBusinessRequests from '../../components/TherapistBusinessRequests';
+import TherapistBookings from '../../components/TherapistBookings';
 import { useAuth } from '../../context/AuthContext';
 import { therapistApi, makeAuthenticatedRequest } from '../../utils/apiUtils';
 
@@ -258,7 +259,7 @@ const TherapistDashboardPage = () => {
       key: '4',
       label: 'Bookings',
       icon: <BookOutlined />,
-      onClick: () => console.log('Navigate to bookings'),
+      onClick: () => setActiveTab('bookings'),
     },
     {
       key: '5',
@@ -538,6 +539,14 @@ const TherapistDashboardPage = () => {
                   </div>
                 ),
               }, {
+                key: 'bookings',
+                label: 'Bookings',
+                children: (
+                  <div style={{ marginTop: 16 }}>
+                    <TherapistBookings />
+                  </div>
+                ),
+              }, {
                 key: 'profile',
                 label: 'Profile Information',
                 children: (
@@ -545,7 +554,8 @@ const TherapistDashboardPage = () => {
                     <TherapistProfileDisplay profile={dashboardData.profile} />
                   </div>
                 ),
-              }]}
+              }]
+            }
             />
           </Content>
         </Layout>

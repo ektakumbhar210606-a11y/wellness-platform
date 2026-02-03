@@ -1,0 +1,188 @@
+import { NextRequest } from 'next/server';
+import { connectToDatabase } from '@/lib/db';
+import BookingModel, { BookingStatus } from '@/models/Booking';
+import TherapistModel from '@/models/Therapist';
+import UserModel from '@/models/User';
+import jwt from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
+import { Types } from 'mongoose';
+
+async function requireTherapistAuth(request: NextRequest) {
+  try {
+    await connectToDatabase();
+
+    // Get token from header
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return {
+        authenticated: false,
+        error: 'Authentication token required',
+        status: 401
+      };
+    }
+
+    // Verify token
+    let decoded: JwtPayload;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    } catch (err) {
+      return {
+        authenticated: false,
+        error: 'Invalid or expired token',
+        status: 401
+      };
+    }
+
+    // Check user role - allow both 'Therapist' and 'therapist' for backward compatibility
+    if (decoded.role.toLowerCase() !== 'therapist') {
+      return {
+        authenticated: false,
+        error: 'Access denied. Therapist role required',
+        status: 403
+      };
+    }
+
+    // Get user to verify existence
+    const user = await UserModel.findById(decoded.id);
+    if (!user) {
+      return {
+        authenticated: false,
+        error: 'User not found',
+        status: 404
+      };
+    }
+
+    return {
+      authenticated: true,
+      user: decoded
+    };
+  } catch (error: any) {
+    console.error('Authentication error:', error);
+    return {
+      authenticated: false,
+      error: error.message || 'Internal server error',
+      status: 500
+    };
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ bookingId: string }> }
+) {
+  try {
+    // Authenticate and authorize therapist
+    const authResult = await requireTherapistAuth(req);
+    if (!authResult.authenticated) {
+      return Response.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
+    const decoded = authResult.user;
+    if (!decoded) {
+      return Response.json(
+        { success: false, error: 'Authentication failed' },
+        { status: 401 }
+      );
+    }
+
+    // Extract bookingId from params
+    const awaitedParams = await params;
+    const bookingId = awaitedParams.bookingId;
+
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(bookingId)) {
+      return Response.json(
+        { success: false, error: 'Invalid booking ID format' },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    // Get therapist profile by user ID
+    const therapist = await TherapistModel.findOne({ user: decoded.id });
+    if (!therapist) {
+      return Response.json(
+        { success: false, error: 'Therapist profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Find the booking and verify it belongs to this therapist
+    const booking = await BookingModel.findById(bookingId);
+    if (!booking) {
+      return Response.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if booking is assigned to this therapist
+    if (booking.therapist.toString() !== therapist._id.toString()) {
+      return Response.json(
+        { success: false, error: 'Access denied. This booking is not assigned to you' },
+        { status: 403 }
+      );
+    }
+
+    // Check if booking is in pending status
+    if (booking.status !== BookingStatus.Pending) {
+      return Response.json(
+        { success: false, error: 'Only pending bookings can be confirmed' },
+        { status: 400 }
+      );
+    }
+
+    // Update booking status to confirmed
+    const updatedBooking = await BookingModel.findByIdAndUpdate(
+      bookingId,
+      { status: BookingStatus.Confirmed },
+      { new: true, runValidators: true }
+    )
+    .populate({
+      path: 'customer',
+      select: 'firstName lastName email phone'
+    })
+    .populate({
+      path: 'service',
+      select: 'name price duration description'
+    });
+
+    return Response.json({
+      success: true,
+      message: 'Booking confirmed successfully',
+      data: {
+        id: updatedBooking!._id.toString(),
+        customer: {
+          id: (updatedBooking!.customer as any)._id.toString(),
+          firstName: (updatedBooking!.customer as any).firstName,
+          lastName: (updatedBooking!.customer as any).lastName,
+          email: (updatedBooking!.customer as any).email,
+          phone: (updatedBooking!.customer as any).phone
+        },
+        service: {
+          id: (updatedBooking!.service as any)._id.toString(),
+          name: (updatedBooking!.service as any).name,
+          price: (updatedBooking!.service as any).price,
+          duration: (updatedBooking!.service as any).duration,
+          description: (updatedBooking!.service as any).description
+        },
+        date: updatedBooking!.date,
+        time: updatedBooking!.time,
+        status: updatedBooking!.status,
+        createdAt: updatedBooking!.createdAt,
+        updatedAt: updatedBooking!.updatedAt
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Error confirming booking:', error);
+    return Response.json(
+      { success: false, error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

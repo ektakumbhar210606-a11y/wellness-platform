@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import TherapistModel from '../../../../models/Therapist';
 import BookingModel, { BookingStatus } from '../../../../models/Booking';
+import ServiceModel from '../../../../models/Service';
+import UserModel from '../../../../models/User';
 import { requireTherapistAuth } from '../../../../lib/middleware/authMiddleware';
 
 export async function GET(req: NextRequest) {
@@ -14,7 +16,7 @@ export async function GET(req: NextRequest) {
         { status: authResult.status }
       );
     }
-    
+
     const decoded = authResult.user;
     if (!decoded) {
       return Response.json(
@@ -22,8 +24,14 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     await connectToDatabase();
+
+    // Ensure models are registered
+    console.log('Models registered:', {
+      Service: ServiceModel.modelName,
+      User: UserModel.modelName
+    });
 
     // Get therapist profile by user ID
     console.log('Fetching therapist profile for user ID:', decoded.id);
@@ -83,10 +91,10 @@ export async function GET(req: NextRequest) {
     const recentActivity = await BookingModel.find({
       therapist: therapistProfile._id
     })
-    .populate('customer', 'name email')
-    .populate('service', 'name duration price')
-    .sort({ date: -1, createdAt: -1 })
-    .limit(5);
+      .populate('customer', 'name email')
+      .populate('service', 'name duration price')
+      .sort({ date: -1, createdAt: -1 })
+      .limit(5);
 
     console.log('Sending dashboard data with weeklyAvailability:', therapistProfile.weeklyAvailability);
     return Response.json({
