@@ -5,6 +5,12 @@ import UserModel from '../../../../../models/User';
 import ServiceModel from '../../../../../models/Service';
 import TherapistModel from '../../../../../models/Therapist';
 import BusinessModel from '../../../../../models/Business';
+
+// Force model registration by doing simple finds
+// This ensures Mongoose knows about the schemas for populate()
+await ServiceModel.findOne({});
+await TherapistModel.findOne({});
+await BusinessModel.findOne({});
 import * as jwt from 'jsonwebtoken';
 
 interface JwtPayload {
@@ -18,8 +24,6 @@ interface JwtPayload {
  */
 async function requireCustomerAuth(request: NextRequest) {
   try {
-    await connectToDatabase();
-
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) {
@@ -81,6 +85,14 @@ async function requireCustomerAuth(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    await connectToDatabase();
+    
+    // Force model registration by doing simple finds
+    // This ensures Mongoose knows about the schemas for populate()
+    await ServiceModel.findOne({});
+    await TherapistModel.findOne({});
+    await BusinessModel.findOne({});
+    
     // Authenticate and authorize the request
     const authResult = await requireCustomerAuth(request);
     if (!authResult.authenticated) {
@@ -106,22 +118,22 @@ export async function GET(request: NextRequest) {
     const query = {
       customer: customerId,
       date: { $gte: today },
-      status: { $ne: 'cancelled' }
+      status: 'confirmed'
     };
 
     // Fetch upcoming bookings with populated data
     const bookings = await BookingModel.find(query)
       .populate({
         path: 'service',
-        select: 'name price duration description'
+        select: 'name price duration description business',
+        populate: {
+          path: 'business',
+          select: 'name'
+        }
       })
       .populate({
         path: 'therapist',
         select: 'fullName professionalTitle'
-      })
-      .populate({
-        path: 'business',
-        select: 'name'
       })
       .sort({ date: 1, time: 1 }) // Sort by nearest date first, then by time
       .skip(skip)
@@ -134,7 +146,7 @@ export async function GET(request: NextRequest) {
     const formattedBookings = bookings.map(booking => {
       const service = booking.service as any;
       const therapist = booking.therapist as any;
-      const business = booking.business as any;
+      const business = service?.business as any;
 
       return {
         id: booking._id.toString(),

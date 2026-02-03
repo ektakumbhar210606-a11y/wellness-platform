@@ -98,13 +98,16 @@ export async function GET(request: NextRequest) {
       completedServices,
       avgRating
     ] = await Promise.all([
-      // 1. Total appointments count (all bookings for this customer)
-      BookingModel.countDocuments({ customer: customerId }),
+      // 1. Total appointments count (only confirmed/completed bookings - business confirmed)
+      BookingModel.countDocuments({ 
+        customer: customerId,
+        status: { $in: ['confirmed', 'completed'] }
+      }),
 
-      // 2. Upcoming appointments count (confirmed/pending bookings with future dates)
+      // 2. Upcoming appointments count (only confirmed bookings with future dates)
       BookingModel.countDocuments({
         customer: customerId,
-        status: { $in: ['pending', 'confirmed'] },
+        status: 'confirmed',
         date: { $gte: new Date() }
       }),
 

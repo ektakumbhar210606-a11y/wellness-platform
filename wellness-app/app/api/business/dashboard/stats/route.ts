@@ -117,16 +117,16 @@ export async function GET(request: NextRequest) {
       totalServices,
       pendingTherapistRequests
     ] = await Promise.all([
-      // 1. Total unique clients who have booked services
+      // 1. Total unique clients who have booked services (only confirmed/completed bookings)
       BookingModel.distinct('customer', { 
         business: businessId,
-        status: { $in: ['completed', 'confirmed', 'pending'] }
+        status: { $in: ['completed', 'confirmed'] }
       }).then(clients => clients.length),
 
-      // 2. Upcoming appointments (confirmed/pending bookings with future dates)
+      // 2. Upcoming appointments (only confirmed bookings with future dates)
       BookingModel.countDocuments({
         business: businessId,
-        status: { $in: ['pending', 'confirmed'] },
+        status: 'confirmed',
         date: { $gte: new Date() }
       }),
 
