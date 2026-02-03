@@ -6,6 +6,7 @@ import ServiceModel from '../../../../models/Service';
 import UserModel from '../../../../models/User';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
+import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
 
 interface JwtPayload {
   id: string;
@@ -103,6 +104,18 @@ export async function GET(req: NextRequest) {
         { success: false, error: 'Business profile not found' },
         { status: 404 }
       );
+    }
+
+    // Automatically cancel expired bookings before fetching current bookings
+    // This ensures the business sees up-to-date booking statuses
+    try {
+      const cancellationResult = await cancelExpiredBookings();
+      if (cancellationResult.cancelledCount > 0) {
+        console.log(`Automatically cancelled ${cancellationResult.cancelledCount} expired bookings for business`);
+      }
+    } catch (error) {
+      console.error('Error during automatic cancellation:', error);
+      // Continue with the request even if automatic cancellation fails
     }
 
     // Parse query parameters for filtering
