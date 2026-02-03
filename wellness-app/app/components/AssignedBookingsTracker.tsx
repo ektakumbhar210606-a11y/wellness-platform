@@ -188,7 +188,7 @@ const AssignedBookingsTracker: React.FC = () => {
             <Statistic
               title="Pending"
               value={summary.pending}
-              valueStyle={{ color: '#faad14' }}
+              styles={{ content: { color: '#faad14' } }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -198,7 +198,7 @@ const AssignedBookingsTracker: React.FC = () => {
             <Statistic
               title="Confirmed"
               value={summary.confirmed}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
               prefix={<CheckOutlined />}
             />
           </Card>
@@ -208,7 +208,7 @@ const AssignedBookingsTracker: React.FC = () => {
             <Statistic
               title="Cancelled"
               value={summary.cancelled}
-              valueStyle={{ color: '#ff4d4f' }}
+              styles={{ content: { color: '#ff4d4f' } }}
               prefix={<CloseOutlined />}
             />
           </Card>
@@ -412,7 +412,7 @@ const AssignedBookingsTracker: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div style={{ marginLeft: 24 }}>
-                  <Space direction="vertical">
+                  <Space orientation="vertical">
                     <Button 
                       size="small"
                       onClick={() => {
