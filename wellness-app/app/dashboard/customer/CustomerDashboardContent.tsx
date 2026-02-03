@@ -351,10 +351,9 @@ const CustomerDashboardContent = () => {
                     <Spin />
                   </div>
                 ) : upcomingBookings.length > 0 ? (
-                  <List
-                    dataSource={upcomingBookings}
-                    renderItem={(booking) => (
-                      <List.Item>
+                  <div>
+                    {upcomingBookings.map((booking) => (
+                      <div key={booking._id} style={{ marginBottom: '12px' }}>
                         <CustomerUpcomingAppointmentCard 
                           appointment={{
                             id: booking._id,
@@ -381,9 +380,9 @@ const CustomerDashboardContent = () => {
                             updatedAt: new Date(booking.createdAt)
                           }}
                         />
-                      </List.Item>
-                    )}
-                  />
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <Empty 
                     description="No upcoming appointments"

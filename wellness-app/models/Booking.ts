@@ -22,6 +22,8 @@ export interface IBooking extends Document {
   status: BookingStatus; // Status of the booking
   notes?: string; // Optional booking notes
   duration?: number; // Optional booking duration
+  assignedByAdmin?: boolean; // Whether this booking was explicitly assigned by an admin
+  assignedById?: string; // ID of the admin who assigned the booking
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,6 +76,14 @@ const BookingSchema: Schema<IBooking> = new Schema({
   duration: {
     type: Number,
     min: [1, 'Duration must be at least 1 minute']
+  },
+  assignedByAdmin: {
+    type: Boolean,
+    default: false // By default, bookings are not explicitly assigned by admin
+  },
+  assignedById: {
+    type: String,
+    ref: 'User' // Reference to the admin who assigned the booking
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

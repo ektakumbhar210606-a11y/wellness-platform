@@ -76,7 +76,7 @@ const CustomerUpcomingAppointmentCard: React.FC<CustomerUpcomingAppointmentCardP
   return (
     <Card 
       style={{ marginBottom: 16 }}
-      bodyStyle={{ padding: '16px' }}
+      styles={{ body: { padding: '16px' } }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
@@ -89,7 +89,7 @@ const CustomerUpcomingAppointmentCard: React.FC<CustomerUpcomingAppointmentCardP
             </Tag>
           </div>
           
-          <Space direction="vertical" size={4}>
+          <Space orientation="vertical" size={4}>
             {appointment.therapist && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <UserOutlined />

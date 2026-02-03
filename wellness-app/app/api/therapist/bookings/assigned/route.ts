@@ -91,11 +91,18 @@ export async function GET(req: NextRequest) {
     // Get therapist profile by user ID
     const therapist = await TherapistModel.findOne({ user: decoded.id });
     if (!therapist) {
+      console.error('Therapist profile not found for user ID:', decoded.id);
       return Response.json(
         { success: false, error: 'Therapist profile not found' },
         { status: 404 }
       );
     }
+    
+    console.log('Found therapist profile:', {
+      therapistId: therapist._id,
+      userId: therapist.user,
+      fullName: therapist.fullName
+    });
 
     // Get query parameters for filtering
     const { searchParams } = new URL(req.url);
@@ -104,11 +111,15 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
-    // Build query for assigned bookings
+    // Build query for assigned bookings - ONLY bookings explicitly assigned by admin
+    // This strictly filters to show only bookings that were assigned through the 'assign task' functionality
     const query: any = {
       therapist: therapist._id,
-      status: { $in: ['pending', 'confirmed'] } // Only show pending and confirmed bookings
+      assignedByAdmin: true,  // Only bookings explicitly assigned by admin through assign task
+      status: { $in: ['pending', 'confirmed'] }  // Only show pending and confirmed bookings
     };
+    
+    console.log('Therapist booking query:', JSON.stringify(query, null, 2));
 
     // Filter by status if provided
     if (status && ['pending', 'confirmed'].includes(status)) {
@@ -128,6 +139,8 @@ export async function GET(req: NextRequest) {
       .sort({ date: 1, time: 1 }) // Sort by date and time
       .skip(skip)
       .limit(limit);
+    
+    console.log(`Found ${bookings.length} bookings matching query`);
 
     // Manually populate business data for each service to avoid Mongoose schema registration issues
     const populatedBookings = await Promise.all(bookings.map(async (booking) => {
@@ -186,6 +199,7 @@ export async function GET(req: NextRequest) {
         time: booking.time,
         status: booking.status,
         notes: booking.notes,
+        assignedByAdmin: booking.assignedByAdmin,
         createdAt: booking.createdAt,
         updatedAt: booking.updatedAt
       };

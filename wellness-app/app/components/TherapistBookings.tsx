@@ -59,6 +59,7 @@ interface Booking {
   time: string;
   status: string;
   notes?: string;
+  assignedByAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -166,17 +167,22 @@ const TherapistBookings: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
+      console.log('Fetching therapist bookings...');
       const response = await makeAuthenticatedRequest('/api/therapist/bookings/assigned');
+      
+      console.log('API Response:', response);
 
       if (response.success && response.data) {
+        console.log('Setting bookings:', response.data.bookings);
         setBookings(response.data.bookings);
       } else {
+        console.error('API Error:', response.error);
         message.error(response.error || 'Failed to fetch bookings');
         setBookings([]);
       }
     } catch (error: any) {
       console.error('Error fetching bookings:', error);
-      message.error('Failed to fetch bookings');
+      message.error('Failed to fetch bookings: ' + error.message);
       setBookings([]);
     } finally {
       setLoading(false);

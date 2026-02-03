@@ -155,14 +155,31 @@ export async function POST(req: NextRequest) {
     }
 
     // Update booking to assign to the therapist
+    console.log('Assigning booking:', {
+      bookingId,
+      therapistId,
+      businessId: business._id,
+      adminId: decoded.id
+    });
+    
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
       { 
         therapist: therapistId,
-        status: BookingStatus.Pending // Reset status to pending for therapist approval
+        status: BookingStatus.Pending, // Reset status to pending for therapist approval
+        assignedByAdmin: true, // Mark as assigned by admin
+        assignedById: decoded.id // Store the admin ID who assigned the booking
       },
       { new: true, runValidators: true }
     ).populate('customer service therapist');
+    
+    console.log('Updated booking result:', {
+      id: updatedBooking._id,
+      therapist: updatedBooking.therapist,
+      assignedByAdmin: updatedBooking.assignedByAdmin,
+      assignedById: updatedBooking.assignedById,
+      status: updatedBooking.status
+    });
 
     if (!updatedBooking) {
       return Response.json(

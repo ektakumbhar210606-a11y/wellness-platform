@@ -130,6 +130,14 @@ export async function PATCH(
       );
     }
 
+    // Also verify that the booking was explicitly assigned by an admin
+    if (!booking.assignedByAdmin) {
+      return Response.json(
+        { success: false, error: 'Access denied. This booking was not explicitly assigned by an admin through the assign task functionality' },
+        { status: 403 }
+      );
+    }
+
     // Check if booking is in pending status
     if (booking.status !== BookingStatus.Pending) {
       return Response.json(
