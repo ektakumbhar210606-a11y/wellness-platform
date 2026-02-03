@@ -6,6 +6,7 @@ import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
+import NotificationService from '@/app/utils/notifications';
 
 interface JwtPayload {
   id: string;
@@ -184,6 +185,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       if (customerProfile && customerProfile.phoneNumber) {
         (updatedBooking.customer as any).phone = customerProfile.phoneNumber;
       }
+    }
+
+    // Send notification based on notification destination
+    try {
+      const notificationService = new NotificationService();
+      await notificationService.sendBookingNotification(bookingId, 'reschedule', { newDate, newTime });
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+      // Continue with response even if notification fails
     }
 
     return Response.json({

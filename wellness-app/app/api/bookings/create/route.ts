@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
       date: new Date(date),
       time: time,
       status: BookingStatus.Pending, // Default to pending
-      assignedByAdmin: false // Customer-initiated booking, not assigned by admin
+      assignedByAdmin: false, // Customer-initiated booking, not assigned by admin
+      notificationDestination: 'customer' // Default to customer notifications for direct bookings
     });
 
     const savedBooking = await newBooking.save();

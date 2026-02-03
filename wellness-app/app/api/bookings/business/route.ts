@@ -7,6 +7,7 @@ import UserModel from '../../../../models/User';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
+import NotificationService from '@/app/utils/notifications';
 
 interface JwtPayload {
   id: string;
@@ -339,6 +340,16 @@ export async function PATCH(req: NextRequest) {
       if (customerProfile && customerProfile.phoneNumber) {
         (updatedBooking.customer as any).phone = customerProfile.phoneNumber;
       }
+    }
+    
+    // Send notification based on notification destination
+    try {
+      const notificationService = new NotificationService();
+      const action = status === 'confirmed' ? 'confirm' : 'cancel';
+      await notificationService.sendBookingNotification(bookingId, action);
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+      // Continue with response even if notification fails
     }
     
     return Response.json({

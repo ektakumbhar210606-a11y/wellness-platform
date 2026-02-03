@@ -6,6 +6,7 @@ import UserModel from '@/models/User';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
+import NotificationService from '@/app/utils/notifications';
 
 async function requireTherapistAuth(request: NextRequest) {
   try {
@@ -175,6 +176,15 @@ export async function PATCH(
       path: 'service',
       select: 'name price duration description'
     });
+
+    // Send notification based on notification destination
+    try {
+      const notificationService = new NotificationService();
+      await notificationService.sendBookingNotification(bookingId, 'reschedule', { newDate, newTime });
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+      // Continue with response even if notification fails
+    }
 
     return Response.json({
       success: true,

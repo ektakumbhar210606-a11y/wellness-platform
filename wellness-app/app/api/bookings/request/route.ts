@@ -164,7 +164,8 @@ export async function POST(request: NextRequest) {
       therapist: therapistId,
       date: new Date(date),
       time: startTime,
-      status: 'pending'
+      status: 'pending',
+      notificationDestination: 'customer' // Default to customer notifications for direct bookings
     });
 
     const savedBooking = await newBooking.save();

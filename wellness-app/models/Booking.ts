@@ -24,6 +24,7 @@ export interface IBooking extends Document {
   duration?: number; // Optional booking duration
   assignedByAdmin?: boolean; // Whether this booking was explicitly assigned by an admin
   assignedById?: string; // ID of the admin who assigned the booking
+  notificationDestination?: 'customer' | 'business'; // Who should receive notifications for this booking
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +85,11 @@ const BookingSchema: Schema<IBooking> = new Schema({
   assignedById: {
     type: String,
     ref: 'User' // Reference to the admin who assigned the booking
+  },
+  notificationDestination: {
+    type: String,
+    enum: ['customer', 'business'],
+    default: 'customer' // By default, notifications go to customer
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

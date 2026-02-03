@@ -8,6 +8,7 @@ import BusinessModel from '@/models/Business';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
+import NotificationService from '@/app/utils/notifications';
 
 async function requireTherapistAuth(request: NextRequest) {
   try {
@@ -178,6 +179,15 @@ export async function PATCH(
         console.error('Error populating business data:', error);
         updatedBooking.service.business = null;
       }
+    }
+
+    // Send notification based on notification destination
+    try {
+      const notificationService = new NotificationService();
+      await notificationService.sendBookingNotification(bookingId, 'cancel');
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+      // Continue with response even if notification fails
     }
 
     return Response.json({
