@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal, Tag } from 'antd';
-import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { businessService, BusinessProfile, BusinessDashboardStats } from '@/app/services/businessService';
@@ -12,6 +12,7 @@ import ProviderOnboarding from '@/app/components/ProviderOnboarding';
 import ServiceCard from '@/app/components/ServiceCard';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 import BookingManagement from '@/app/components/BookingManagement';
+import AssignedBookingsTracker from '@/app/components/AssignedBookingsTracker';
 
 const { Title, Text } = Typography;
 
@@ -932,6 +933,31 @@ const ProviderDashboardContent = () => {
                   )}
                 </Col>
               </Row>
+            </div>
+          ),
+        }, {
+          key: 'booking-responses',
+          label: (
+            <span>
+              <HistoryOutlined />
+              Booking Responses
+              {(dashboardStats?.totalServices || 0) > 0 && (
+                <span style={{ 
+                  marginLeft: 8, 
+                  backgroundColor: '#1890ff', 
+                  color: 'white', 
+                  borderRadius: '50%', 
+                  padding: '2px 6px', 
+                  fontSize: '12px' 
+                }}>
+                  New
+                </span>
+              )}
+            </span>
+          ),
+          children: (
+            <div style={{ marginTop: 16 }}>
+              <AssignedBookingsTracker />
             </div>
           ),
         }, {
