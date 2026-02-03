@@ -5,12 +5,6 @@ import UserModel from '../../../../../models/User';
 import ServiceModel from '../../../../../models/Service';
 import TherapistModel from '../../../../../models/Therapist';
 import BusinessModel from '../../../../../models/Business';
-
-// Force model registration by doing simple finds
-// This ensures Mongoose knows about the schemas for populate()
-await ServiceModel.findOne({});
-await TherapistModel.findOne({});
-await BusinessModel.findOne({});
 import * as jwt from 'jsonwebtoken';
 
 interface JwtPayload {
@@ -125,11 +119,7 @@ export async function GET(request: NextRequest) {
     const bookings = await BookingModel.find(query)
       .populate({
         path: 'service',
-        select: 'name price duration description business',
-        populate: {
-          path: 'business',
-          select: 'name'
-        }
+        select: 'name price duration description business'
       })
       .populate({
         path: 'therapist',
@@ -139,11 +129,35 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit);
 
+    // Manually populate business data for each service to avoid Mongoose schema registration issues
+    const populatedBookings = await Promise.all(bookings.map(async (booking) => {
+      const populatedBooking = booking.toObject();
+      
+      if (populatedBooking.service && populatedBooking.service.business) {
+        try {
+          const business = await BusinessModel.findById(populatedBooking.service.business)
+            .select('name')
+            .lean();
+          
+          if (business) {
+            populatedBooking.service.business = business;
+          } else {
+            populatedBooking.service.business = null;
+          }
+        } catch (error) {
+          console.error('Error populating business data:', error);
+          populatedBooking.service.business = null;
+        }
+      }
+      
+      return populatedBooking;
+    }));
+
     // Get total count for pagination
     const total = await BookingModel.countDocuments(query);
 
     // Format the bookings for the response
-    const formattedBookings = bookings.map(booking => {
+    const formattedBookings = populatedBookings.map(booking => {
       const service = booking.service as any;
       const therapist = booking.therapist as any;
       const business = service?.business as any;

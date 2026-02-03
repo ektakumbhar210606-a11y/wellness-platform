@@ -3,6 +3,8 @@ import { connectToDatabase } from '@/lib/db';
 import BookingModel, { BookingStatus } from '@/models/Booking';
 import TherapistModel from '@/models/Therapist';
 import UserModel from '@/models/User';
+import ServiceModel from '@/models/Service';
+import BusinessModel from '@/models/Business';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
@@ -137,7 +139,7 @@ export async function PATCH(
     }
 
     // Update booking status to cancelled
-    const updatedBooking = await BookingModel.findByIdAndUpdate(
+    const bookingWithPopulatedData = await BookingModel.findByIdAndUpdate(
       bookingId,
       { status: BookingStatus.Cancelled },
       { new: true, runValidators: true }
@@ -148,33 +150,56 @@ export async function PATCH(
     })
     .populate({
       path: 'service',
-      select: 'name price duration description'
+      select: 'name price duration description business'
     });
+
+    // Manually populate business data to avoid Mongoose schema registration issues
+    let updatedBooking = bookingWithPopulatedData.toObject();
+    if (updatedBooking.service && updatedBooking.service.business) {
+      try {
+        const business = await BusinessModel.findById(updatedBooking.service.business)
+          .select('name')
+          .lean();
+        
+        if (business) {
+          updatedBooking.service.business = business;
+        } else {
+          updatedBooking.service.business = null;
+        }
+      } catch (error) {
+        console.error('Error populating business data:', error);
+        updatedBooking.service.business = null;
+      }
+    }
 
     return Response.json({
       success: true,
       message: 'Booking cancelled successfully',
       data: {
-        id: updatedBooking!._id.toString(),
+        id: updatedBooking._id.toString(),
         customer: {
-          id: (updatedBooking!.customer as any)._id.toString(),
-          firstName: (updatedBooking!.customer as any).firstName,
-          lastName: (updatedBooking!.customer as any).lastName,
-          email: (updatedBooking!.customer as any).email,
-          phone: (updatedBooking!.customer as any).phone
+          id: (updatedBooking.customer as any)._id.toString(),
+          firstName: (updatedBooking.customer as any).firstName,
+          lastName: (updatedBooking.customer as any).lastName,
+          email: (updatedBooking.customer as any).email,
+          phone: (updatedBooking.customer as any).phone
         },
         service: {
-          id: (updatedBooking!.service as any)._id.toString(),
-          name: (updatedBooking!.service as any).name,
-          price: (updatedBooking!.service as any).price,
-          duration: (updatedBooking!.service as any).duration,
-          description: (updatedBooking!.service as any).description
+          id: (updatedBooking.service as any)._id.toString(),
+          name: (updatedBooking.service as any).name,
+          price: (updatedBooking.service as any).price,
+          duration: (updatedBooking.service as any).duration,
+          description: (updatedBooking.service as any).description,
+          business: updatedBooking.service.business ? {
+            id: (updatedBooking.service.business as any)._id.toString(),
+            name: (updatedBooking.service.business as any).name
+          } : null
         },
-        date: updatedBooking!.date,
-        time: updatedBooking!.time,
-        status: updatedBooking!.status,
-        createdAt: updatedBooking!.createdAt,
-        updatedAt: updatedBooking!.updatedAt
+        date: updatedBooking.date,
+        time: updatedBooking.time,
+        status: updatedBooking.status,
+        createdAt: updatedBooking.createdAt,
+        updatedAt: updatedBooking.updatedAt
       }
     });
 

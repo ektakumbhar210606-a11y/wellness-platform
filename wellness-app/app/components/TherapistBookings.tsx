@@ -129,7 +129,7 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({
 
       <div>
         <Title level={5}>New Date & Time</Title>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space vertical style={{ width: '100%' }}>
           <div>
             <Text strong>New Date:</Text>
             <DatePicker
@@ -403,7 +403,7 @@ const TherapistBookings: React.FC = () => {
                 </div>
 
                 <div style={{ marginLeft: 24 }}>
-                  <Space direction="vertical">
+                  <Space vertical>
                     {booking.status === 'pending' && (
                       <>
                         <Button
