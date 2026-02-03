@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal, Tag } from 'antd';
-import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined, HistoryOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { businessService, BusinessProfile, BusinessDashboardStats } from '@/app/services/businessService';
@@ -12,7 +12,7 @@ import ProviderOnboarding from '@/app/components/ProviderOnboarding';
 import ServiceCard from '@/app/components/ServiceCard';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 import BookingManagement from '@/app/components/BookingManagement';
-import AssignedBookingsTracker from '@/app/components/AssignedBookingsTracker';
+import TherapistRequestsAndResponses from '@/app/components/TherapistRequestsAndResponses';
 
 const { Title, Text } = Typography;
 
@@ -880,84 +880,15 @@ const ProviderDashboardContent = () => {
           ),
           children: (
             <div style={{ marginTop: 16 }}>
-              <Row gutter={[16, 16]}>
-                <Col span={24}>
-                  <Title level={3}>Therapist Applications</Title>
-                  <Text type="secondary">
-                    Review and manage therapist requests to join your business
-                  </Text>
-                </Col>
-                
-                <Col span={24}>
-                  {requestsLoading ? (
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                      <Spin size="large" />
-                      <div style={{ marginTop: 16 }}>
-                        <Text>Loading therapist requests...</Text>
-                      </div>
-                    </div>
-                  ) : requests.length > 0 ? (
-                    <div>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text strong>
-                          Showing {requests.length} request{requests.length !== 1 ? 's' : ''} 
-                          ({requests.filter(r => r.status === 'pending').length} pending, 
-                          {requests.filter(r => r.status === 'approved').length} approved)
-                        </Text>
-                      </div>
-                      <Row gutter={[16, 16]}>
-                        {requests.map((request) => (
-                          <Col xs={24} sm={24} md={12} lg={8} xl={6} key={request.id}>
-                            <TherapistRequestCard 
-                              request={request}
-                              onApprove={handleApproveRequest}
-                              onReject={handleRejectRequest}
-                              onAssignTask={handleAssignTask}
-                              loading={requestActionLoading === request.therapistId}
-                            />
-                          </Col>
-                        ))}
-                      </Row>
-                    </div>
-                  ) : (
-                    <Card>
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <TeamOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
-                        <Title level={4}>No Therapist Requests</Title>
-                        <Text type="secondary">
-                          There are currently no therapist requests.
-                          Therapists will appear here when they request to join your business.
-                        </Text>
-                      </div>
-                    </Card>
-                  )}
-                </Col>
-              </Row>
-            </div>
-          ),
-        }, {
-          key: 'booking-responses',
-          label: (
-            <span>
-              <HistoryOutlined />
-              Booking Responses
-              {(dashboardStats?.totalServices || 0) > 0 && (
-                <span style={{ 
-                  marginLeft: 8, 
-                  backgroundColor: '#1890ff', 
-                  color: 'white', 
-                  borderRadius: '50%', 
-                  padding: '2px 6px', 
-                  fontSize: '12px' 
-                }}>
-                  New
-                </span>
-              )}
-            </span>
-          ),
-          children: (
-            <div style={{ marginTop: 16 }}>
-              <AssignedBookingsTracker />
+              <TherapistRequestsAndResponses 
+                requests={requests}
+                requestsLoading={requestsLoading}
+                requestActionLoading={requestActionLoading}
+                onApproveRequest={handleApproveRequest}
+                onRejectRequest={handleRejectRequest}
+                onAssignTask={handleAssignTask}
+                dashboardStats={dashboardStats}
+              />
             </div>
           ),
         }, {
