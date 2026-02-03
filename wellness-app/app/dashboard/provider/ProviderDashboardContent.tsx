@@ -187,6 +187,65 @@ const ProviderDashboardContent = () => {
     }
   };
 
+  // Handle assign task to therapist
+  const handleAssignTask = async (therapistId: string, bookingId: string) => {
+    try {
+      // Validate IDs
+      if (!therapistId || !bookingId) {
+        throw new Error('Both therapist ID and booking ID are required');
+      }
+      
+      // Validate ObjectId format
+      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!objectIdRegex.test(therapistId)) {
+        throw new Error(`Invalid therapist ID format: ${therapistId}`);
+      }
+      
+      if (!objectIdRegex.test(bookingId)) {
+        throw new Error(`Invalid booking ID format: ${bookingId}`);
+      }
+      
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/assign-to-therapist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bookingId,
+          therapistId
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Unauthorized access. Please log in again.');
+        } else if (response.status === 404) {
+          throw new Error(result.error || 'Booking or therapist not found');
+        } else if (response.status === 400) {
+          throw new Error(result.error || 'Invalid request parameters');
+        } else {
+          throw new Error(result.error || 'Failed to assign booking to therapist');
+        }
+      }
+      
+      message.success(result.message || 'Booking assigned to therapist successfully!');
+      // Refresh the requests list
+      await fetchTherapistRequests();
+    } catch (error: any) {
+      console.error('Error assigning booking to therapist:', error);
+      message.error(error.message || 'Failed to assign booking to therapist');
+    }
+  };
+
 
   const fetchServices = React.useCallback(async () => {
     try {
@@ -852,6 +911,7 @@ const ProviderDashboardContent = () => {
                               request={request}
                               onApprove={handleApproveRequest}
                               onReject={handleRejectRequest}
+                              onAssignTask={handleAssignTask}
                               loading={requestActionLoading === request.therapistId}
                             />
                           </Col>
