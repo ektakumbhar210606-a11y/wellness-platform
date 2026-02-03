@@ -20,6 +20,8 @@ export interface IBooking extends Document {
   date: Date; // Date of the booking
   time: string; // Time in HH:MM format
   status: BookingStatus; // Status of the booking
+  notes?: string; // Optional booking notes
+  duration?: number; // Optional booking duration
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +65,15 @@ const BookingSchema: Schema<IBooking> = new Schema({
       message: 'Status must be either pending, confirmed, completed, cancelled, or no-show'
     },
     default: BookingStatus.Pending
+  },
+  notes: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Notes cannot exceed 500 characters']
+  },
+  duration: {
+    type: Number,
+    min: [1, 'Duration must be at least 1 minute']
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
     const bookings = await BookingModel.find(query)
       .populate({
         path: 'customer',
-        select: 'firstName lastName email phone'
+        select: 'name email phone'
       })
       .populate({
         path: 'service',
@@ -141,6 +141,18 @@ export async function GET(req: NextRequest) {
       .skip((page - 1) * limit)
       .limit(limit);
 
+    // For each booking, if customer doesn't have phone, try to get from associated Customer profile
+    for (const booking of bookings) {
+      if (!booking.customer.phone) {
+        // Import Customer model here
+        const CustomerModel = (await import('@/models/Customer')).default;
+        const customerProfile = await CustomerModel.findOne({ user: booking.customer._id }).select('phoneNumber');
+        if (customerProfile && customerProfile.phoneNumber) {
+          (booking.customer as any).phone = customerProfile.phoneNumber;
+        }
+      }
+    }
+
     // Get total count for pagination
     const total = await BookingModel.countDocuments(query);
 
@@ -149,10 +161,11 @@ export async function GET(req: NextRequest) {
       id: booking._id.toString(),
       customer: {
         id: (booking.customer as any)._id.toString(),
-        firstName: (booking.customer as any).firstName,
-        lastName: (booking.customer as any).lastName,
+        name: (booking.customer as any).name,
         email: (booking.customer as any).email,
-        phone: (booking.customer as any).phone
+        phone: (booking.customer as any).phone,
+        firstName: (booking.customer as any).name.split(' ')[0] || (booking.customer as any).name,
+        lastName: (booking.customer as any).name.split(' ').slice(1).join(' ') || ''
       },
       service: {
         id: (booking.service as any)._id.toString(),
@@ -167,8 +180,8 @@ export async function GET(req: NextRequest) {
         professionalTitle: (booking.therapist as any).professionalTitle
       },
       date: booking.date,
-      timeSlot: booking.time,
-      duration: (booking.service as any).duration,
+      time: booking.time,
+      duration: booking.duration || (booking.service as any).duration,
       status: booking.status,
       notes: booking.notes,
       createdAt: booking.createdAt
@@ -292,9 +305,10 @@ export async function PATCH(req: NextRequest) {
       bookingId,
       updateData,
       { new: true }
-    ).populate({
+    )
+    .populate({
       path: 'customer',
-      select: 'firstName lastName email phone'
+      select: 'name email phone'
     })
     .populate({
       path: 'service',
@@ -304,7 +318,16 @@ export async function PATCH(req: NextRequest) {
       path: 'therapist',
       select: 'fullName professionalTitle'
     });
-
+    
+    // If customer doesn't have phone, try to get from associated Customer profile
+    if (updatedBooking && !updatedBooking.customer.phone) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: updatedBooking.customer._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        (updatedBooking.customer as any).phone = customerProfile.phoneNumber;
+      }
+    }
+    
     return Response.json({
       success: true,
       message: `Booking ${status} successfully`,
@@ -312,10 +335,11 @@ export async function PATCH(req: NextRequest) {
         id: updatedBooking._id.toString(),
         customer: {
           id: (updatedBooking.customer as any)._id.toString(),
-          firstName: (updatedBooking.customer as any).firstName,
-          lastName: (updatedBooking.customer as any).lastName,
+          name: (updatedBooking.customer as any).name,
           email: (updatedBooking.customer as any).email,
-          phone: (updatedBooking.customer as any).phone
+          phone: (updatedBooking.customer as any).phone,
+          firstName: (updatedBooking.customer as any).name.split(' ')[0] || (updatedBooking.customer as any).name,
+          lastName: (updatedBooking.customer as any).name.split(' ').slice(1).join(' ') || ''
         },
         service: {
           id: (updatedBooking.service as any)._id.toString(),
@@ -330,8 +354,8 @@ export async function PATCH(req: NextRequest) {
           professionalTitle: (updatedBooking.therapist as any).professionalTitle
         },
         date: updatedBooking.date,
-        timeSlot: updatedBooking.timeSlot,
-        duration: updatedBooking.duration,
+        time: updatedBooking.time,
+        duration: updatedBooking.duration || (updatedBooking.service as any).duration,
         status: updatedBooking.status,
         notes: updatedBooking.notes,
         createdAt: updatedBooking.createdAt
