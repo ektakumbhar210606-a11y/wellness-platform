@@ -15,7 +15,9 @@ import {
   Statistic,
   message,
   DatePicker,
-  TimePicker
+  TimePicker,
+  Modal,
+  Descriptions
 } from 'antd';
 import {
   CheckOutlined,
@@ -66,6 +68,15 @@ interface AssignedBooking {
   assignedById: string;
   createdAt: Date;
   updatedAt: Date;
+  // Reschedule tracking fields
+  originalDate?: Date;
+  originalTime?: string;
+  rescheduledBy?: string;
+  rescheduledAt?: Date;
+  confirmedBy?: string;
+  confirmedAt?: Date;
+  cancelledBy?: string;
+  cancelledAt?: Date;
   statusHistory: {
     status: string;
     timestamp: Date;
@@ -86,6 +97,9 @@ const AssignedBookingsTracker: React.FC = () => {
     rescheduled: 0
   });
   const [therapists, setTherapists] = useState<{id: string, name: string}[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<AssignedBooking | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchAssignedBookings = async () => {
     try {
@@ -100,7 +114,7 @@ const AssignedBookingsTracker: React.FC = () => {
         queryParams.append('therapistId', filterTherapist);
       }
       
-      const url = `/api/business/assigned-bookings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = '/api/business/assigned-bookings' + (queryParams.toString() ? '?' + queryParams.toString() : '');
       const response = await makeAuthenticatedRequest(url);
       
       console.log('Assigned bookings API response:', response);
@@ -158,6 +172,42 @@ const AssignedBookingsTracker: React.FC = () => {
       case 'rescheduled': return '#1890ff';
       default: return '#d9d9d9';
     }
+  };
+
+  const showBookingDetails = async (booking: AssignedBooking) => {
+    setRefreshing(true);
+    // Refresh the booking data to ensure we have the latest information
+    try {
+      // Use the booking ID to get a specific booking if possible
+      // Otherwise, fetch all assigned bookings to get the latest data
+      const response = await makeAuthenticatedRequest(`/api/business/assigned-bookings`);
+      if (response.success && response.data) {
+        // Find the specific booking in the refreshed data
+        const refreshedBooking = response.data.bookings.find((b: AssignedBooking) => b.id === booking.id);
+        if (refreshedBooking) {
+          setSelectedBooking(refreshedBooking);
+        } else {
+          // If not found in refreshed data, use the original booking
+          setSelectedBooking(booking);
+        }
+      } else {
+        // If refresh fails, use the original booking
+        setSelectedBooking(booking);
+      }
+    } catch (error) {
+      console.error('Error refreshing booking data:', error);
+      // If refresh fails, use the original booking
+      setSelectedBooking(booking);
+    } finally {
+      setRefreshing(false);
+    }
+    
+    setModalVisible(true);
+  };
+
+  const hideBookingDetails = () => {
+    setModalVisible(false);
+    setSelectedBooking(null);
   };
 
   const filteredBookings = bookings.filter(booking => {
@@ -415,10 +465,7 @@ const AssignedBookingsTracker: React.FC = () => {
                   <Space orientation="vertical">
                     <Button 
                       size="small"
-                      onClick={() => {
-                        // Future: Implement view details functionality
-                        message.info('Booking details functionality coming soon');
-                      }}
+                      onClick={async () => await showBookingDetails(booking)}
                     >
                       View Details
                     </Button>
@@ -442,6 +489,138 @@ const AssignedBookingsTracker: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Booking Details Modal */}
+      <Modal
+        title="Booking Details"
+        open={modalVisible}
+        onCancel={hideBookingDetails}
+        footer={[
+          <Button key="refresh" onClick={async () => {
+            if (selectedBooking) {
+              await showBookingDetails(selectedBooking);
+            }
+          }}
+          loading={refreshing}
+          >
+            Refresh Data
+          </Button>,
+          <Button key="close" onClick={hideBookingDetails}>
+            Close
+          </Button>
+        ]}
+        width={700}
+      >
+        {selectedBooking && !refreshing && (
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Booking ID">
+              {selectedBooking.id}
+            </Descriptions.Item>
+            <Descriptions.Item label="Customer Name">
+              {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Customer Email">
+              {selectedBooking.customer.email}
+            </Descriptions.Item>
+            <Descriptions.Item label="Customer Phone">
+              {selectedBooking.customer.phone || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Service">
+              {selectedBooking.service.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Service Description">
+              {selectedBooking.service.description}
+            </Descriptions.Item>
+            <Descriptions.Item label="Service Price">
+              ${selectedBooking.service.price}
+            </Descriptions.Item>
+            <Descriptions.Item label="Service Duration">
+              {selectedBooking.service.duration} minutes
+            </Descriptions.Item>
+            <Descriptions.Item label="Therapist">
+              {selectedBooking.therapist.fullName} ({selectedBooking.therapist.professionalTitle})
+            </Descriptions.Item>
+            <Descriptions.Item label="Original Booking Date">
+              {(selectedBooking.originalDate && selectedBooking.originalDate !== undefined) ? dayjs(selectedBooking.originalDate).format('MMMM D, YYYY') : 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Original Booking Time">
+              {(selectedBooking.originalTime && selectedBooking.originalTime !== undefined && selectedBooking.originalTime !== '') ? selectedBooking.originalTime : 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Current Booking Date">
+              {dayjs(selectedBooking.date).format('MMMM D, YYYY')}
+            </Descriptions.Item>
+            <Descriptions.Item label="Current Booking Time">
+              {selectedBooking.time}
+            </Descriptions.Item>
+            {selectedBooking.rescheduledAt && (
+              <Descriptions.Item label="Rescheduled By Therapist">
+                <div>
+                  <p>Yes - This booking was rescheduled by the therapist</p>
+                  <p><strong>Rescheduled At:</strong> {dayjs(selectedBooking.rescheduledAt).format('MMMM D, YYYY h:mm A')}</p>
+                  {selectedBooking.rescheduledBy && <p><strong>Rescheduled By:</strong> ID {selectedBooking.rescheduledBy}</p>}
+                </div>
+              </Descriptions.Item>
+            )}
+            {selectedBooking.confirmedAt && !selectedBooking.rescheduledAt && (
+              <Descriptions.Item label="Confirmed By">
+                <div>
+                  <p>This booking was confirmed by a staff member</p>
+                  <p><strong>Confirmed At:</strong> {dayjs(selectedBooking.confirmedAt).format('MMMM D, YYYY h:mm A')}</p>
+                  {selectedBooking.confirmedBy && <p><strong>Confirmed By:</strong> ID {selectedBooking.confirmedBy}</p>}
+                </div>
+              </Descriptions.Item>
+            )}
+            {selectedBooking.cancelledAt && (
+              <Descriptions.Item label="Cancelled By">
+                <div>
+                  <p>This booking was cancelled</p>
+                  <p><strong>Cancelled At:</strong> {dayjs(selectedBooking.cancelledAt).format('MMMM D, YYYY h:mm A')}</p>
+                  {selectedBooking.cancelledBy && <p><strong>Cancelled By:</strong> ID {selectedBooking.cancelledBy}</p>}
+                </div>
+              </Descriptions.Item>
+            )}
+            <Descriptions.Item label="Status">
+              <Tag 
+                color={selectedBooking.status === 'pending' ? 'orange' : 
+                      selectedBooking.status === 'confirmed' ? 'green' : 
+                      selectedBooking.status === 'cancelled' ? 'red' : 
+                      selectedBooking.status === 'rescheduled' ? 'blue' : 'default'}
+                icon={selectedBooking.status === 'pending' ? <ClockCircleOutlined /> :
+                      selectedBooking.status === 'confirmed' ? <CheckOutlined /> :
+                      selectedBooking.status === 'cancelled' ? <CloseOutlined /> :
+                      selectedBooking.status === 'rescheduled' ? <CalendarOutlined /> : undefined}
+              >
+                {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Assigned by Admin">
+              {selectedBooking.assignedByAdmin ? 'Yes' : 'No'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Assigned By ID">
+              {selectedBooking.assignedById}
+            </Descriptions.Item>
+            <Descriptions.Item label="Created At">
+              {dayjs(selectedBooking.createdAt).format('MMMM D, YYYY h:mm A')}
+            </Descriptions.Item>
+            <Descriptions.Item label="Last Updated">
+              {dayjs(selectedBooking.updatedAt).format('MMMM D, YYYY h:mm A')}
+            </Descriptions.Item>
+            {selectedBooking.notes && (
+              <Descriptions.Item label="Notes">
+                {selectedBooking.notes}
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        )}
+        {refreshing && (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>
+              <Text>Refreshing booking data...</Text>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

@@ -157,25 +157,57 @@ export async function PATCH(
       );
     }
 
-    // Update booking with new date and time
+    // Prepare update data, preserving original date/time if not already stored
     const updateData: any = {
       date: new Date(newDate),
       time: newTime
     };
+
+    // If this is the first reschedule, preserve the original date/time
+    if (!booking.originalDate || !booking.originalTime) {
+      updateData.originalDate = booking.date;
+      updateData.originalTime = booking.time;
+    }
+
+    // Track who rescheduled and when
+    updateData.rescheduledBy = decoded.id;
+    updateData.rescheduledAt = new Date();
+
+    // Update the booking status to rescheduled
+    updateData.status = 'rescheduled';
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
       updateData,
       { new: true, runValidators: true }
     )
-    .populate({
-      path: 'customer',
-      select: 'firstName lastName email phone'
-    })
-    .populate({
-      path: 'service',
-      select: 'name price duration description'
-    });
+      .populate({
+        path: 'customer',
+        select: 'name email phone'
+      })
+      .populate({
+        path: 'service',
+        select: 'name price duration description'
+      });
+
+    // Split the full name into first and last name
+    let firstName = '';
+    let lastName = '';
+    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as any).name) {
+      const nameParts = (updatedBooking.customer as any).name.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+
+    // Handle phone number - try to get from Customer model if not in User model
+    let phoneNumber = (updatedBooking!.customer as any).phone;
+    if (!phoneNumber) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        phoneNumber = customerProfile.phoneNumber;
+      }
+    }
 
     // Send notification based on notification destination
     try {
@@ -193,10 +225,10 @@ export async function PATCH(
         id: updatedBooking!._id.toString(),
         customer: {
           id: (updatedBooking!.customer as any)._id.toString(),
-          firstName: (updatedBooking!.customer as any).firstName,
-          lastName: (updatedBooking!.customer as any).lastName,
+          firstName: firstName,
+          lastName: lastName,
           email: (updatedBooking!.customer as any).email,
-          phone: (updatedBooking!.customer as any).phone
+          phone: phoneNumber
         },
         service: {
           id: (updatedBooking!.service as any)._id.toString(),
@@ -207,6 +239,8 @@ export async function PATCH(
         },
         date: updatedBooking!.date,
         time: updatedBooking!.time,
+        originalDate: updatedBooking!.originalDate,
+        originalTime: updatedBooking!.originalTime,
         status: updatedBooking!.status,
         createdAt: updatedBooking!.createdAt,
         updatedAt: updatedBooking!.updatedAt

@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
     const bookings = await BookingModel.find(query)
       .populate({
         path: 'customer',
-        select: 'firstName lastName email phone'
+        select: 'name email phone'
       })
       .populate({
         path: 'therapist',
@@ -151,20 +151,40 @@ export async function GET(req: NextRequest) {
     // Get total count for pagination
     const total = await BookingModel.countDocuments(query);
 
-    // Format the bookings for response
-    const formattedBookings = bookings.map(booking => {
+    // Handle phone number for all bookings asynchronously
+    const formattedBookings = await Promise.all(bookings.map(async (booking) => {
       const customer = booking.customer as any;
       const therapist = booking.therapist as any;
       const service = booking.service as any;
+
+      // Split the full name into first and last name
+      let firstName = '';
+      let lastName = '';
+      if (customer?.name) {
+        const nameParts = customer.name.trim().split(/\s+/);
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Handle phone number - try to get from Customer model if not in User model
+      let phoneNumber = customer?.phone;
+      if (!phoneNumber) {
+        // Import Customer model here to avoid circular dependencies
+        const CustomerModel = (await import('@/models/Customer')).default;
+        const customerProfile = await CustomerModel.findOne({ user: customer?._id }).select('phoneNumber');
+        if (customerProfile && customerProfile.phoneNumber) {
+          phoneNumber = customerProfile.phoneNumber;
+        }
+      }
 
       return {
         id: booking._id.toString(),
         customer: {
           id: customer?._id?.toString(),
-          firstName: customer?.firstName,
-          lastName: customer?.lastName,
+          firstName: firstName,
+          lastName: lastName,
           email: customer?.email,
-          phone: customer?.phone
+          phone: phoneNumber
         },
         therapist: {
           id: therapist?._id?.toString(),
@@ -187,6 +207,15 @@ export async function GET(req: NextRequest) {
         assignedById: booking.assignedById,
         createdAt: booking.createdAt,
         updatedAt: booking.updatedAt,
+        // Add reschedule tracking data
+        originalDate: booking.originalDate ? new Date(booking.originalDate) : null,
+        originalTime: booking.originalTime || null,
+        rescheduledBy: booking.rescheduledBy,
+        rescheduledAt: booking.rescheduledAt,
+        confirmedBy: booking.confirmedBy,
+        confirmedAt: booking.confirmedAt,
+        cancelledBy: booking.cancelledBy,
+        cancelledAt: booking.cancelledAt,
         // Add status change history
         statusHistory: [
           {
@@ -196,7 +225,7 @@ export async function GET(req: NextRequest) {
           }
         ]
       };
-    });
+    }));
 
     return Response.json({
       success: true,

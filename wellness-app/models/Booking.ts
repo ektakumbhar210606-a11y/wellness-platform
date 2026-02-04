@@ -25,6 +25,14 @@ export interface IBooking extends Document {
   assignedByAdmin?: boolean; // Whether this booking was explicitly assigned by an admin
   assignedById?: string; // ID of the admin who assigned the booking
   notificationDestination?: 'customer' | 'business'; // Who should receive notifications for this booking
+  originalDate?: Date; // Original booking date (for tracking reschedules)
+  originalTime?: string; // Original booking time (for tracking reschedules)
+  rescheduledBy?: string; // ID of the user who rescheduled the booking (therapist or business)
+  rescheduledAt?: Date; // When the booking was rescheduled
+  confirmedBy?: string; // ID of the user who confirmed the booking (therapist or business)
+  confirmedAt?: Date; // When the booking was confirmed
+  cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
+  cancelledAt?: Date; // When the booking was cancelled
   createdAt: Date;
   updatedAt: Date;
 }
@@ -90,6 +98,38 @@ const BookingSchema: Schema<IBooking> = new Schema({
     type: String,
     enum: ['customer', 'business'],
     default: 'customer' // By default, notifications go to customer
+  },
+  originalDate: {
+    type: Date, // Original booking date (for tracking reschedules)
+    required: false
+  },
+  originalTime: {
+    type: String, // Original booking time (for tracking reschedules)
+    required: false
+  },
+  rescheduledBy: {
+    type: String, // ID of the user who rescheduled the booking (therapist or business)
+    required: false
+  },
+  rescheduledAt: {
+    type: Date, // When the booking was rescheduled
+    required: false
+  },
+  confirmedBy: {
+    type: String, // ID of the user who confirmed the booking (therapist or business)
+    required: false
+  },
+  confirmedAt: {
+    type: Date, // When the booking was confirmed
+    required: false
+  },
+  cancelledBy: {
+    type: String, // ID of the user who cancelled the booking (therapist or business)
+    required: false
+  },
+  cancelledAt: {
+    type: Date, // When the booking was cancelled
+    required: false
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

@@ -150,17 +150,41 @@ export async function PATCH(
     // Update booking status to cancelled
     const bookingWithPopulatedData = await BookingModel.findByIdAndUpdate(
       bookingId,
-      { status: BookingStatus.Cancelled },
+      { 
+        status: BookingStatus.Cancelled,
+        // Track who cancelled and when
+        cancelledBy: decoded.id,
+        cancelledAt: new Date()
+      },
       { new: true, runValidators: true }
     )
     .populate({
       path: 'customer',
-      select: 'firstName lastName email phone'
+      select: 'name email phone'
     })
     .populate({
       path: 'service',
       select: 'name price duration description business'
     });
+
+    // Split the full name into first and last name
+    let firstName = '';
+    let lastName = '';
+    if (bookingWithPopulatedData && bookingWithPopulatedData.customer && (bookingWithPopulatedData.customer as any).name) {
+      const nameParts = (bookingWithPopulatedData.customer as any).name.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+
+    // Handle phone number - try to get from Customer model if not in User model
+    let phoneNumber = (bookingWithPopulatedData!.customer as any).phone;
+    if (!phoneNumber) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: (bookingWithPopulatedData!.customer as any)._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        phoneNumber = customerProfile.phoneNumber;
+      }
+    }
 
     // Manually populate business data to avoid Mongoose schema registration issues
     let updatedBooking = bookingWithPopulatedData.toObject();
@@ -197,10 +221,10 @@ export async function PATCH(
         id: updatedBooking._id.toString(),
         customer: {
           id: (updatedBooking.customer as any)._id.toString(),
-          firstName: (updatedBooking.customer as any).firstName,
-          lastName: (updatedBooking.customer as any).lastName,
+          firstName: firstName,
+          lastName: lastName,
           email: (updatedBooking.customer as any).email,
-          phone: (updatedBooking.customer as any).phone
+          phone: phoneNumber
         },
         service: {
           id: (updatedBooking.service as any)._id.toString(),
@@ -215,6 +239,8 @@ export async function PATCH(
         },
         date: updatedBooking.date,
         time: updatedBooking.time,
+        originalDate: updatedBooking.originalDate ? new Date(updatedBooking.originalDate) : null,
+        originalTime: updatedBooking.originalTime || null,
         status: updatedBooking.status,
         createdAt: updatedBooking.createdAt,
         updatedAt: updatedBooking.updatedAt

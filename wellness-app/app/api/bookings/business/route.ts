@@ -198,7 +198,9 @@ export async function GET(req: NextRequest) {
       duration: booking.duration || (booking.service as any).duration,
       status: booking.status,
       notes: booking.notes,
-      createdAt: booking.createdAt
+      createdAt: booking.createdAt,
+      originalDate: booking.originalDate ? new Date(booking.originalDate) : null,
+      originalTime: booking.originalTime || null
     }));
 
     return Response.json({
@@ -314,6 +316,15 @@ export async function PATCH(req: NextRequest) {
     if (notes !== undefined) {
       updateData.notes = notes;
     }
+    
+    // Track who performed the action and when
+    if (status === 'confirmed') {
+      updateData.confirmedBy = decoded.id;
+      updateData.confirmedAt = new Date();
+    } else if (status === 'cancelled') {
+      updateData.cancelledBy = decoded.id;
+      updateData.cancelledAt = new Date();
+    }
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
@@ -333,12 +344,31 @@ export async function PATCH(req: NextRequest) {
       select: 'fullName professionalTitle'
     });
     
+    // Split the full name into first and last name
+    let firstName = '';
+    let lastName = '';
+    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as any).name) {
+      const nameParts = (updatedBooking.customer as any).name.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+    
+    // Handle phone number - try to get from Customer model if not in User model
+    let phoneNumber = (updatedBooking!.customer as any).phone;
+    if (!phoneNumber) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        phoneNumber = customerProfile.phoneNumber;
+      }
+    }
+    
     // If customer doesn't have phone, try to get from associated Customer profile
-    if (updatedBooking && !updatedBooking.customer.phone) {
+    if (updatedBooking && !phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
       const customerProfile = await CustomerModel.findOne({ user: updatedBooking.customer._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
-        (updatedBooking.customer as any).phone = customerProfile.phoneNumber;
+        phoneNumber = customerProfile.phoneNumber;
       }
     }
     
@@ -361,9 +391,9 @@ export async function PATCH(req: NextRequest) {
           id: (updatedBooking.customer as any)._id.toString(),
           name: (updatedBooking.customer as any).name,
           email: (updatedBooking.customer as any).email,
-          phone: (updatedBooking.customer as any).phone,
-          firstName: (updatedBooking.customer as any).name.split(' ')[0] || (updatedBooking.customer as any).name,
-          lastName: (updatedBooking.customer as any).name.split(' ').slice(1).join(' ') || ''
+          phone: phoneNumber,
+          firstName: firstName,
+          lastName: lastName
         },
         service: {
           id: (updatedBooking.service as any)._id.toString(),
@@ -380,6 +410,8 @@ export async function PATCH(req: NextRequest) {
         date: updatedBooking.date,
         time: updatedBooking.time,
         duration: updatedBooking.duration || (updatedBooking.service as any).duration,
+        originalDate: updatedBooking.originalDate ? new Date(updatedBooking.originalDate) : null,
+        originalTime: updatedBooking.originalTime || null,
         status: updatedBooking.status,
         notes: updatedBooking.notes,
         createdAt: updatedBooking.createdAt

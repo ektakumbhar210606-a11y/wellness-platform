@@ -154,11 +154,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       );
     }
 
-    // Update booking with new date and time
+    // Prepare update data, preserving original date/time if not already stored
     const updateData: any = {
       date: new Date(newDate),
       time: newTime
     };
+
+    // If this is the first reschedule, preserve the original date/time
+    if (!booking.originalDate || !booking.originalTime) {
+      updateData.originalDate = booking.date;
+      updateData.originalTime = booking.time;
+    }
+
+    // Track who rescheduled and when
+    updateData.rescheduledBy = decoded.id;
+    updateData.rescheduledAt = new Date();
+
+    // Update the booking status to rescheduled
+    updateData.status = 'rescheduled';
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
@@ -178,12 +191,31 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       select: 'fullName professionalTitle'
     });
     
+    // Split the full name into first and last name
+    let firstName = '';
+    let lastName = '';
+    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as any).name) {
+      const nameParts = (updatedBooking.customer as any).name.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+    
+    // Handle phone number - try to get from Customer model if not in User model
+    let phoneNumber = (updatedBooking!.customer as any).phone;
+    if (!phoneNumber) {
+      const CustomerModel = (await import('@/models/Customer')).default;
+      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
+      if (customerProfile && customerProfile.phoneNumber) {
+        phoneNumber = customerProfile.phoneNumber;
+      }
+    }
+    
     // If customer doesn't have phone, try to get from associated Customer profile
-    if (updatedBooking && !updatedBooking.customer.phone) {
+    if (updatedBooking && !phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
       const customerProfile = await CustomerModel.findOne({ user: updatedBooking.customer._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
-        (updatedBooking.customer as any).phone = customerProfile.phoneNumber;
+        phoneNumber = customerProfile.phoneNumber;
       }
     }
 
@@ -205,9 +237,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
           id: (updatedBooking!.customer as any)._id.toString(),
           name: (updatedBooking!.customer as any).name,
           email: (updatedBooking!.customer as any).email,
-          phone: (updatedBooking!.customer as any).phone,
-          firstName: (updatedBooking!.customer as any).name.split(' ')[0] || (updatedBooking!.customer as any).name,
-          lastName: (updatedBooking!.customer as any).name.split(' ').slice(1).join(' ') || ''
+          phone: phoneNumber,
+          firstName: firstName,
+          lastName: lastName
         },
         service: {
           id: (updatedBooking!.service as any)._id.toString(),
@@ -223,6 +255,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
         },
         date: updatedBooking!.date,
         time: updatedBooking!.time,
+        originalDate: updatedBooking!.originalDate,
+        originalTime: updatedBooking!.originalTime,
         status: updatedBooking!.status,
         createdAt: updatedBooking!.createdAt
       }
