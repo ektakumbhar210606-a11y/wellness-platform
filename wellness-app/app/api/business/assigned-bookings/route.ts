@@ -113,7 +113,8 @@ export async function GET(req: NextRequest) {
     const query: any = {
       service: { $in: serviceIds },
       assignedByAdmin: true,  // Only bookings explicitly assigned by admin
-      therapist: { $exists: true, $ne: null }  // Only bookings with assigned therapist
+      therapist: { $exists: true, $ne: null },  // Only bookings with assigned therapist
+      therapistResponded: true  // Only bookings where therapist has responded
     };
 
     // Filter by status if provided

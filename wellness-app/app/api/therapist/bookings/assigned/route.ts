@@ -116,13 +116,13 @@ export async function GET(req: NextRequest) {
     const query: any = {
       therapist: therapist._id,
       assignedByAdmin: true,  // Only bookings explicitly assigned by admin through assign task
-      status: { $in: ['pending', 'confirmed'] }  // Only show pending and confirmed bookings
+      status: { $in: ['pending', 'confirmed', 'rescheduled'] }  // Show pending, confirmed, and rescheduled bookings
     };
     
     console.log('Therapist booking query:', JSON.stringify(query, null, 2));
 
     // Filter by status if provided
-    if (status && ['pending', 'confirmed'].includes(status)) {
+    if (status && ['pending', 'confirmed', 'rescheduled'].includes(status)) {
       query.status = status;
     }
 

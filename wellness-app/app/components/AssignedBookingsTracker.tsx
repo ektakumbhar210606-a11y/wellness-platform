@@ -38,6 +38,98 @@ import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+interface RescheduleModalProps {
+  visible: boolean;
+  booking: AssignedBooking | null;
+  onCancel: () => void;
+  onReschedule: (newDate: Date, newTime: string) => void;
+  loading: boolean;
+}
+
+const RescheduleModal: React.FC<RescheduleModalProps> = ({
+  visible,
+  booking,
+  onCancel,
+  onReschedule,
+  loading
+}) => {
+  const [newDate, setNewDate] = useState<dayjs.Dayjs | null>(null);
+  const [newTime, setNewTime] = useState<dayjs.Dayjs | null>(null);
+
+  const handleReschedule = () => {
+    if (!newDate || !newTime) {
+      message.warning('Please select both date and time');
+      return;
+    }
+
+    onReschedule(newDate.toDate(), newTime.format('HH:mm'));
+    setNewDate(null);
+    setNewTime(null);
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    setNewDate(null);
+    setNewTime(null);
+  };
+
+  return (
+    <Modal
+      title="Reschedule Booking"
+      open={visible}
+      onCancel={handleCancel}
+      footer={[
+        <Button key="cancel" onClick={handleCancel}>
+          Cancel
+        </Button>,
+        <Button
+          key="reschedule"
+          type="primary"
+          onClick={handleReschedule}
+          loading={loading}
+        >
+          Reschedule
+        </Button>
+      ]}
+    >
+      {booking && (
+        <div style={{ marginBottom: 24 }}>
+          <Title level={5}>Booking Details</Title>
+          <p><strong>Customer:</strong> {booking.customer.firstName} {booking.customer.lastName}</p>
+          <p><strong>Service:</strong> {booking.service.name}</p>
+          <p><strong>Current Date:</strong> {dayjs(booking.date).format('MMMM D, YYYY')}</p>
+          <p><strong>Current Time:</strong> {booking.time}</p>
+        </div>
+      )}
+
+      <div>
+        <Title level={5}>New Date & Time</Title>
+        <Space vertical style={{ width: '100%' }}>
+          <div>
+            <Text strong>New Date:</Text>
+            <DatePicker
+              value={newDate}
+              onChange={setNewDate}
+              style={{ width: '100%', marginTop: 8 }}
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+            />
+          </div>
+          <div>
+            <Text strong>New Time:</Text>
+            <TimePicker
+              value={newTime}
+              onChange={setNewTime}
+              format="HH:mm"
+              style={{ width: '100%', marginTop: 8 }}
+              minuteStep={15}
+            />
+          </div>
+        </Space>
+      </div>
+    </Modal>
+  );
+};
+
 interface AssignedBooking {
   id: string;
   customer: {
@@ -100,6 +192,8 @@ const AssignedBookingsTracker: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<AssignedBooking | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchAssignedBookings = async () => {
     try {
@@ -215,6 +309,32 @@ const AssignedBookingsTracker: React.FC = () => {
     if (filterTherapist !== 'all' && booking.therapist.id !== filterTherapist) return false;
     return true;
   });
+
+  const handleReschedule = async (newDate: Date, newTime: string) => {
+    if (!selectedBooking) return;
+
+    try {
+      setActionLoading(selectedBooking.id);
+      const response = await makeAuthenticatedRequest(`/api/business/assigned-bookings/reschedule/${selectedBooking.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ newDate, newTime })
+      });
+
+      if (response.success) {
+        message.success('Booking rescheduled successfully');
+        setRescheduleModalVisible(false);
+        setSelectedBooking(null);
+        await fetchAssignedBookings(); // Refresh the list
+      } else {
+        message.error(response.error || 'Failed to reschedule booking');
+      }
+    } catch (error: any) {
+      console.error('Error rescheduling booking:', error);
+      message.error('Failed to reschedule booking');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   useEffect(() => {
     fetchAssignedBookings();
@@ -482,6 +602,77 @@ const AssignedBookingsTracker: React.FC = () => {
                         Cancel Assignment
                       </Button>
                     )}
+                    {(booking.status === 'pending' || booking.status === 'rescheduled') && (
+                      <Button 
+                        size="small"
+                        type="primary"
+                        onClick={async () => {
+                          try {
+                            const response = await makeAuthenticatedRequest(
+                              `/api/business/assigned-bookings/confirm/${booking.id}`,
+                              {
+                                method: 'PATCH'
+                              }
+                            );
+                            
+                            if (response.success) {
+                              message.success('Booking confirmed successfully');
+                              // Refresh the data to reflect the new status
+                              await fetchAssignedBookings();
+                            } else {
+                              message.error(response.error || 'Failed to confirm booking');
+                            }
+                          } catch (error) {
+                            console.error('Error confirming booking:', error);
+                            message.error('An error occurred while confirming the booking');
+                          }
+                        }}
+                      >
+                        Confirm
+                      </Button>
+                    )}
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
+                      <Button 
+                        size="small"
+                        onClick={async () => {
+                          setSelectedBooking(booking);
+                          setRescheduleModalVisible(true);
+                        }}
+                        loading={actionLoading === booking.id}
+                      >
+                        Reschedule
+                      </Button>
+                    )}
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
+                      <Button 
+                        size="small"
+                        danger
+                        onClick={async () => {
+                          try {
+                            const response = await makeAuthenticatedRequest(
+                              `/api/business/assigned-bookings/cancel/${booking.id}`,
+                              {
+                                method: 'PATCH'
+                              }
+                            );
+                            
+                            if (response.success) {
+                              message.success('Booking cancelled successfully');
+                              // Refresh the data to reflect the new status
+                              await fetchAssignedBookings();
+                            } else {
+                              message.error(response.error || 'Failed to cancel booking');
+                            }
+                          } catch (error) {
+                            console.error('Error cancelling booking:', error);
+                            message.error('An error occurred while cancelling the booking');
+                          }
+                        }}
+                        loading={actionLoading === booking.id}
+                      >
+                        Cancel
+                      </Button>
+                    )}
                   </Space>
                 </div>
               </div>
@@ -621,6 +812,17 @@ const AssignedBookingsTracker: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      <RescheduleModal
+        visible={rescheduleModalVisible}
+        booking={selectedBooking}
+        onCancel={() => {
+          setRescheduleModalVisible(false);
+          setSelectedBooking(null);
+        }}
+        onReschedule={handleReschedule}
+        loading={actionLoading !== null}
+      />
     </div>
   );
 };

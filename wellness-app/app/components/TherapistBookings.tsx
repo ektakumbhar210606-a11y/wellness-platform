@@ -267,6 +267,8 @@ const TherapistBookings: React.FC = () => {
         return <Tag color="red">Cancelled</Tag>;
       case 'completed':
         return <Tag color="blue">Completed</Tag>;
+      case 'rescheduled':
+        return <Tag color="gold">Rescheduled</Tag>;
       default:
         return <Tag>{status}</Tag>;
     }
@@ -303,6 +305,7 @@ const TherapistBookings: React.FC = () => {
               <Option value="all">All</Option>
               <Option value="pending">Pending</Option>
               <Option value="confirmed">Confirmed</Option>
+              <Option value="rescheduled">Rescheduled</Option>
             </Select>
             <Button onClick={fetchBookings} loading={loading}>
               Refresh
@@ -431,7 +434,7 @@ const TherapistBookings: React.FC = () => {
                         </Button>
                       </>
                     )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
                       <Button
                         onClick={() => {
                           setSelectedBooking(booking);

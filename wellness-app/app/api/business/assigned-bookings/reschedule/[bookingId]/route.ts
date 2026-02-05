@@ -1,22 +1,15 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BookingModel, { BookingStatus } from '@/models/Booking';
+import TherapistModel from '@/models/Therapist';
+import UserModel from '@/models/User';
 import ServiceModel from '@/models/Service';
 import BusinessModel from '@/models/Business';
-import UserModel from '@/models/User';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import NotificationService from '@/app/utils/notifications';
 
-interface JwtPayload {
-  id: string;
-  email: string;
-  role: string;
-}
-
-/**
- * Middleware to authenticate and authorize business users
- */
 async function requireBusinessAuth(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -76,7 +69,10 @@ async function requireBusinessAuth(request: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { bookingId: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ bookingId: string }> }
+) {
   try {
     // Authenticate and authorize business user
     const authResult = await requireBusinessAuth(req);
@@ -95,7 +91,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       );
     }
 
-    const bookingId = params.bookingId;
+    // Extract bookingId from params
+    const awaitedParams = await params;
+    const bookingId = awaitedParams.bookingId;
 
     // Parse request body
     const body = await req.json();
@@ -146,10 +144,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       );
     }
 
-    // Check if booking can be rescheduled (only pending or confirmed bookings)
-    if (booking.status !== BookingStatus.Pending && booking.status !== BookingStatus.Confirmed) {
+    // Also verify that the booking was explicitly assigned by an admin
+    if (!booking.assignedByAdmin) {
       return Response.json(
-        { success: false, error: 'Only pending or confirmed bookings can be rescheduled' },
+        { success: false, error: 'Access denied. This booking was not explicitly assigned by an admin through the assign task functionality' },
+        { status: 403 }
+      );
+    }
+
+    // Check if booking can be rescheduled (only pending, confirmed, or rescheduled bookings)
+    if (booking.status !== BookingStatus.Pending && 
+        booking.status !== BookingStatus.Confirmed && 
+        booking.status !== BookingStatus.Rescheduled) {
+      return Response.json(
+        { success: false, error: 'Only pending, confirmed, or rescheduled bookings can be rescheduled' },
         { status: 400 }
       );
     }
@@ -172,26 +180,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
 
     // Update the booking status to rescheduled
     updateData.status = BookingStatus.Rescheduled;
-    updateData.therapistResponded = true; // Mark that therapist has responded
+    updateData.therapistResponded = true; // Mark that therapist has responded (business rescheduling counts as therapist response)
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
       updateData,
-      { new: true }
+      { new: true, runValidators: true }
     )
-    .populate({
-      path: 'customer',
-      select: 'name email phone'
-    })
-    .populate({
-      path: 'service',
-      select: 'name price duration description'
-    })
-    .populate({
-      path: 'therapist',
-      select: 'fullName professionalTitle'
-    });
-    
+      .populate({
+        path: 'customer',
+        select: 'name email phone'
+      })
+      .populate({
+        path: 'therapist',
+        select: 'fullName professionalTitle user'
+      })
+      .populate({
+        path: 'service',
+        select: 'name price duration description'
+      });
+
     // Split the full name into first and last name
     let firstName = '';
     let lastName = '';
@@ -200,21 +208,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       firstName = nameParts[0] || '';
       lastName = nameParts.slice(1).join(' ') || '';
     }
-    
+
     // Handle phone number - try to get from Customer model if not in User model
     let phoneNumber = (updatedBooking!.customer as any).phone;
     if (!phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
       const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
-      if (customerProfile && customerProfile.phoneNumber) {
-        phoneNumber = customerProfile.phoneNumber;
-      }
-    }
-    
-    // If customer doesn't have phone, try to get from associated Customer profile
-    if (updatedBooking && !phoneNumber) {
-      const CustomerModel = (await import('@/models/Customer')).default;
-      const customerProfile = await CustomerModel.findOne({ user: updatedBooking.customer._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
         phoneNumber = customerProfile.phoneNumber;
       }
@@ -236,11 +235,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
         id: updatedBooking!._id.toString(),
         customer: {
           id: (updatedBooking!.customer as any)._id.toString(),
-          name: (updatedBooking!.customer as any).name,
-          email: (updatedBooking!.customer as any).email,
-          phone: phoneNumber,
           firstName: firstName,
-          lastName: lastName
+          lastName: lastName,
+          email: (updatedBooking!.customer as any).email,
+          phone: phoneNumber
+        },
+        therapist: {
+          id: (updatedBooking!.therapist as any)._id.toString(),
+          fullName: (updatedBooking!.therapist as any).fullName,
+          professionalTitle: (updatedBooking!.therapist as any).professionalTitle
         },
         service: {
           id: (updatedBooking!.service as any)._id.toString(),
@@ -249,17 +252,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
           duration: (updatedBooking!.service as any).duration,
           description: (updatedBooking!.service as any).description
         },
-        therapist: {
-          id: (updatedBooking!.therapist as any)._id.toString(),
-          fullName: (updatedBooking!.therapist as any).fullName,
-          professionalTitle: (updatedBooking!.therapist as any).professionalTitle
-        },
         date: updatedBooking!.date,
         time: updatedBooking!.time,
         originalDate: updatedBooking!.originalDate,
         originalTime: updatedBooking!.originalTime,
         status: updatedBooking!.status,
-        createdAt: updatedBooking!.createdAt
+        createdAt: updatedBooking!.createdAt,
+        updatedAt: updatedBooking!.updatedAt
       }
     });
 

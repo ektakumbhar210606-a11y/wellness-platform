@@ -169,6 +169,7 @@ export async function POST(req: NextRequest) {
         status: BookingStatus.Pending, // Reset status to pending for therapist approval
         assignedByAdmin: true, // Mark as assigned by admin
         assignedById: decoded.id, // Store the admin ID who assigned the booking
+        therapistResponded: false, // Therapist has not responded yet
         notificationDestination: 'business' // Set notification destination to business for assigned bookings
       },
       { new: true, runValidators: true }

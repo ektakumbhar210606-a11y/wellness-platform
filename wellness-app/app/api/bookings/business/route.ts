@@ -325,6 +325,9 @@ export async function PATCH(req: NextRequest) {
       updateData.cancelledBy = decoded.id;
       updateData.cancelledAt = new Date();
     }
+    
+    // Mark that therapist has responded (business confirming or cancelling the booking)
+    updateData.therapistResponded = true;
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,

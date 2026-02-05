@@ -9,7 +9,8 @@ export enum BookingStatus {
   Confirmed = 'confirmed',
   Completed = 'completed',
   Cancelled = 'cancelled',
-  NoShow = 'no-show'
+  NoShow = 'no-show',
+  Rescheduled = 'rescheduled'
 }
 
 // Define the interface for the Booking document
@@ -24,6 +25,7 @@ export interface IBooking extends Document {
   duration?: number; // Optional booking duration
   assignedByAdmin?: boolean; // Whether this booking was explicitly assigned by an admin
   assignedById?: string; // ID of the admin who assigned the booking
+  therapistResponded?: boolean; // Whether the therapist has responded to the assignment
   notificationDestination?: 'customer' | 'business'; // Who should receive notifications for this booking
   originalDate?: Date; // Original booking date (for tracking reschedules)
   originalTime?: string; // Original booking time (for tracking reschedules)
@@ -72,8 +74,8 @@ const BookingSchema: Schema<IBooking> = new Schema({
   status: {
     type: String,
     enum: {
-      values: Object.values(BookingStatus),
-      message: 'Status must be either pending, confirmed, completed, cancelled, or no-show'
+      values: ['pending', 'confirmed', 'completed', 'cancelled', 'no-show', 'rescheduled'],
+      message: 'Status must be either pending, confirmed, completed, cancelled, no-show, or rescheduled'
     },
     default: BookingStatus.Pending
   },
@@ -93,6 +95,10 @@ const BookingSchema: Schema<IBooking> = new Schema({
   assignedById: {
     type: String,
     ref: 'User' // Reference to the admin who assigned the booking
+  },
+  therapistResponded: {
+    type: Boolean,
+    default: false // By default, therapist has not responded
   },
   notificationDestination: {
     type: String,

@@ -174,7 +174,8 @@ export async function PATCH(
     updateData.rescheduledAt = new Date();
 
     // Update the booking status to rescheduled
-    updateData.status = 'rescheduled';
+    updateData.status = BookingStatus.Rescheduled;
+    updateData.therapistResponded = true; // Mark that therapist has responded
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,

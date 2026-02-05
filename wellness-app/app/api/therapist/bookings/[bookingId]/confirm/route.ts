@@ -139,10 +139,10 @@ export async function PATCH(
       );
     }
 
-    // Check if booking is in pending status
-    if (booking.status !== BookingStatus.Pending) {
+    // Check if booking is in pending or rescheduled status
+    if (booking.status !== BookingStatus.Pending && booking.status !== BookingStatus.Rescheduled) {
       return Response.json(
-        { success: false, error: 'Only pending bookings can be confirmed' },
+        { success: false, error: 'Only pending or rescheduled bookings can be confirmed' },
         { status: 400 }
       );
     }
@@ -152,6 +152,7 @@ export async function PATCH(
       bookingId,
       { 
         status: BookingStatus.Confirmed,
+        therapistResponded: true, // Mark that therapist has responded
         // Track who confirmed and when
         confirmedBy: decoded.id,
         confirmedAt: new Date()

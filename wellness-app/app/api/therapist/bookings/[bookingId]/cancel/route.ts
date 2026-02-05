@@ -139,10 +139,10 @@ export async function PATCH(
       );
     }
 
-    // Check if booking can be cancelled (only pending or confirmed bookings)
-    if (booking.status !== BookingStatus.Pending && booking.status !== BookingStatus.Confirmed) {
+    // Check if booking can be cancelled (only pending, confirmed, or rescheduled bookings)
+    if (booking.status !== BookingStatus.Pending && booking.status !== BookingStatus.Confirmed && booking.status !== BookingStatus.Rescheduled) {
       return Response.json(
-        { success: false, error: 'Only pending or confirmed bookings can be cancelled' },
+        { success: false, error: 'Only pending, confirmed, or rescheduled bookings can be cancelled' },
         { status: 400 }
       );
     }
@@ -152,6 +152,7 @@ export async function PATCH(
       bookingId,
       { 
         status: BookingStatus.Cancelled,
+        therapistResponded: true, // Mark that therapist has responded
         // Track who cancelled and when
         cancelledBy: decoded.id,
         cancelledAt: new Date()
