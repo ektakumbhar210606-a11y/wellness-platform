@@ -251,6 +251,8 @@ export async function GET(req: NextRequest) {
     console.log(`Page: ${page}, Limit: ${limit}, Skip: ${(page - 1) * limit}`);
 
     // Format the bookings for the response
+    // For business dashboard, show the original request information for communication with customers
+    // but also provide current state information for context
     const formattedBookings = bookings.map(booking => ({
       id: booking._id.toString(),
       customer: {
@@ -273,14 +275,20 @@ export async function GET(req: NextRequest) {
         fullName: (booking.therapist as any).fullName,
         professionalTitle: (booking.therapist as any).professionalTitle
       },
-      date: booking.date,
-      time: booking.time,
+      // Show original request date/time for business communication with customers
+      date: booking.originalDate ? booking.originalDate : booking.date,
+      time: booking.originalTime ? booking.originalTime : booking.time,
+      // Current date/time for reference (in case of rescheduling)
+      currentDate: booking.date,
+      currentTime: booking.time,
       duration: booking.duration || (booking.service as any).duration,
       status: booking.status,
       notes: booking.notes,
       createdAt: booking.createdAt,
       originalDate: booking.originalDate ? new Date(booking.originalDate) : null,
-      originalTime: booking.originalTime || null
+      originalTime: booking.originalTime || null,
+      // Flag to indicate if this booking has been rescheduled
+      hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime
     }));
 
     return Response.json({
@@ -408,6 +416,16 @@ export async function PATCH(req: NextRequest) {
     
     // Mark that therapist has responded (business confirming or cancelling the booking)
     updateData.therapistResponded = true;
+    
+    // For rescheduled bookings, ensure we preserve the original date/time information
+    // This maintains the distinction between the original customer request and current state
+    if (booking.originalDate || booking.originalTime) {
+      // This is a rescheduled booking, preserve original information
+      updateData.notificationDestination = 'customer'; // Business actions on rescheduled bookings go to customers
+    } else {
+      // This is an original request, business actions go to customers by default
+      updateData.notificationDestination = 'customer';
+    }
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,

@@ -53,11 +53,16 @@ interface Booking {
   };
   date: string;
   time: string;
+  currentDate?: string;
+  currentTime?: string;
   duration: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
   notes?: string;
   assignedByAdmin?: boolean;
   createdAt: string;
+  originalDate?: Date | null;
+  originalTime?: string | null;
+  hasBeenRescheduled?: boolean;
 }
 
 interface BookingManagementProps {
@@ -223,19 +228,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
   const handleRescheduleBooking = async (booking: Booking) => {
     try {
       setActionLoading(booking.id);
-      
+        
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!token) {
         throw new Error('Authentication token not found');
       }
-      
+        
       // For demonstration, we'll use today's date + 1 day and same time
       // In a real implementation, this would come from a date/time picker
       const newDate = new Date();
       newDate.setDate(newDate.getDate() + 1);
-      const newTime = booking.time || '10:00';
-      
-      const response = await fetch(`/api/bookings/${booking.id}/reschedule`, {
+      // Use the original time if available, otherwise current time
+      const newTime = booking.originalTime || booking.time || '10:00';
+        
+      // Use the business reschedule endpoint instead of the general one
+      const response = await fetch(`/api/business/assigned-bookings/reschedule/${booking.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -246,14 +253,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
           newTime: newTime
         }),
       });
-      
+        
       const result = await response.json();
-      
+        
       if (!response.ok) {
         throw new Error(result.error || 'Failed to reschedule booking');
       }
-      
-      message.success('Booking rescheduled successfully!');
+        
+      message.success(booking.hasBeenRescheduled 
+        ? "Original request rescheduled successfully! (This overrides the therapist's rescheduling)" 
+        : 'Booking rescheduled successfully!');
       // Refresh both lists
       await Promise.all([fetchBookingRequests(), fetchConfirmedBookings()]);
     } catch (error: any) {
@@ -347,6 +356,11 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
           <div style={{ fontSize: '12px', color: '#888' }}>
             {record.time}
           </div>
+          {record.hasBeenRescheduled && record.currentDate && record.currentTime && (
+            <div style={{ fontSize: '11px', color: '#1890ff', marginTop: '4px' }}>
+              <SyncOutlined /> Rescheduled to: {new Date(record.currentDate).toLocaleDateString()} at {record.currentTime}
+            </div>
+          )}
         </div>
       ),
     },
@@ -356,7 +370,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       key: 'status',
       render: (_: any, record: Booking) => (
         <div>
-          {record.status === 'rescheduled' ? (
+          {record.hasBeenRescheduled ? (
+            <div>
+              <Tag icon={<ClockCircleOutlined />} color="orange">
+                Original Request
+              </Tag>
+              <Tag icon={<SyncOutlined />} color="gold" style={{ marginLeft: 8 }}>
+                Rescheduled
+              </Tag>
+            </div>
+          ) : record.status === 'rescheduled' ? (
             <Tag icon={<SyncOutlined />} color="gold">
               Rescheduled
             </Tag>
@@ -384,7 +407,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             loading={actionLoading === record.id}
             onClick={() => handleConfirmBooking(record.id)}
           >
-            Confirm
+            {record.hasBeenRescheduled ? 'Confirm Original Request' : 'Confirm Request'}
           </Button>
           <Button 
             type="default"
@@ -392,7 +415,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             loading={actionLoading === record.id}
             onClick={() => handleRescheduleBooking(record)}
           >
-            Reschedule
+            {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
           </Button>
           <Button 
             danger 
@@ -400,13 +423,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             loading={actionLoading === record.id}
             onClick={() => {
               confirm({
-                title: 'Cancel Booking',
-                content: 'Are you sure you want to cancel this booking request?',
+                title: record.hasBeenRescheduled ? 'Cancel Original Request' : 'Cancel Booking',
+                content: record.hasBeenRescheduled 
+                  ? 'Are you sure you want to cancel this original customer request? (This will override the therapist\'s rescheduling)'
+                  : 'Are you sure you want to cancel this booking request?',
                 onOk: () => handleCancelBooking(record.id),
               });
             }}
           >
-            Cancel
+            {record.hasBeenRescheduled ? 'Cancel Original' : 'Cancel'}
           </Button>
           <Button 
             type="link" 
