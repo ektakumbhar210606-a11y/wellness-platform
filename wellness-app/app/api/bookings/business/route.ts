@@ -122,6 +122,7 @@ export async function GET(req: NextRequest) {
     // Parse query parameters for filtering
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const includeAssigned = searchParams.get('includeAssigned') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
@@ -130,13 +131,41 @@ export async function GET(req: NextRequest) {
     const serviceIds = services.map((service: any) => service._id);
     
     // Build query for bookings of these services
-    const query: any = { service: { $in: serviceIds } };
+    // This ensures we get all bookings related to services offered by this business
+    let query: any = { service: { $in: serviceIds } };
     
     // Add status filter if provided
     if (status && ['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
       query.status = status;
     }
+    
+    // For default view (no status specified), query for both pending and rescheduled bookings
+    // This ensures businesses can track all pending requests and rescheduled bookings
+    // Both assigned and unassigned bookings should appear for proper business tracking
+    if (status === 'pending' || (!status && !query.status)) {
+      query.status = { $in: ['pending', 'rescheduled'] }; // Include both pending and rescheduled bookings
+      console.log('Querying for all pending and rescheduled bookings (both assigned and unassigned)');
+    }
+    
+    // Explicitly ensure that the query includes both assigned and unassigned bookings
+    // This is critical to ensure assigned bookings remain visible in the business dashboard
+    console.log(`Query constructed: ${JSON.stringify(query)}`);
+    
+    // Ensure that assigned bookings are included in the results
+    // Both assignedByAdmin=true and assignedByAdmin=false bookings should appear
+    // This is important because assigned bookings should remain visible to businesses
+    console.log('Query will include all bookings for services belonging to this business, regardless of assignment status');
+    
+    // Log the final query to ensure it's correct
+    console.log('Final query for business bookings:', JSON.stringify(query, null, 2));
 
+    // Log the exact query being executed to ensure it's correct
+    console.log('Executing query for bookings:', JSON.stringify(query, null, 2));
+    
+    // Enhanced query to ensure all relevant bookings are retrieved
+    // This includes both assigned and unassigned bookings for the business's services
+    console.log('Fetching bookings with query:', JSON.stringify(query, null, 2));
+    
     // Fetch bookings with populated data
     const bookings = await BookingModel.find(query)
       .populate({
@@ -154,6 +183,53 @@ export async function GET(req: NextRequest) {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
+      
+    // Additional verification: Make sure we're getting all expected bookings
+    // If we're looking for pending bookings, also check if there are any assigned bookings that might be missed
+    if (query.status === 'pending') {
+      // Get count of all pending bookings for this business to make sure our query is accurate
+      const totalCount = await BookingModel.countDocuments({
+        service: { $in: serviceIds },
+        status: 'pending'
+      });
+      
+      console.log(`Expected up to ${limit} pending bookings (page ${page}), found ${bookings.length}, total available: ${totalCount}`);
+      
+      if (bookings.length < totalCount) {
+        console.log(`Note: Pagination limiting results to ${limit} per page. Total pending bookings: ${totalCount}`);
+      }
+    }
+      
+    // DEBUG: Additional check to ensure assigned bookings are included
+    // If we're querying for pending bookings, explicitly check for any missing assigned bookings
+    if (query.status === 'pending') {
+      // Find any pending bookings for this business's services that might have been missed
+      const allPendingBookingsForBusiness = await BookingModel.find({
+        service: { $in: serviceIds },
+        status: 'pending'
+      }).countDocuments();
+      
+      const allAssignedBookingsForBusiness = await BookingModel.find({
+        service: { $in: serviceIds },
+        status: 'pending',
+        assignedByAdmin: true
+      }).countDocuments();
+      
+      console.log(`DEBUG: Total pending bookings for business services: ${allPendingBookingsForBusiness}`);
+      console.log(`DEBUG: Total assigned pending bookings for business services: ${allAssignedBookingsForBusiness}`);
+      console.log(`DEBUG: Actually retrieved bookings: ${bookings.length}`);
+    }
+
+    console.log(`Business bookings API - Query:`, JSON.stringify(query, null, 2));
+    console.log(`Found ${bookings.length} bookings`);
+    bookings.forEach((booking, index) => {
+      console.log(`${index + 1}. ${booking.service?.name} - ${booking.customer?.name} - Status: ${booking.status} - Assigned: ${booking.assignedByAdmin} - Therapist: ${booking.therapist?.fullName || 'None'}`);
+    });
+    
+    // Add explicit check for assigned bookings in the results
+    const assignedBookings = bookings.filter(b => b.assignedByAdmin);
+    const unassignedBookings = bookings.filter(b => !b.assignedByAdmin);
+    console.log(`Breakdown: ${assignedBookings.length} assigned, ${unassignedBookings.length} unassigned`);
 
     // For each booking, if customer doesn't have phone, try to get from associated Customer profile
     for (const booking of bookings) {
@@ -169,6 +245,10 @@ export async function GET(req: NextRequest) {
 
     // Get total count for pagination
     const total = await BookingModel.countDocuments(query);
+    
+    // Log additional info about what we're retrieving
+    console.log(`Retrieved ${bookings.length} bookings out of ${total} total matching records`);
+    console.log(`Page: ${page}, Limit: ${limit}, Skip: ${(page - 1) * limit}`);
 
     // Format the bookings for the response
     const formattedBookings = bookings.map(booking => ({

@@ -22,7 +22,8 @@ import {
   CalendarOutlined,
   DollarOutlined,
   PhoneOutlined,
-  MailOutlined
+  MailOutlined,
+  SyncOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -53,8 +54,9 @@ interface Booking {
   date: string;
   time: string;
   duration: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
   notes?: string;
+  assignedByAdmin?: boolean;
   createdAt: string;
 }
 
@@ -71,7 +73,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Fetch booking requests (pending bookings)
+  // Fetch booking requests (pending and rescheduled bookings)
   const fetchBookingRequests = async () => {
     try {
       setLoading(true);
@@ -81,7 +83,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         throw new Error('Authentication token not found');
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business?status=pending`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -328,6 +330,11 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
           <div style={{ fontSize: '12px', color: '#888' }}>
             {record.therapist.professionalTitle}
           </div>
+          {record.assignedByAdmin && (
+            <div style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold', marginTop: '2px' }}>
+              <UserOutlined /> Assigned by Admin
+            </div>
+          )}
         </div>
       ),
     },
@@ -344,13 +351,26 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       ),
     },
     {
-      title: 'Status',
+      title: 'Request Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag icon={<ClockCircleOutlined />} color="orange">
-          Pending Approval
-        </Tag>
+      render: (_: any, record: Booking) => (
+        <div>
+          {record.status === 'rescheduled' ? (
+            <Tag icon={<SyncOutlined />} color="gold">
+              Rescheduled
+            </Tag>
+          ) : (
+            <Tag icon={<ClockCircleOutlined />} color="orange">
+              Pending Approval
+            </Tag>
+          )}
+          {record.assignedByAdmin && (
+            <Tag icon={<UserOutlined />} color="blue" style={{ marginLeft: 8 }}>
+              Assigned to Therapist
+            </Tag>
+          )}
+        </div>
       ),
     },
     {
