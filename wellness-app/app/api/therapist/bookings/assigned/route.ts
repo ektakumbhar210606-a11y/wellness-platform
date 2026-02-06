@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
           duration: service.duration,
           description: service.description
         },
-        business: business ? {
+        business: business && business._id ? {
           id: business._id.toString(),
           name: business.name,
           address: business.address,
