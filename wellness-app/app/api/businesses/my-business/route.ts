@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
       email: business.email,
       website: business.website,
       openingTime: business.openingTime,
+      currency: business.currency,
       closingTime: business.closingTime,
       businessHours: business.businessHours,
       status: business.status,

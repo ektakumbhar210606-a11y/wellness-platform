@@ -18,6 +18,7 @@ import {
   Col,
   Divider
 } from 'antd';
+import { formatCurrency } from '../../utils/currencyFormatter';
 import {
   CheckOutlined,
   CloseOutlined,
@@ -54,6 +55,9 @@ interface Booking {
   business: {
     id: string;
     name: string;
+    address?: {
+      country: string;
+    };
   } | null;
   date: Date;
   time: string;
@@ -374,7 +378,7 @@ const TherapistBookings: React.FC = () => {
                         <div style={{ marginLeft: 24, marginTop: 4 }}>
                           <Text type="secondary">
                             <DollarCircleOutlined style={{ marginRight: 4 }} />
-                            ${booking.service.price} • {booking.service.duration} mins
+                            {formatCurrency(booking.service.price, booking.business?.address?.country || 'USA')} • {booking.service.duration} mins
                           </Text>
                           {booking.business && (
                             <div>

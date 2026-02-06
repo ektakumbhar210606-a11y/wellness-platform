@@ -86,6 +86,7 @@ export async function GET(
         duration: service.duration,
         category: service.serviceCategory,
         status: service.status,
+        businessCountry: business.address.country, // Include business country for currency formatting
         therapists: service.therapists ? (service.therapists as any[]).map((therapist: any) => {
           return {
             _id: therapist._id,

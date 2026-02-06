@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -130,6 +131,12 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({
   );
 };
 
+interface BusinessInfo {
+  id: string;
+  country: string;
+  currency: string;
+}
+
 interface AssignedBooking {
   id: string;
   customer: {
@@ -188,12 +195,15 @@ const AssignedBookingsTracker: React.FC = () => {
     cancelled: 0,
     rescheduled: 0
   });
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null); // Add business info state
   const [therapists, setTherapists] = useState<{id: string, name: string}[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<AssignedBooking | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // State variables are already defined above
 
   const fetchAssignedBookings = async () => {
     try {
@@ -216,6 +226,11 @@ const AssignedBookingsTracker: React.FC = () => {
       if (response.success && response.data) {
         setBookings(response.data.bookings);
         setSummary(response.data.summary);
+        
+        // Store business info if available in response
+        if (response.data.business) {
+          setBusinessInfo(response.data.business);
+        }
         
         // Extract unique therapists for filter dropdown
         const uniqueTherapists = Array.from(
@@ -287,6 +302,11 @@ const AssignedBookingsTracker: React.FC = () => {
       } else {
         // If refresh fails, use the original booking
         setSelectedBooking(booking);
+      }
+      
+      // Also update business info if available in response
+      if (response.data.business) {
+        setBusinessInfo(response.data.business);
       }
     } catch (error) {
       console.error('Error refreshing booking data:', error);
@@ -504,7 +524,10 @@ const AssignedBookingsTracker: React.FC = () => {
                         <div style={{ marginLeft: 24, marginTop: 4 }}>
                           <Text type="secondary">
                             <DollarCircleOutlined style={{ marginRight: 4 }} />
-                            ${booking.service.price} • {booking.service.duration} mins
+                            {businessInfo ? 
+                              formatCurrency(booking.service.price, businessInfo.country) : 
+                              `$${booking.service.price}`
+                            } • {booking.service.duration} mins
                           </Text>
                         </div>
                       </div>
@@ -723,7 +746,10 @@ const AssignedBookingsTracker: React.FC = () => {
               {selectedBooking.service.description}
             </Descriptions.Item>
             <Descriptions.Item label="Service Price">
-              ${selectedBooking.service.price}
+              {selectedBooking && businessInfo ? 
+                formatCurrency(selectedBooking.service.price, businessInfo.country) : 
+                `$${selectedBooking?.service.price || 0}`
+              }
             </Descriptions.Item>
             <Descriptions.Item label="Service Duration">
               {selectedBooking.service.duration} minutes

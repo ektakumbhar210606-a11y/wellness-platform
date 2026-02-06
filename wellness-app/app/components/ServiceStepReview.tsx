@@ -1,5 +1,6 @@
 import React from 'react';
 import { Typography, Descriptions, Tag, Space, Divider, Button } from 'antd';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 const { Title, Text } = Typography;
 
@@ -9,6 +10,7 @@ interface ServiceStepReviewProps {
   onSubmit: () => void;
   loading: boolean;
   isEditing: boolean;
+  businessCountry?: string;
 }
 
 const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({ 
@@ -16,7 +18,8 @@ const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({
   onPrev,
   onSubmit,
   loading,
-  isEditing
+  isEditing,
+  businessCountry
 }) => {
   return (
     <div>
@@ -30,7 +33,7 @@ const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({
             {formData.name || <Text type="secondary">Not provided</Text>}
           </Descriptions.Item>
           <Descriptions.Item label="Price">
-            {formData.price !== undefined ? `$${formData.price.toFixed(2)}` : <Text type="secondary">Not provided</Text>}
+            {formData.price !== undefined ? formatCurrency(formData.price, businessCountry || 'USA') : <Text type="secondary">Not provided</Text>}
           </Descriptions.Item>
           <Descriptions.Item label="Duration">
             {formData.duration ? `${formData.duration} minutes` : <Text type="secondary">Not provided</Text>}

@@ -699,6 +699,7 @@ const ProviderDashboardContent = () => {
                           <Col key={service.id} xs={24} sm={12} md={8} lg={6} xl={6}>
                             <ServiceCard
                               service={service}
+                              businessCountry={business?.address?.country || 'USA'} // Pass business country for currency formatting
                               onEdit={(serviceData) => {
                                 setEditingService(serviceData);
                                 setModalVisible(true);
@@ -787,6 +788,7 @@ const ProviderDashboardContent = () => {
                         <Col key={service.id} xs={24} sm={12} md={8} lg={6} xl={6}>
                           <ServiceCard
                             service={service}
+                            businessCountry={business?.address?.country || 'USA'} // Pass business country for currency formatting
                             onEdit={(serviceData) => {
                               setEditingService(serviceData);
                               setModalVisible(true);

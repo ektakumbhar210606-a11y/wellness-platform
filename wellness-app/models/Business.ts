@@ -36,6 +36,7 @@ export interface IAddress {
   state: string;
   zipCode: string;
   country: string;
+  currency?: string; // Added currency field
 }
 
 // Define the interface for the Business document
@@ -61,6 +62,7 @@ export interface IBusiness extends Document {
     Sunday?: { open: string; close: string; closed?: boolean };
   };
   status: BusinessStatus;
+  currency?: string; // Currency code for the business
   therapists?: ITherapistAssociation[]; // Array of therapist associations
   createdAt: Date;
   updatedAt: Date;
@@ -156,6 +158,12 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
       required: [true, 'Country is required'],
       trim: true,
       maxlength: [50, 'Country cannot exceed 50 characters']
+    },
+    currency: {
+      type: String,
+      trim: true,
+      maxlength: [3, 'Currency code cannot exceed 3 characters'],
+      default: 'USD' // Default to USD
     }
   },
   openingTime: {
@@ -218,6 +226,12 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
       message: 'Status must be either active, inactive, or suspended'
     },
     default: BusinessStatus.Active
+  },
+  currency: {
+    type: String,
+    trim: true,
+    maxlength: [3, 'Currency code cannot exceed 3 characters'],
+    default: 'USD' // Default to USD
   },
   therapists: [{
     therapistId: {

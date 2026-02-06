@@ -1,6 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Select, Typography, Button } from 'antd';
+import { getCurrencySymbol } from '../../utils/currencyFormatter';
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -25,6 +26,7 @@ interface ServiceStepBasicProps {
   onPrev: () => void;
   current: number;
   totalSteps: number;
+  businessCountry?: string; // Country for currency formatting
 }
 
 const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({ 
@@ -33,7 +35,8 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   onNext,
   onPrev,
   current,
-  totalSteps
+  totalSteps,
+  businessCountry = 'USA' // Default to USA if not provided
 }) => {
   const [form] = Form.useForm();
   const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
@@ -229,7 +232,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
         </Form.Item>
 
         <Form.Item 
-          label="Price ($)" 
+          label={`Price (${getCurrencySymbol(businessCountry)})`} 
           name="price"
           rules={[
             { 
@@ -244,12 +247,12 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
             { 
               type: 'number',
               max: 9999.99, 
-              message: 'Price cannot exceed $9,999.99' 
+              message: `Price cannot exceed ${getCurrencySymbol(businessCountry)}9,999.99` 
             }
           ]}
         >
           <InputNumber
-            placeholder="Enter price"
+            placeholder={`Enter price in ${getCurrencySymbol(businessCountry)}`}
             min={0}
             step={0.01}
             style={{ width: '100%' }}

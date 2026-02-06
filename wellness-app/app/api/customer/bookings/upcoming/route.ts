@@ -136,11 +136,16 @@ export async function GET(request: NextRequest) {
       if (populatedBooking.service && populatedBooking.service.business) {
         try {
           const business = await BusinessModel.findById(populatedBooking.service.business)
-            .select('name')
+            .select('name address currency')
             .lean();
           
           if (business) {
-            populatedBooking.service.business = business;
+            populatedBooking.service.business = {
+              id: business._id.toString(),
+              name: business.name,
+              address: business.address,
+              currency: business.currency
+            };
           } else {
             populatedBooking.service.business = null;
           }
@@ -178,7 +183,9 @@ export async function GET(request: NextRequest) {
         } : null,
         business: business ? {
           id: business._id.toString(),
-          name: business.name
+          name: business.name,
+          address: business.address,
+          currency: business.currency
         } : null,
         date: booking.date,
         time: booking.time,

@@ -14,6 +14,7 @@ import {
   Modal,
   Descriptions
 } from 'antd';
+import { formatCurrency } from '../../utils/currencyFormatter';
 import { 
   CheckCircleOutlined, 
   ClockCircleOutlined, 
@@ -45,6 +46,14 @@ interface Booking {
     price: number;
     duration: number;
     description: string;
+    business?: {
+      id: string;
+      name: string;
+      address?: {
+        country: string;
+      };
+      currency?: string;
+    };
   };
   therapist: {
     id: string;
@@ -324,7 +333,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         <div>
           <div>{record.service.name}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.service.duration} mins • ${record.service.price}
+            {record.service.duration} mins • {formatCurrency(record.service.price, record.service.business?.address?.country || 'USA')}
           </div>
         </div>
       ),
@@ -471,7 +480,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         <div>
           <div>{record.service.name}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.service.duration} mins • ${record.service.price}
+            {record.service.duration} mins • {formatCurrency(record.service.price, record.service.business?.address?.country || 'USA')}
           </div>
         </div>
       ),
@@ -651,7 +660,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
               {selectedBooking.service.name}
             </Descriptions.Item>
             <Descriptions.Item label="Service Price">
-              ${selectedBooking.service.price}
+              {formatCurrency(selectedBooking.service.price, selectedBooking.service.business?.address?.country || 'USA')}
             </Descriptions.Item>
             <Descriptions.Item label="Service Duration">
               {selectedBooking.service.duration} minutes

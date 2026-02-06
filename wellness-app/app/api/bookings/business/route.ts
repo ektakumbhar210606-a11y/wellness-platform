@@ -174,7 +174,7 @@ export async function GET(req: NextRequest) {
       })
       .populate({
         path: 'service',
-        select: 'name price duration description'
+        select: 'name price duration description business'
       })
       .populate({
         path: 'therapist',
@@ -239,6 +239,32 @@ export async function GET(req: NextRequest) {
         const customerProfile = await CustomerModel.findOne({ user: booking.customer._id }).select('phoneNumber');
         if (customerProfile && customerProfile.phoneNumber) {
           (booking.customer as any).phone = customerProfile.phoneNumber;
+        }
+      }
+    }
+
+    // Manually populate business data for each service to include currency information
+    for (const booking of bookings) {
+      if (booking.service && (booking.service as any).business) {
+        try {
+          const BusinessModel = (await import('@/models/Business')).default;
+          const business = await BusinessModel.findById((booking.service as any).business)
+            .select('name address currency')
+            .lean();
+          
+          if (business) {
+            (booking.service as any).business = {
+              id: business._id.toString(),
+              name: business.name,
+              address: business.address,
+              currency: business.currency
+            };
+          } else {
+            (booking.service as any).business = null;
+          }
+        } catch (error) {
+          console.error('Error populating business data for booking:', booking._id, error);
+          (booking.service as any).business = null;
         }
       }
     }

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { business_name, description, service_type, service_name, address, opening_time, closing_time, businessHours, status, phone, email } = body;
+    const { business_name, description, service_type, service_name, address, opening_time, closing_time, businessHours, status, phone, email, currency } = body;
 
     // Validate required fields
     if (!business_name || !address) {
@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
       openingTime: opening_time || '09:00',
       closingTime: closing_time || '17:00',
       businessHours: formattedBusinessHours, // Store the formatted business hours
-      status: status || 'active' // Default to active status
+      status: status || 'active', // Default to active status
+      currency: currency || (address.country === 'India' ? 'INR' : 'USD') // Set currency based on country, default to USD
     });
 
     const savedBusiness = await newBusiness.save();

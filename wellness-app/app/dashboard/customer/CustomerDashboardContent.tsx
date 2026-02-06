@@ -55,6 +55,10 @@ interface UpcomingBooking {
   business: {
     business_name: string;
     location?: string;
+    address?: {
+      country: string;
+    };
+    currency?: string;
   } | null;
   therapist: {
     fullName: string;
@@ -371,7 +375,9 @@ const CustomerDashboardContent = () => {
                             } : null,
                             business: booking.business ? {
                               id: booking._id,
-                              name: booking.business.business_name
+                              name: booking.business.business_name,
+                              address: booking.business.address,
+                              currency: booking.business.currency
                             } : null,
                             date: new Date(booking.date),
                             time: booking.time,

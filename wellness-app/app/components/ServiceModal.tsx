@@ -20,6 +20,7 @@ interface ServiceModalProps {
   onSubmit: (formData: any) => Promise<void>;
   loading: boolean;
   editingService?: any;
+  businessCountry?: string; // Country for currency formatting
 }
 
 const TOTAL_STEPS = 4;
@@ -30,6 +31,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   onSubmit,
   loading,
   editingService,
+  businessCountry = 'USA',
 }) => {
   const [current, setCurrent] = useState(0);
   const [approvedTherapists, setApprovedTherapists] = useState<any[]>([]);
@@ -125,7 +127,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
     switch (current) {
       case 0:
-        return <ServiceStepBasic {...commonProps} />;
+        return <ServiceStepBasic {...commonProps} businessCountry={businessCountry} />;
 
       case 1:
         return <ServiceStepMedia {...commonProps} />;

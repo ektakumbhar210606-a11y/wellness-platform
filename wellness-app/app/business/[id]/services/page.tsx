@@ -8,6 +8,7 @@ import Navbar from '@/app/components/Navbar';
 import Link from 'next/link';
 import { businessService } from '@/app/services/businessService';
 import { useAuth } from '@/app/context/AuthContext';
+import { formatCurrency } from '../../../../utils/currencyFormatter';
 
 const { Title, Paragraph } = Typography;
 
@@ -235,7 +236,7 @@ export default function BusinessServicesPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                             <div style={{ display: 'flex', gap: '16px', color: '#8c8c8c', fontSize: '14px' }}>
                               <span>⏱️ {service.duration} min</span>
-                              <span>💰 ${service.price}</span>
+                              <span>💰 {formatCurrency(service.price, service.businessCountry || 'USA')}</span>
                             </div>
                           </div>
                         </div>

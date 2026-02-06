@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, Button, Table, Tag, Space, Typography, Modal, Skeleton, Tabs } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
+import { formatCurrency } from '../../../../utils/currencyFormatter';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -101,7 +102,10 @@ const CustomerBookingsPage = () => {
       title: 'Price',
       dataIndex: ['service', 'price'],
       key: 'price',
-      render: (price: number) => `$${price || 'N/A'}`,
+      render: (price: number, record: any) => {
+        const country = record.business?.address?.country || 'USA';
+        return price ? formatCurrency(price, country) : 'N/A';
+      },
     },
     {
       title: 'Status',
@@ -204,7 +208,10 @@ const CustomerBookingsPage = () => {
       title: 'Price',
       dataIndex: ['service', 'price'],
       key: 'price',
-      render: (price: number) => `$${price || 'N/A'}`,
+      render: (price: number, record: any) => {
+        const country = record.business?.address?.country || 'USA';
+        return price ? formatCurrency(price, country) : 'N/A';
+      },
     },
     {
       title: 'Payment Status',

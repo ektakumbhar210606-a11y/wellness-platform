@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { business_name, description, service_type, service_name, address, opening_time, closing_time, businessHours, status, phone, email, website } = body;
+    const { business_name, description, service_type, service_name, address, opening_time, closing_time, businessHours, status, phone, email, website, currency } = body;
 
     // Import Business model
     const businessModule = await import('@/models/Business');
@@ -85,6 +85,7 @@ export async function PUT(request: NextRequest) {
     if (phone !== undefined) updateData.phone = phone;
     if (email !== undefined) updateData.email = email;
     if (website !== undefined) updateData.website = website;
+    if (currency !== undefined) updateData.currency = currency;
 
     // Convert businessHours array to the expected object format
     if (businessHours) {
@@ -132,6 +133,7 @@ export async function PUT(request: NextRequest) {
       closingTime: updatedBusiness.closingTime,
       businessHours: updatedBusiness.businessHours,
       status: updatedBusiness.status,
+      currency: updatedBusiness.currency,
       createdAt: updatedBusiness.createdAt,
       updatedAt: updatedBusiness.updatedAt
     }, { status: 200 });

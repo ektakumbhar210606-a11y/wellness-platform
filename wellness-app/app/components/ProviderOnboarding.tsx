@@ -89,6 +89,7 @@ interface FormData {
   address: string;
   state: string;
   pincode: string;
+  country: string;
   businessHours: BusinessHour[];
 }
 
@@ -125,6 +126,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         address: initialData.address?.street || '',
         state: initialData.address?.state || '',
         pincode: initialData.address?.zipCode || '',
+        country: initialData.address?.country || 'USA', // Default to USA if not provided
         businessHours: initialData.businessHours || [],
       };
     }
@@ -141,6 +143,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       address: '',
       state: '',
       pincode: '',
+      country: 'USA', // Default to USA
       businessHours: [],
     };
   });
@@ -166,6 +169,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           address: initialData.address?.street || '',
           state: initialData.address?.state || '',
           pincode: initialData.address?.zipCode || '',
+          country: initialData.address?.country || 'USA', // Default to USA if not provided
           businessHours: initialData.businessHours || [],
         };
         
@@ -513,8 +517,9 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           city: formData.address.split(',')[0] || 'Default City', // Extract city from address or provide default
           state: formData.state,
           zipCode: formData.pincode,
-          country: 'USA' // Default or add to form
+          country: formData.country // Use selected country
         },
+        currency: formData.country === 'India' ? 'INR' : 'USD', // Set currency based on country
         opening_time: hourRows.length > 0 ? hourRows[0].openingTime.format('HH:mm') : '09:00',
         closing_time: hourRows.length > 0 ? hourRows[0].closingTime.format('HH:mm') : '17:00',
         status: 'active',
@@ -895,6 +900,26 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
+                  label="Country"
+                  name="country"
+                  rules={[
+                    { required: true, message: 'Please select your country' }
+                  ]}
+                >
+                  <Select 
+                    placeholder="Select your country" 
+                    size="large"
+                    options={[
+                      { value: 'USA', label: 'United States' },
+                      { value: 'India', label: 'India' },
+                      // Add more countries as needed
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              
+              <Col span={12}>
+                <Form.Item
                   label="State"
                   name="state"
                   rules={[
@@ -908,24 +933,22 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
                   />
                 </Form.Item>
               </Col>
-              
-              <Col span={12}>
-                <Form.Item
-                  label="Pincode"
-                  name="pincode"
-                  rules={[
-                    { required: true, message: 'Please enter your pincode' },
-                    { pattern: /^\d{6}$/, message: 'Please enter a valid 6-digit pincode' }
-                  ]}
-                >
-                  <Input 
-                    placeholder="Enter your pincode" 
-                    size="large"
-                    maxLength={6}
-                  />
-                </Form.Item>
-              </Col>
             </Row>
+            
+            <Form.Item
+              label="Pincode"
+              name="pincode"
+              rules={[
+                { required: true, message: 'Please enter your pincode' },
+                { pattern: /^\d{6}$/, message: 'Please enter a valid 6-digit pincode' }
+              ]}
+            >
+              <Input 
+                placeholder="Enter your pincode" 
+                size="large"
+                maxLength={6}
+              />
+            </Form.Item>
           </Form>
         )}
         
@@ -977,6 +1000,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
             
             <Card style={{ marginBottom: '16px' }}>
               <Title level={5}>Location Information</Title>
+              <Paragraph><strong>Country:</strong> {formData.country}</Paragraph>
               <Paragraph><strong>Address:</strong> {formData.address}</Paragraph>
               <Paragraph><strong>State:</strong> {formData.state}</Paragraph>
               <Paragraph><strong>Pincode:</strong> {formData.pincode}</Paragraph>

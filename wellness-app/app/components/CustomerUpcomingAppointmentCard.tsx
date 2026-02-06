@@ -6,6 +6,7 @@ import {
   ShopOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 const { Text, Title } = Typography;
 
@@ -26,6 +27,10 @@ interface Appointment {
   business: {
     id: string;
     name: string;
+    address?: {
+      country: string;
+    };
+    currency?: string;
   } | null;
   date: Date;
   time: string;
@@ -118,7 +123,7 @@ const CustomerUpcomingAppointmentCard: React.FC<CustomerUpcomingAppointmentCardP
             
             {appointment.service && (
               <Text type="secondary">
-                Duration: {appointment.service.duration} mins • ${appointment.service.price}
+                Duration: {appointment.service.duration} mins • {formatCurrency(appointment.service.price, appointment.business?.address?.country || 'USA')}
               </Text>
             )}
           </Space>

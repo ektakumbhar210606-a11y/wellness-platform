@@ -179,6 +179,7 @@ export async function POST(req: NextRequest) {
           therapists: formattedTherapists,
           teamMembers: formattedTeamMembers,
           createdAt: populatedService.createdAt,
+          businessCountry: business.address.country // Include business country for currency formatting
         }
       },
       { status: 201 }

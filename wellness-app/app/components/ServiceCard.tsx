@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Typography, Tag, Button, Space, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined, DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 const { Meta } = Card;
 const { Text, Paragraph } = Typography;
@@ -20,12 +21,13 @@ interface ServiceCardProps {
     teamMembers?: any[];
     therapists?: any[];
   };
+  businessCountry?: string; // Country for currency formatting (optional with default 'USA')
   onEdit: (service: any) => void;
   onDelete: (id: string) => void;
   deletingServiceId?: string | null;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, deletingServiceId }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, businessCountry = 'USA', onEdit, onDelete, deletingServiceId }) => {
   const handleEdit = () => {
     onEdit(service);
   };
@@ -97,7 +99,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onEdit, onDelete, de
                   {service.name || service.serviceCategory?.name || 'Service Name Not Set'}
                 </Text>
                 <Tag icon={<DollarOutlined />} color="green">
-                  ${service.price.toFixed(2)}
+                  {formatCurrency(service.price, businessCountry)}
                 </Tag>
               </div>
             </div>
