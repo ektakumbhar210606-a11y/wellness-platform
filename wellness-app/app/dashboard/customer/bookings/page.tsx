@@ -89,7 +89,7 @@ const CustomerBookingsPage = () => {
     {
       title: 'Date & Time',
       key: 'datetime',
-      render: (record: any) => `${record.date} at ${formatTimeTo12Hour(record.time)}`,
+      render: (record: any) => `${new Date(record.date).getDate().toString().padStart(2, '0')}-${(new Date(record.date).getMonth() + 1).toString().padStart(2, '0')}-${new Date(record.date).getFullYear()} at ${formatTimeTo12Hour(record.time)}`,
     },
     {
       title: 'Duration',
@@ -192,7 +192,7 @@ const CustomerBookingsPage = () => {
     {
       title: 'Date & Time',
       key: 'datetime',
-      render: (record: any) => `${record.date} at ${formatTimeTo12Hour(record.time)}`,
+      render: (record: any) => `${new Date(record.date).getDate().toString().padStart(2, '0')}-${(new Date(record.date).getMonth() + 1).toString().padStart(2, '0')}-${new Date(record.date).getFullYear()} at ${formatTimeTo12Hour(record.time)}`,
     },
     {
       title: 'Duration',
@@ -367,7 +367,7 @@ const CustomerBookingsPage = () => {
         okText="Yes, Cancel"
         cancelText="No, Keep Booking"
       >
-        <p>Are you sure you want to cancel the booking for <strong>{bookingToCancel?.service?.name || 'N/A'}</strong> on {bookingToCancel?.date ? new Date(bookingToCancel.date).toLocaleDateString() : 'N/A'} at {formatTimeTo12Hour(bookingToCancel?.time || '')}?</p>
+        <p>Are you sure you want to cancel the booking for <strong>{bookingToCancel?.service?.name || 'N/A'}</strong> on {bookingToCancel?.date ? `${new Date(bookingToCancel.date).getDate().toString().padStart(2, '0')}-${(new Date(bookingToCancel.date).getMonth() + 1).toString().padStart(2, '0')}-${new Date(bookingToCancel.date).getFullYear()}` : 'N/A'} at {formatTimeTo12Hour(bookingToCancel?.time || '')}?</p>
         <p>Please note that cancellation policies may apply depending on how far in advance you cancel.</p>
       </Modal>
     </div>
