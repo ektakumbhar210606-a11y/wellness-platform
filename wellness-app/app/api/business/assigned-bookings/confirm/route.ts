@@ -234,7 +234,7 @@ export async function PATCH(
           price: (updatedBooking.service as any).price,
           duration: (updatedBooking.service as any).duration,
           description: (updatedBooking.service as any).description,
-          business: updatedBooking.service.business ? {
+          business: updatedBooking.service.business && (updatedBooking.service.business as any)._id ? {
             id: (updatedBooking.service.business as any)._id.toString(),
             name: (updatedBooking.service.business as any).name
           } : null

@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
           fullName: therapist.fullName,
           professionalTitle: therapist.professionalTitle
         } : null,
-        business: business ? {
+        business: business && business._id ? {
           id: business._id.toString(),
           name: business.name,
           address: business.address,
