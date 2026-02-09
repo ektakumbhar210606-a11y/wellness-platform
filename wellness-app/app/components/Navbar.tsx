@@ -212,6 +212,7 @@ const Navbar: React.FC<NavbarProps> = ({ resetToken }) => {
 
   const handleLogout = () => {
     logout();
+    router.push('/');
     closeMobileMenu();
   };
 

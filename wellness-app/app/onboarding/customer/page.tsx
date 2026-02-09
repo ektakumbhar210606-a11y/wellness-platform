@@ -123,14 +123,14 @@ const CustomerOnboardingPage = () => {
       }));
       
       notification.success({
-        message: 'Success',
+        title: 'Success',
         description: 'Personal details saved!',
       });
       
       setCurrentStep(1);
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Please fill in all required fields',
       });
     } finally {
@@ -154,14 +154,14 @@ const CustomerOnboardingPage = () => {
       }));
       
       notification.success({
-        message: 'Success',
+        title: 'Success',
         description: 'Preferences saved!',
       });
       
       setCurrentStep(2);
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Please fill in required fields',
       });
     } finally {
@@ -191,14 +191,14 @@ const CustomerOnboardingPage = () => {
       }));
       
       notification.success({
-        message: 'Success',
+        title: 'Success',
         description: 'Wellness goals saved!',
       });
       
       setCurrentStep(3);
     } catch (error: any) {
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Please fill in required fields',
       });
     } finally {
@@ -284,7 +284,7 @@ const CustomerOnboardingPage = () => {
       }
       
       notification.success({
-        message: 'Success',
+        title: 'Success',
         description: 'Customer profile created successfully!',
       });
       
@@ -292,7 +292,7 @@ const CustomerOnboardingPage = () => {
     } catch (error: any) {
       console.error('Error completing onboarding:', error);
       notification.error({
-        message: 'Error',
+        title: 'Error',
         description: error.message || 'Failed to complete onboarding. Please try again.',
       });
     } finally {

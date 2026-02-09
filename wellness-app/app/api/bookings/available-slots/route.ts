@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import UserModel from '@/models/User';
 import { generateSlots } from '@/app/utils/generateSlots';
 import { checkTherapistAvailability } from '@/app/utils/checkTherapistAvailability';
+import BookingModel, { BookingStatus } from '@/models/Booking';
 
 export async function GET(request: NextRequest) {
   try {
@@ -118,24 +119,46 @@ export async function GET(request: NextRequest) {
     );
 
     // Check availability for each slot using the therapist availability checker
-    const slotsWithAvailability = rawSlots.map(slot => {
-      const isAvailable = checkTherapistAvailability(
+    const slotsWithAvailability = rawSlots.map(async (slot) => {
+      const isAvailableFromTherapist = checkTherapistAvailability(
         slot.startTime,
         slot.endTime,
         therapist.weeklyAvailability,
         selectedDate
       );
       
+      // Check if there's already a pending or confirmed booking for this slot
+      const conflictingBooking = await BookingModel.findOne({
+        therapist: therapistId,
+        date: {
+          $gte: new Date(selectedDate.setHours(0, 0, 0, 0)), // Start of the day
+          $lt: new Date(selectedDate.setHours(23, 59, 59, 999)) // End of the day
+        },
+        time: slot.startTime,
+        $or: [
+          { status: BookingStatus.Pending },
+          { status: BookingStatus.Confirmed },
+          { status: BookingStatus.Rescheduled }
+        ]
+      });
+      
+      // A slot is truly available if it's available in therapist's schedule AND no conflicting booking exists
+      const isAvailable = isAvailableFromTherapist && !conflictingBooking;
+      
       return {
         startTime: slot.startTime,
         endTime: slot.endTime,
-        isAvailable
+        isAvailable,
+        status: conflictingBooking ? conflictingBooking.status : 'available'
       };
     });
+    
+    // Wait for all slot availability checks to complete
+    const resolvedSlots = await Promise.all(slotsWithAvailability);
 
     return Response.json({
       success: true,
-      data: slotsWithAvailability
+      data: resolvedSlots
     });
 
   } catch (error: any) {

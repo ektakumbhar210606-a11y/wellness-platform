@@ -5,6 +5,7 @@ import TherapistModel from '@/models/Therapist';
 import UserModel from '@/models/User';
 import ServiceModel from '@/models/Service';
 import BusinessModel from '@/models/Business';
+import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '@/models/TherapistAvailability';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
@@ -172,6 +173,26 @@ export async function PATCH(
         path: 'service',
         select: 'name price duration description'
       });
+
+    // Release the slot by updating the therapist's availability back to available
+    if (updatedBooking && booking) {
+      const slotDate = new Date(booking.date);
+      const availabilitySlot = await TherapistAvailabilityModel.findOne({
+        therapist: booking.therapist,
+        date: {
+          $gte: new Date(slotDate.setHours(0, 0, 0, 0)), // Start of the day
+          $lt: new Date(slotDate.setHours(23, 59, 59, 999)) // End of the day
+        },
+        startTime: { $lte: booking.time }, // Slot starts at or before the requested time
+        endTime: { $gt: booking.time },    // Slot ends after the requested time
+      });
+
+      if (availabilitySlot) {
+        // Update the availability slot back to available
+        availabilitySlot.status = TherapistAvailabilityStatus.Available;
+        await availabilitySlot.save();
+      }
+    }
 
     // Split the full name into first and last name
     let firstName = '';
