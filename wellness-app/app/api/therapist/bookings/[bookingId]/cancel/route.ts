@@ -5,6 +5,7 @@ import TherapistModel from '@/models/Therapist';
 import UserModel from '@/models/User';
 import ServiceModel from '@/models/Service';
 import BusinessModel from '@/models/Business';
+import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '@/models/TherapistAvailability';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
@@ -148,7 +149,7 @@ export async function PATCH(
     }
 
     // Update booking status to cancelled
-    const bookingWithPopulatedData = await BookingModel.findByIdAndUpdate(
+    const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
       { 
         status: BookingStatus.Cancelled,
@@ -168,41 +169,61 @@ export async function PATCH(
       select: 'name price duration description business'
     });
 
+    // Release the slot by updating the therapist's availability back to available
+    if (updatedBooking) {
+      const slotDate = new Date(booking.date);
+      const availabilitySlot = await TherapistAvailabilityModel.findOne({
+        therapist: booking.therapist,
+        date: {
+          $gte: new Date(slotDate.setHours(0, 0, 0, 0)), // Start of the day
+          $lt: new Date(slotDate.setHours(23, 59, 59, 999)) // End of the day
+        },
+        startTime: { $lte: booking.time }, // Slot starts at or before the requested time
+        endTime: { $gt: booking.time },    // Slot ends after the requested time
+      });
+
+      if (availabilitySlot) {
+        // Update the availability slot back to available
+        availabilitySlot.status = TherapistAvailabilityStatus.Available;
+        await availabilitySlot.save();
+      }
+    }
+
     // Split the full name into first and last name
     let firstName = '';
     let lastName = '';
-    if (bookingWithPopulatedData && bookingWithPopulatedData.customer && (bookingWithPopulatedData.customer as any).name) {
-      const nameParts = (bookingWithPopulatedData.customer as any).name.trim().split(/\s+/);
+    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as any).name) {
+      const nameParts = (updatedBooking.customer as any).name.trim().split(/\s+/);
       firstName = nameParts[0] || '';
       lastName = nameParts.slice(1).join(' ') || '';
     }
 
     // Handle phone number - try to get from Customer model if not in User model
-    let phoneNumber = (bookingWithPopulatedData!.customer as any).phone;
+    let phoneNumber = (updatedBooking!.customer as any).phone;
     if (!phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
-      const customerProfile = await CustomerModel.findOne({ user: (bookingWithPopulatedData!.customer as any)._id }).select('phoneNumber');
+      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
         phoneNumber = customerProfile.phoneNumber;
       }
     }
 
     // Manually populate business data to avoid Mongoose schema registration issues
-    let updatedBooking = bookingWithPopulatedData.toObject();
-    if (updatedBooking.service && updatedBooking.service.business) {
+    let finalBookingData = updatedBooking.toObject();
+    if (finalBookingData.service && finalBookingData.service.business) {
       try {
-        const business = await BusinessModel.findById(updatedBooking.service.business)
+        const business = await BusinessModel.findById(finalBookingData.service.business)
           .select('name')
           .lean();
         
         if (business) {
-          updatedBooking.service.business = business;
+          finalBookingData.service.business = business;
         } else {
-          updatedBooking.service.business = null;
+          finalBookingData.service.business = null;
         }
       } catch (error) {
         console.error('Error populating business data:', error);
-        updatedBooking.service.business = null;
+        finalBookingData.service.business = null;
       }
     }
 
@@ -219,32 +240,32 @@ export async function PATCH(
       success: true,
       message: 'Booking cancelled successfully',
       data: {
-        id: updatedBooking._id.toString(),
+        id: finalBookingData._id.toString(),
         customer: {
-          id: (updatedBooking.customer as any)._id.toString(),
+          id: (finalBookingData.customer as any)._id.toString(),
           firstName: firstName,
           lastName: lastName,
-          email: (updatedBooking.customer as any).email,
+          email: (finalBookingData.customer as any).email,
           phone: phoneNumber
         },
         service: {
-          id: (updatedBooking.service as any)._id.toString(),
-          name: (updatedBooking.service as any).name,
-          price: (updatedBooking.service as any).price,
-          duration: (updatedBooking.service as any).duration,
-          description: (updatedBooking.service as any).description,
-          business: updatedBooking.service.business ? {
-            id: (updatedBooking.service.business as any)._id.toString(),
-            name: (updatedBooking.service.business as any).name
+          id: (finalBookingData.service as any)._id.toString(),
+          name: (finalBookingData.service as any).name,
+          price: (finalBookingData.service as any).price,
+          duration: (finalBookingData.service as any).duration,
+          description: (finalBookingData.service as any).description,
+          business: finalBookingData.service.business ? {
+            id: (finalBookingData.service.business as any)._id.toString(),
+            name: (finalBookingData.service.business as any).name
           } : null
         },
-        date: updatedBooking.date,
-        time: updatedBooking.time,
-        originalDate: updatedBooking.originalDate ? new Date(updatedBooking.originalDate) : null,
-        originalTime: updatedBooking.originalTime || null,
-        status: updatedBooking.status,
-        createdAt: updatedBooking.createdAt,
-        updatedAt: updatedBooking.updatedAt
+        date: finalBookingData.date,
+        time: finalBookingData.time,
+        originalDate: finalBookingData.originalDate ? new Date(finalBookingData.originalDate) : null,
+        originalTime: finalBookingData.originalTime || null,
+        status: finalBookingData.status,
+        createdAt: finalBookingData.createdAt,
+        updatedAt: finalBookingData.updatedAt
       }
     });
 

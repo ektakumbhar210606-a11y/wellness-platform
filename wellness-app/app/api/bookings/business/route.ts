@@ -7,6 +7,7 @@ import UserModel from '../../../../models/User';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
+import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '@/models/TherapistAvailability';
 import NotificationService from '@/app/utils/notifications';
 import { formatBookingId } from '@/utils/bookingIdFormatter';
 
@@ -472,6 +473,26 @@ export async function PATCH(req: NextRequest) {
       path: 'therapist',
       select: 'fullName professionalTitle'
     });
+
+    // Release the slot by updating the therapist's availability back to available if booking was cancelled
+    if (status === 'cancelled' && updatedBooking) {
+      const slotDate = new Date(booking.date);
+      const availabilitySlot = await TherapistAvailabilityModel.findOne({
+        therapist: booking.therapist,
+        date: {
+          $gte: new Date(slotDate.setHours(0, 0, 0, 0)), // Start of the day
+          $lt: new Date(slotDate.setHours(23, 59, 59, 999)) // End of the day
+        },
+        startTime: { $lte: booking.time }, // Slot starts at or before the requested time
+        endTime: { $gt: booking.time },    // Slot ends after the requested time
+      });
+
+      if (availabilitySlot) {
+        // Update the availability slot back to available
+        availabilitySlot.status = TherapistAvailabilityStatus.Available;
+        await availabilitySlot.save();
+      }
+    }
     
     // Split the full name into first and last name
     let firstName = '';

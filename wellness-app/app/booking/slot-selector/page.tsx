@@ -97,17 +97,17 @@ export default function BookingSlotSelectorPage() {
       const result = await response.json();
       
       if (result.success) {
-        // Filter out only available slots and format them
-        const filteredSlots = result.data
-          .filter((slot: any) => slot.isAvailable)
-          .map((slot: any, index: number) => ({
-            id: `slot-${index}-${formattedDate}`,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            date: formattedDate
-          }));
+        // Include all slots (available, pending, confirmed) but track their status
+        const allSlots = result.data.map((slot: any, index: number) => ({
+          id: `slot-${index}-${formattedDate}`,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          date: formattedDate,
+          isAvailable: slot.isAvailable,
+          status: slot.status || 'available'  // 'available', 'pending', 'confirmed', 'rescheduled'
+        }));
         
-        setAvailableSlots(filteredSlots);
+        setAvailableSlots(allSlots);
       } else {
         throw new Error(result.error || 'Failed to fetch available slots');
       }
@@ -128,6 +128,20 @@ export default function BookingSlotSelectorPage() {
     // If the slot date/time is before the current date/time, it's in the past
     if (slotDateTime.isBefore(currentTime, 'minute')) {
       message.warning('Cannot select past time slots');
+      return;
+    }
+    
+    // Only allow selection of available slots
+    if (!slot.isAvailable) {
+      if (slot.status === 'pending') {
+        message.warning('This time slot has a pending booking request and is temporarily unavailable.');
+      } else if (slot.status === 'confirmed') {
+        message.warning('This time slot is already booked.');
+      } else if (slot.status === 'rescheduled') {
+        message.warning('This time slot is reserved for a rescheduled booking.');
+      } else {
+        message.warning('This time slot is not available.');
+      }
       return;
     }
     
@@ -288,26 +302,63 @@ export default function BookingSlotSelectorPage() {
                 {availableSlots.length > 0 ? (
                   availableSlots.map((slot) => {
                     const currentTime = moment();
-                    const slotTime = moment(slot.startTime, 'HH:mm');
+                    const slotDateTime = moment(`${slot.date} ${slot.startTime}`, 'YYYY-MM-DD HH:mm');
                     
-                    // For date-specific slots, we don't need to check if it's in the past
-                    // since the user selected the date
-                    const isPast = false;
+                    // Check if the slot is in the past
+                    const isPast = slotDateTime.isBefore(currentTime, 'minute');
+                    
+                    // Determine slot status for styling
+                    const isAvailable = slot.isAvailable;
+                    const slotStatus = slot.status || 'available';
+                    
+                    // Define styles based on slot status
+                    let borderColor = '#f0f0f0'; // Default
+                    let backgroundColor = '#ffffff'; // Default
+                    let cursorStyle = 'pointer';
+                    let opacity = 1;
+                    let disabled = false;
+                    
+                    if (isPast) {
+                      borderColor = '#ffccc7';
+                      backgroundColor = '#fff2f0';
+                      cursorStyle = 'not-allowed';
+                      opacity = 0.6;
+                      disabled = true;
+                    } else if (slotStatus === 'pending') {
+                      borderColor = '#ffe58f'; // Light yellow for pending
+                      backgroundColor = '#fffbe6'; // Light yellow background
+                      cursorStyle = 'not-allowed';
+                      opacity = 0.7;
+                      disabled = true;
+                    } else if (slotStatus === 'confirmed') {
+                      borderColor = '#ffccc7'; // Light red for confirmed
+                      backgroundColor = '#fff2f0'; // Light red background
+                      cursorStyle = 'not-allowed';
+                      opacity = 0.7;
+                      disabled = true;
+                    } else if (slotStatus === 'rescheduled') {
+                      borderColor = '#d9f7be'; // Light green for rescheduled
+                      backgroundColor = '#f6ffed'; // Light green background
+                      cursorStyle = 'not-allowed';
+                      opacity = 0.7;
+                      disabled = true;
+                    } else if (selectedSlot?.id === slot.id) {
+                      borderColor = '#1890ff'; // Blue for selected
+                      backgroundColor = '#e6f7ff';
+                    }
                     
                     return (
                       <Col key={slot.id} xs={24} sm={12} md={8}>
                         <Card
-                          hoverable
+                          hoverable={!disabled}
                           style={{
                             borderRadius: 8,
-                            border: selectedSlot?.id === slot.id ? '2px solid #1890ff' : 
-                                     isPast ? '1px solid #ffccc7' : '1px solid #f0f0f0',
-                            backgroundColor: selectedSlot?.id === slot.id ? '#e6f7ff' : 
-                                           isPast ? '#fff2f0' : '#ffffff',
-                            cursor: isPast ? 'not-allowed' : 'pointer',
-                            opacity: isPast ? 0.6 : 1
+                            border: `1px solid ${borderColor}`,
+                            backgroundColor,
+                            cursor: cursorStyle,
+                            opacity,
                           }}
-                          onClick={() => !isPast && handleSlotSelect(slot)}
+                          onClick={() => !disabled && handleSlotSelect(slot)}
                         >
                           <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
@@ -316,6 +367,11 @@ export default function BookingSlotSelectorPage() {
                             <div style={{ marginTop: 8, fontSize: '12px', color: '#8c8c8c' }}>
                               {slot.date}
                             </div>
+                            {!isAvailable && slotStatus !== 'available' && (
+                              <div style={{ marginTop: 4, fontSize: '11px', color: '#ff4d4f', fontWeight: 'normal' }}>
+                                {slotStatus.charAt(0).toUpperCase() + slotStatus.slice(1)}
+                              </div>
+                            )}
                           </div>
                         </Card>
                       </Col>
