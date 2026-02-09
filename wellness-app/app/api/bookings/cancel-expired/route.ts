@@ -5,6 +5,7 @@ import UserModel from '@/models/User';
 import * as jwt from 'jsonwebtoken';
 import { BookingStatus } from '@/models/Booking';
 import BookingModel from '@/models/Booking';
+import { formatBookingId } from '@/utils/bookingIdFormatter';
 
 interface JwtPayload {
   id: string;
@@ -108,6 +109,7 @@ export async function POST(request: NextRequest) {
         cancelledCount: result.cancelledCount,
         cancelledBookings: result.cancelledBookings.map(booking => ({
           id: booking._id.toString(),
+          displayId: formatBookingId(booking._id.toString()),
           customer: (booking.customer as any).name || 'Unknown Customer',
           service: (booking.service as any).name || 'Unknown Service',
           date: booking.date,

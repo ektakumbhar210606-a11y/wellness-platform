@@ -38,6 +38,7 @@ const { Option } = Select;
 
 interface Booking {
   id: string;
+  displayId?: string; // User-friendly display ID
   customer: {
     id: string;
     firstName: string;

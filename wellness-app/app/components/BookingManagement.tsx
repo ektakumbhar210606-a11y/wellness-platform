@@ -32,6 +32,7 @@ const { confirm } = Modal;
 
 interface Booking {
   id: string;
+  displayId?: string; // User-friendly display ID
   customer: {
     id: string;
     firstName?: string;
@@ -645,6 +646,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       >
         {selectedBooking && (
           <Descriptions column={1} bordered>
+            <Descriptions.Item label="Booking ID">
+              {selectedBooking.displayId || selectedBooking.id}
+            </Descriptions.Item>
             <Descriptions.Item label="Customer Name">
               {selectedBooking.customer.firstName 
                 ? `${selectedBooking.customer.firstName} ${selectedBooking.customer.lastName || ''}`

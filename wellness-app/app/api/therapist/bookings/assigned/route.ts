@@ -7,6 +7,7 @@ import BusinessModel from '@/models/Business';
 import UserModel from '@/models/User';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
+import { formatBookingId } from '@/utils/bookingIdFormatter';
 
 async function requireTherapistAuth(request: NextRequest) {
   try {
@@ -182,6 +183,7 @@ export async function GET(req: NextRequest) {
 
       return {
         id: booking._id.toString(),
+        displayId: formatBookingId(booking._id.toString()),
         customer: {
           id: customer._id.toString(),
           firstName: customer.firstName,

@@ -73,8 +73,8 @@ const CustomerBookingsPage = () => {
   const requestColumns = [
     {
       title: 'Booking ID',
-      dataIndex: 'id',
       key: 'id',
+      render: (record: any) => record.displayId || record.id,
     },
     {
       title: 'Service',
@@ -179,8 +179,8 @@ const CustomerBookingsPage = () => {
   const confirmedColumns = [
     {
       title: 'Booking ID',
-      dataIndex: 'id',
       key: 'id',
+      render: (record: any) => record.displayId || record.id,
     },
     {
       title: 'Service',

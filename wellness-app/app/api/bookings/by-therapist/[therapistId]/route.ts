@@ -8,6 +8,7 @@ import UserModel from '@/models/User';
 import { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
+import { formatBookingId } from '@/utils/bookingIdFormatter';
 
 async function requireBusinessAuth(request: NextRequest) {
   try {
@@ -177,6 +178,7 @@ export async function GET(
     // Format the bookings for response
     const formattedBookings = bookings.map(booking => ({
       id: booking._id.toString(),
+      displayId: formatBookingId(booking._id.toString()),
       customer: {
         id: (booking.customer as any)._id.toString(),
         firstName: (booking.customer as any).firstName,

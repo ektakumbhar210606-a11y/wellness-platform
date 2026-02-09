@@ -6,6 +6,7 @@ import ServiceModel from '../../../../models/Service';
 import TherapistModel from '../../../../models/Therapist';
 import BusinessModel from '../../../../models/Business';
 import * as jwt from 'jsonwebtoken';
+import { formatBookingId } from '../../../../utils/bookingIdFormatter';
 
 interface JwtPayload {
   id: string;
@@ -170,6 +171,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: booking._id.toString(),
+        displayId: formatBookingId(booking._id.toString()),
         service: service ? {
           id: service._id.toString(),
           name: service.name,

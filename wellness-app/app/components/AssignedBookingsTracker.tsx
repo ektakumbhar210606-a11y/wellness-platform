@@ -139,6 +139,7 @@ interface BusinessInfo {
 
 interface AssignedBooking {
   id: string;
+  displayId?: string; // User-friendly display ID
   customer: {
     id: string;
     firstName: string;
@@ -728,7 +729,7 @@ const AssignedBookingsTracker: React.FC = () => {
         {selectedBooking && !refreshing && (
           <Descriptions column={1} bordered>
             <Descriptions.Item label="Booking ID">
-              {selectedBooking.id}
+              {selectedBooking.displayId || selectedBooking.id}
             </Descriptions.Item>
             <Descriptions.Item label="Customer Name">
               {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}

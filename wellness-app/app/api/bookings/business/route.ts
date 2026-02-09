@@ -8,6 +8,7 @@ import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
 import NotificationService from '@/app/utils/notifications';
+import { formatBookingId } from '@/utils/bookingIdFormatter';
 
 interface JwtPayload {
   id: string;
@@ -281,6 +282,7 @@ export async function GET(req: NextRequest) {
     // but also provide current state information for context
     const formattedBookings = bookings.map(booking => ({
       id: booking._id.toString(),
+      displayId: formatBookingId(booking._id.toString()),
       customer: {
         id: (booking.customer as any)._id.toString(),
         name: (booking.customer as any).name,

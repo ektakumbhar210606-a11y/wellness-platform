@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
+import { formatBookingId } from '@/utils/bookingIdFormatter';
 
 /**
  * API endpoint for automatic background task
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
         cancelledBookings: result.cancelledBookings.map(booking => ({
           id: booking._id.toString(),
+          displayId: formatBookingId(booking._id.toString()),
           customer: (booking.customer as any)?.name || 'Unknown Customer',
           service: (booking.service as any)?.name || 'Unknown Service',
           date: booking.date,

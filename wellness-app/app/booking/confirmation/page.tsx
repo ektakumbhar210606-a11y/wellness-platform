@@ -5,6 +5,7 @@ import { Layout, Typography, Row, Col, Card, Button, Alert } from 'antd';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import moment from 'moment';
+import { formatBookingId } from '../../../utils/bookingIdFormatter';
 
 const { Title, Text } = Typography;
 
@@ -38,6 +39,7 @@ export default function BookingConfirmationPage() {
     // For now, we'll just set the booking details from the parameters
     setBookingDetails({
       id: bookingId || 'temp-id',
+      displayId: bookingId ? formatBookingId(bookingId) : '', // Use actual display ID formatter
       businessId,
       serviceId,
       therapistId,
@@ -90,6 +92,11 @@ export default function BookingConfirmationPage() {
               <div style={{ fontSize: '48px', marginBottom: 16 }}>✅</div>
               <Title level={3} style={{ color: '#52c41a' }}>Your appointment has been booked</Title>
               <Text>Your booking confirmation number is <strong>{bookingId || 'TEMP-' + Date.now()}</strong></Text>
+              {bookingId && (
+                <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                  Display ID: {formatBookingId(bookingId)}
+                </Text>
+              )}
             </div>
           </Card>
           
@@ -101,6 +108,9 @@ export default function BookingConfirmationPage() {
                 </Col>
                 <Col span={24}>
                   <Text strong>Time:</Text> <Text>{bookingDetails.time}</Text>
+                </Col>
+                <Col span={24}>
+                  <Text strong>Booking ID:</Text> <Text>{bookingDetails.displayId || bookingDetails.id}</Text>
                 </Col>
                 {bookingDetails.businessId && (
                   <Col span={24}>
