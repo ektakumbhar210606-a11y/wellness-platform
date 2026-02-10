@@ -1,0 +1,275 @@
+'use client';
+
+import React, { useState } from 'react';
+import { 
+  Modal, 
+  Form, 
+  Input, 
+  Button, 
+  Typography, 
+  Card, 
+  Space,
+  Divider
+} from 'antd';
+import { 
+  CalendarOutlined, 
+  UserOutlined, 
+  ClockCircleOutlined,
+  DollarCircleOutlined,
+  PhoneOutlined,
+  MailOutlined
+} from '@ant-design/icons';
+import { formatCurrency } from '../../utils/currencyFormatter';
+import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
+
+const { Title, Text } = Typography;
+
+interface BookingConfirmationModalProps {
+  visible: boolean;
+  booking: any;
+  onCancel: () => void;
+  onConfirm: (formData: any) => void;
+  loading?: boolean;
+}
+
+const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
+  visible,
+  booking,
+  onCancel,
+  onConfirm,
+  loading = false
+}) => {
+  const [form] = Form.useForm();
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: ''
+  });
+
+  const handleFormChange = (changedValues: any) => {
+    setFormData(prev => ({
+      ...prev,
+      ...changedValues
+    }));
+  };
+
+  const handleConfirm = () => {
+    form.validateFields()
+      .then(values => {
+        onConfirm({
+          ...formData,
+          ...values
+        });
+      })
+      .catch(errorInfo => {
+        console.log('Validation failed:', errorInfo);
+      });
+  };
+
+  // Reset form when modal opens/closes
+  React.useEffect(() => {
+    if (visible) {
+      form.resetFields();
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: ''
+      });
+    }
+  }, [visible, form]);
+
+  if (!booking) {
+    return null;
+  }
+
+  return (
+    <Modal
+      title={
+        <Space>
+          <CalendarOutlined />
+          <span>Confirm Your Booking</span>
+        </Space>
+      }
+      open={visible}
+      onCancel={onCancel}
+      footer={[
+        <Button key="cancel" onClick={onCancel}>
+          Cancel
+        </Button>,
+        <Button 
+          key="confirm" 
+          type="primary" 
+          onClick={handleConfirm}
+          loading={loading}
+        >
+          Pay Now
+        </Button>
+      ]}
+      width={600}
+    >
+      <div style={{ marginBottom: 24 }}>
+        <Card size="small" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae7ff' }}>
+          <Title level={5} style={{ marginBottom: 16, color: '#1890ff' }}>
+            Booking Details
+          </Title>
+          
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                <UserOutlined style={{ marginRight: 8 }} />
+                Service
+              </Text>
+              <Text>{booking.service?.name || 'N/A'}</Text>
+            </div>
+            
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                <UserOutlined style={{ marginRight: 8 }} />
+                Therapist
+              </Text>
+              <Text>
+                {booking.therapist?.fullName || 'Not assigned'} 
+                {booking.therapist?.professionalTitle ? ` (${booking.therapist.professionalTitle})` : ''}
+              </Text>
+            </div>
+            
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                <CalendarOutlined style={{ marginRight: 8 }} />
+                Date & Time
+              </Text>
+              <Text>
+                {booking.date} at {formatTimeTo12Hour(booking.time || '')}
+              </Text>
+            </div>
+            
+            {booking.service?.duration && (
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                  <ClockCircleOutlined style={{ marginRight: 8 }} />
+                  Duration
+                </Text>
+                <Text>{booking.service.duration} minutes</Text>
+              </div>
+            )}
+            
+            {booking.service?.price !== undefined && (
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                  <DollarCircleOutlined style={{ marginRight: 8 }} />
+                  Price
+                </Text>
+                <Text type="success" strong>
+                  {formatCurrency(booking.service.price, booking.business?.address?.country || 'USA')}
+                </Text>
+              </div>
+            )}
+          </Space>
+        </Card>
+      </div>
+
+      <Divider />
+      
+      <Title level={5} style={{ marginBottom: 16 }}>
+        Customer Information
+      </Title>
+      
+      <Form
+        form={form}
+        layout="vertical"
+        onValuesChange={handleFormChange}
+        autoComplete="off"
+      >
+        <Form.Item
+          name="fullName"
+          label={
+            <span>
+              <UserOutlined style={{ marginRight: 8 }} />
+              Full Name
+            </span>
+          }
+          rules={[
+            { 
+              required: true, 
+              message: 'Please enter your full name' 
+            },
+            { 
+              min: 2, 
+              message: 'Name must be at least 2 characters' 
+            }
+          ]}
+        >
+          <Input 
+            placeholder="Enter your full name" 
+            size="large"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="email"
+          label={
+            <span>
+              <MailOutlined style={{ marginRight: 8 }} />
+              Email Address
+            </span>
+          }
+          rules={[
+            { 
+              required: true, 
+              message: 'Please enter your email address' 
+            },
+            { 
+              type: 'email', 
+              message: 'Please enter a valid email address' 
+            }
+          ]}
+        >
+          <Input 
+            placeholder="Enter your email address" 
+            size="large"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="phone"
+          label={
+            <span>
+              <PhoneOutlined style={{ marginRight: 8 }} />
+              Phone Number
+            </span>
+          }
+          rules={[
+            { 
+              required: true, 
+              message: 'Please enter your phone number' 
+            },
+            { 
+              pattern: /^[\+]?[1-9][\d]{0,15}$/, 
+              message: 'Please enter a valid phone number' 
+            }
+          ]}
+        >
+          <Input 
+            placeholder="Enter your phone number" 
+            size="large"
+          />
+        </Form.Item>
+      </Form>
+
+      <div style={{ 
+        backgroundColor: '#fffbe6', 
+        border: '1px solid #ffe58f', 
+        borderRadius: 6, 
+        padding: 16, 
+        marginTop: 24 
+      }}>
+        <Text type="warning">
+          <strong>Note:</strong> The "Pay Now" button is currently for UI demonstration only. 
+          Payment functionality will be implemented in a future update.
+        </Text>
+      </div>
+    </Modal>
+  );
+};
+
+export default BookingConfirmationModal;

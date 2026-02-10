@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, Table, Tag, Space, Typography, Modal, Skeleton, Tabs } from 'antd';
+import { Card, Button, Table, Tag, Space, Typography, Modal, Skeleton, Tabs, message } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
 import { formatCurrency } from '../../../../utils/currencyFormatter';
+import BookingConfirmationModal from '@/app/components/BookingConfirmationModal';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -24,6 +25,8 @@ const CustomerBookingsPage = () => {
   const [bookingToCancel, setBookingToCancel] = useState<any>(null);
 
   const [activeTab, setActiveTab] = useState('requests');
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [bookingToConfirm, setBookingToConfirm] = useState<any>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -138,9 +141,8 @@ const CustomerBookingsPage = () => {
                 type="primary"
                 ghost
                 onClick={() => {
-                  // Add confirm functionality here if needed
-                  // For now, this is just a placeholder since typically customers don't confirm their own requests
-                  console.log('Confirm booking:', record.id);
+                  setBookingToConfirm(record);
+                  setConfirmModalVisible(true);
                 }}
               >
                 Confirm
@@ -316,6 +318,33 @@ const CustomerBookingsPage = () => {
     }
   };
 
+  const handleConfirmBooking = async (formData: any) => {
+    try {
+      // In a real implementation, you would send the form data to your API
+      console.log('Booking confirmation data:', {
+        bookingId: bookingToConfirm.id,
+        formData
+      });
+      
+      // Show success message
+      message.success('Booking confirmed successfully! Payment functionality coming soon.');
+      
+      // Close modal
+      setConfirmModalVisible(false);
+      setBookingToConfirm(null);
+      
+      // In a real implementation, you would:
+      // 1. Send the form data to your booking confirmation API
+      // 2. Update the booking status in your database
+      // 3. Process payment (when implemented)
+      // 4. Update local state to reflect the confirmed booking
+      
+    } catch (error: any) {
+      console.error('Error confirming booking:', error);
+      message.error('Failed to confirm booking. Please try again.');
+    }
+  };
+
   if (!user || user.role.toLowerCase() !== 'customer') {
     return null; // Or render a redirect message
   }
@@ -377,6 +406,16 @@ const CustomerBookingsPage = () => {
         <p>Are you sure you want to cancel the booking for <strong>{bookingToCancel?.service?.name || 'N/A'}</strong> on {bookingToCancel?.date ? new Date(bookingToCancel.date).toLocaleDateString() : 'N/A'} at {formatTimeTo12Hour(bookingToCancel?.time || '')}?</p>
         <p>Please note that cancellation policies may apply depending on how far in advance you cancel.</p>
       </Modal>
+
+      <BookingConfirmationModal
+        visible={confirmModalVisible}
+        booking={bookingToConfirm}
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setBookingToConfirm(null);
+        }}
+        onConfirm={handleConfirmBooking}
+      />
     </div>
   );
 };
