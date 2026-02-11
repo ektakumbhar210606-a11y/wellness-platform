@@ -45,6 +45,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     email: '',
     phone: ''
   });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFormChange = (changedValues: any) => {
     setFormData(prev => ({
@@ -53,17 +54,57 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     }));
   };
 
-  const handleConfirm = () => {
-    form.validateFields()
-      .then(values => {
-        onConfirm({
-          ...formData,
-          ...values
-        });
-      })
-      .catch(errorInfo => {
-        console.log('Validation failed:', errorInfo);
+  const handleConfirm = async () => {
+    try {
+      const values = await form.validateFields();
+      
+      // Show loading state
+      setIsProcessing(true);
+      
+      // Get service price for payment amount
+      const amount = booking.service?.price || 0;
+      
+      // Prepare payment data
+      const paymentData = {
+        bookingId: booking.id,
+        customerData: {
+          fullName: values.fullName,
+          email: values.email,
+          phone: values.phone
+        },
+        amount: amount
+      };
+
+      // Call Razorpay payment API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/razorpay/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(paymentData)
       });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Payment failed');
+      }
+
+      // Call the original onConfirm with payment details
+      onConfirm({
+        ...values,
+        paymentDetails: result.data
+      });
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      // Show error message to user
+      // In a real implementation, you'd use Ant Design's message component
+      alert(`Payment failed: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Reset form when modal opens/closes
@@ -100,7 +141,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
           key="confirm" 
           type="primary" 
           onClick={handleConfirm}
-          loading={loading}
+          loading={isProcessing}
         >
           Pay Now
         </Button>

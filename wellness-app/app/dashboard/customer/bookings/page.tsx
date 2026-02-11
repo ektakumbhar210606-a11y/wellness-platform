@@ -320,24 +320,31 @@ const CustomerBookingsPage = () => {
 
   const handleConfirmBooking = async (formData: any) => {
     try {
-      // In a real implementation, you would send the form data to your API
-      console.log('Booking confirmation data:', {
-        bookingId: bookingToConfirm.id,
-        formData
-      });
-      
-      // Show success message
-      message.success('Booking confirmed successfully! Payment functionality coming soon.');
+      // Check if this is a Razorpay payment response
+      if (formData.paymentDetails) {
+        // Razorpay payment was successful
+        const { paymentDetails } = formData;
+        
+        // Update local state to reflect the confirmed booking
+        setBookings(bookings.map(booking => 
+          booking.id === bookingToConfirm.id 
+            ? { ...booking, status: 'confirmed' } 
+            : booking
+        ));
+
+        // Show success message with payment details
+        message.success(
+          `Booking confirmed successfully! Payment of ${formatCurrency(paymentDetails.amount, 'INR')} completed. ` +
+          `Payment ID: ${paymentDetails.razorpayPaymentId}`
+        );
+      } else {
+        // Fallback to original behavior if no payment details
+        message.success('Booking confirmed successfully!');
+      }
       
       // Close modal
       setConfirmModalVisible(false);
       setBookingToConfirm(null);
-      
-      // In a real implementation, you would:
-      // 1. Send the form data to your booking confirmation API
-      // 2. Update the booking status in your database
-      // 3. Process payment (when implemented)
-      // 4. Update local state to reflect the confirmed booking
       
     } catch (error: any) {
       console.error('Error confirming booking:', error);
