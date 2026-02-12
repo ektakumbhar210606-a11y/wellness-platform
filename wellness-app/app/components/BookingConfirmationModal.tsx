@@ -1,23 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
-import { 
-  Modal, 
-  Form, 
-  Input, 
-  Button, 
-  Typography, 
-  Card, 
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  Form,
+  Input,
+  Button,
+  Typography,
+  Card,
   Space,
-  Divider
+  Divider,
+  Radio,
+  message
 } from 'antd';
-import { 
-  CalendarOutlined, 
-  UserOutlined, 
+import {
+  CalendarOutlined,
+  UserOutlined,
   ClockCircleOutlined,
   DollarCircleOutlined,
   PhoneOutlined,
-  MailOutlined
+  MailOutlined,
+  CreditCardOutlined,
+  MoneyCollectOutlined
 } from '@ant-design/icons';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
@@ -40,12 +44,24 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
   loading = false
 }) => {
   const [form] = Form.useForm();
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('online');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: ''
   });
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleFormChange = (changedValues: any) => {
     setFormData(prev => ({
@@ -54,63 +70,183 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     }));
   };
 
-  const handleConfirm = async () => {
+  const processRazorpayPayment = async (amount: number, values: any) => {
     try {
-      const values = await form.validateFields();
-      
-      // Show loading state
-      setIsProcessing(true);
-      
-      // Get service price for payment amount
-      const amount = booking.service?.price || 0;
-      
-      // Prepare payment data
-      const paymentData = {
-        bookingId: booking.id,
-        customerData: {
-          fullName: values.fullName,
-          email: values.email,
-          phone: values.phone
+      // 1. Create Order
+      const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/razorpay/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          amount: amount
+        })
+      });
+
+      const orderData = await orderResponse.json();
+      if (!orderData.success) throw new Error(orderData.error);
+
+      // 2. Check for Mock Mode
+      if (orderData.isMock) {
+        message.info('Test Mode: Simulating Razorpay Payment...');
+
+        // Simulate user interaction delay
+        setTimeout(async () => {
+          try {
+            // 3. Verify Payment (Mock)
+            const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/razorpay/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: orderData.order.id,
+                razorpay_payment_id: `pay_mock_${Date.now()}`,
+                razorpay_signature: 'mock_signature',
+                bookingId: booking.id,
+                amount: amount,
+                customerData: {
+                  fullName: values.fullName,
+                  email: values.email,
+                  phone: values.phone
+                }
+              })
+            });
+
+            const verifyResult = await verifyResponse.json();
+            if (verifyResult.success) {
+              message.success('Payment successful (Test Mode)!');
+              onConfirm({ ...values, paymentDetails: verifyResult.data });
+            } else {
+              message.error(verifyResult.error || 'Payment verification failed');
+            }
+          } catch (error) {
+            console.error(error);
+            message.error('Payment verification failed');
+          } finally {
+            setIsProcessing(false);
+          }
+        }, 1500);
+        return;
+      }
+
+      // 3. Open Razorpay Checkout
+      const options = {
+        key: orderData.key,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: booking.business?.name || "Wellness Platform",
+        description: `Payment for ${booking.service?.name}`,
+        order_id: orderData.order.id,
+        handler: async function (response: any) {
+          try {
+            // 4. Verify Payment
+            const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/razorpay/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                bookingId: booking.id,
+                amount: amount,
+                customerData: {
+                  fullName: values.fullName,
+                  email: values.email,
+                  phone: values.phone
+                }
+              })
+            });
+
+            const verifyResult = await verifyResponse.json();
+            if (verifyResult.success) {
+              message.success('Payment successful!');
+              onConfirm({ ...values, paymentDetails: verifyResult.data });
+            } else {
+              message.error(verifyResult.error || 'Payment verification failed');
+            }
+          } catch (error) {
+            console.error(error);
+            message.error('Payment verification failed');
+          }
         },
-        amount: amount
+        prefill: {
+          name: values.fullName,
+          email: values.email,
+          contact: values.phone
+        },
+        theme: {
+          color: "#1890ff"
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+          }
+        }
       };
 
-      // Call Razorpay payment API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/razorpay/process`, {
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+    } catch (error: any) {
+      console.error('Razorpay Error:', error);
+      message.error(error.message || 'Failed to initiate payment');
+      setIsProcessing(false);
+    }
+  };
+
+  const processCashPayment = async (amount: number, values: any) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/cash/process`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(paymentData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          amount: amount,
+          customerData: {
+            fullName: values.fullName,
+            email: values.email,
+            phone: values.phone
+          }
+        })
       });
 
       const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Payment failed');
+      if (result.success) {
+        message.success('Booking confirmed!');
+        onConfirm({ ...values, paymentDetails: result.data });
+      } else {
+        message.error(result.error || 'Failed to confirm booking');
       }
-
-      // Call the original onConfirm with payment details
-      onConfirm({
-        ...values,
-        paymentDetails: result.data
-      });
-
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      // Show error message to user
-      // In a real implementation, you'd use Ant Design's message component
-      alert(`Payment failed: ${error.message}`);
+    } catch (error) {
+      console.error('Cash Payment Error:', error);
+      message.error('Failed to process request');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleConfirm = async () => {
+    try {
+      const values = await form.validateFields();
+      setIsProcessing(true);
+
+      const amount = booking.service?.price || 0;
+
+      if (paymentMethod === 'online') {
+        await processRazorpayPayment(amount, values);
+      } else {
+        await processCashPayment(amount, values);
+      }
+
+    } catch (error: any) {
+      console.error('Validation Error:', error);
+      setIsProcessing(false);
+    }
+  };
+
   // Reset form when modal opens/closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       form.resetFields();
+      setPaymentMethod('online');
       setFormData({
         fullName: '',
         email: '',
@@ -134,16 +270,16 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
       open={visible}
       onCancel={onCancel}
       footer={[
-        <Button key="cancel" onClick={onCancel}>
+        <Button key="cancel" onClick={onCancel} disabled={isProcessing}>
           Cancel
         </Button>,
-        <Button 
-          key="confirm" 
-          type="primary" 
+        <Button
+          key="confirm"
+          type="primary"
           onClick={handleConfirm}
           loading={isProcessing}
         >
-          Pay Now
+          {paymentMethod === 'online' ? 'Pay Now' : 'Confirm Booking'}
         </Button>
       ]}
       width={600}
@@ -152,36 +288,35 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
         margin: 'auto'
       }}
       bodyStyle={{
-        height: '450px',
+        height: '550px', // Increased height for payment options
         padding: '0',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column'
       }}
     >
-      <div style={{ 
-        flex: 1, 
+      <div style={{
+        flex: 1,
         overflowY: 'auto',
         padding: '24px',
         display: 'flex',
         flexDirection: 'column',
-        scrollbarWidth: 'none',  /* Firefox */
-        msOverflowStyle: 'none',  /* IE 10+ */
-        scrollBehavior: 'smooth'  /* Smooth scrolling */
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        scrollBehavior: 'smooth'
       }}>
-        {/* Hide scrollbar for WebKit browsers */}
         <style jsx>{`
           div::-webkit-scrollbar {
             display: none;
           }
         `}</style>
-        
+
         <div style={{ marginBottom: 24, flexShrink: 0 }}>
           <Card size="small" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae7ff' }}>
             <Title level={5} style={{ marginBottom: 16, color: '#1890ff' }}>
               Booking Details
             </Title>
-            
+
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <div>
                 <Text strong style={{ display: 'block', marginBottom: 4 }}>
@@ -190,18 +325,18 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 </Text>
                 <Text>{booking.service?.name || 'N/A'}</Text>
               </div>
-              
+
               <div>
                 <Text strong style={{ display: 'block', marginBottom: 4 }}>
                   <UserOutlined style={{ marginRight: 8 }} />
                   Therapist
                 </Text>
                 <Text>
-                  {booking.therapist?.fullName || 'Not assigned'} 
+                  {booking.therapist?.fullName || 'Not assigned'}
                   {booking.therapist?.professionalTitle ? ` (${booking.therapist.professionalTitle})` : ''}
                 </Text>
               </div>
-              
+
               <div>
                 <Text strong style={{ display: 'block', marginBottom: 4 }}>
                   <CalendarOutlined style={{ marginRight: 8 }} />
@@ -211,7 +346,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                   {booking.date} at {formatTimeTo12Hour(booking.time || '')}
                 </Text>
               </div>
-              
+
               {booking.service?.duration && (
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
@@ -221,7 +356,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                   <Text>{booking.service.duration} minutes</Text>
                 </div>
               )}
-              
+
               {booking.service?.price !== undefined && (
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
@@ -238,20 +373,16 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
         </div>
 
         <Divider style={{ margin: '16px 0', flexShrink: 0 }} />
-        
+
         <div style={{ flexShrink: 0, marginBottom: 16 }}>
           <Title level={5} style={{ marginBottom: 16 }}>
             Customer Information
           </Title>
         </div>
-        
-        <div style={{ 
-          flex: 1,
-          overflowY: 'auto',
+
+        <div style={{
           marginBottom: 24,
           paddingRight: '12px',
-          minHeight: '200px',  /* Ensure there's enough space for the form fields */
-          scrollBehavior: 'smooth'  /* Smooth scrolling for form area */
         }}>
           <Form
             form={form}
@@ -268,20 +399,11 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 </span>
               }
               rules={[
-                { 
-                  required: true, 
-                  message: 'Please enter your full name' 
-                },
-                { 
-                  min: 2, 
-                  message: 'Name must be at least 2 characters' 
-                }
+                { required: true, message: 'Please enter your full name' },
+                { min: 2, message: 'Name must be at least 2 characters' }
               ]}
             >
-              <Input 
-                placeholder="Enter your full name" 
-                size="large"
-              />
+              <Input placeholder="Enter your full name" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -293,20 +415,11 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 </span>
               }
               rules={[
-                { 
-                  required: true, 
-                  message: 'Please enter your email address' 
-                },
-                { 
-                  type: 'email', 
-                  message: 'Please enter a valid email address' 
-                }
+                { required: true, message: 'Please enter your email address' },
+                { type: 'email', message: 'Please enter a valid email address' }
               ]}
             >
-              <Input 
-                placeholder="Enter your email address" 
-                size="large"
-              />
+              <Input placeholder="Enter your email address" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -318,22 +431,65 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 </span>
               }
               rules={[
-                { 
-                  required: true, 
-                  message: 'Please enter your phone number' 
-                },
-                { 
-                  pattern: /^[\+]?[1-9][\d]{0,15}$/, 
-                  message: 'Please enter a valid phone number' 
-                }
+                { required: true, message: 'Please enter your phone number' },
+                { pattern: /^[\+]?[1-9][\d]{0,15}$/, message: 'Please enter a valid phone number' }
               ]}
             >
-              <Input 
-                placeholder="Enter your phone number" 
-                size="large"
-              />
+              <Input placeholder="Enter your phone number" size="large" />
             </Form.Item>
           </Form>
+        </div>
+
+        <Divider style={{ margin: '16px 0', flexShrink: 0 }} />
+
+        <div style={{ flexShrink: 0, marginBottom: 16 }}>
+          <Title level={5} style={{ marginBottom: 16 }}>
+            Payment Method
+          </Title>
+          <Radio.Group
+            value={paymentMethod}
+            onChange={e => setPaymentMethod(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Radio value="online" style={{
+                border: '1px solid #d9d9d9',
+                borderRadius: '8px',
+                padding: '12px',
+                width: '100%',
+                backgroundColor: paymentMethod === 'online' ? '#e6f7ff' : 'transparent',
+                borderColor: paymentMethod === 'online' ? '#1890ff' : '#d9d9d9'
+              }}>
+                <Space>
+                  <CreditCardOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                  <div>
+                    <Text strong>Pay Online</Text>
+                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                      Secure payment via Razorpay
+                    </div>
+                  </div>
+                </Space>
+              </Radio>
+              <Radio value="cash" style={{
+                border: '1px solid #d9d9d9',
+                borderRadius: '8px',
+                padding: '12px',
+                width: '100%',
+                backgroundColor: paymentMethod === 'cash' ? '#e6f7ff' : 'transparent',
+                borderColor: paymentMethod === 'cash' ? '#1890ff' : '#d9d9d9'
+              }}>
+                <Space>
+                  <MoneyCollectOutlined style={{ color: '#52c41a', fontSize: '18px' }} />
+                  <div>
+                    <Text strong>Pay at Venue</Text>
+                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                      Pay cash when you arrive
+                    </div>
+                  </div>
+                </Space>
+              </Radio>
+            </Space>
+          </Radio.Group>
         </div>
 
       </div>
