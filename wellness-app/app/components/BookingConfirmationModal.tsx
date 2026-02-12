@@ -287,12 +287,14 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
         maxHeight: 'calc(100vh - 100px)',
         margin: 'auto'
       }}
-      bodyStyle={{
-        height: '550px', // Increased height for payment options
-        padding: '0',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
+      styles={{
+        body: {
+          height: '550px', // Increased height for payment options
+          padding: '0',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }
       }}
     >
       <div style={{

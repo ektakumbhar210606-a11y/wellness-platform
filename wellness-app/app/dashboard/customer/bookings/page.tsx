@@ -13,7 +13,7 @@ const { TabPane } = Tabs;
 
 const CustomerBookingsPage = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
   const [bookingStats, setBookingStats] = useState({
@@ -29,6 +29,9 @@ const CustomerBookingsPage = () => {
   const [bookingToConfirm, setBookingToConfirm] = useState<any>(null);
 
   useEffect(() => {
+    // Wait for auth to finish loading before redirecting
+    if (authLoading) return;
+
     const fetchBookings = async () => {
       if (!user || user.role.toLowerCase() !== 'customer') {
         router.push('/');
@@ -70,7 +73,7 @@ const CustomerBookingsPage = () => {
     };
 
     fetchBookings();
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
   // Columns for booking requests tab
   const requestColumns = [
@@ -121,7 +124,7 @@ const CustomerBookingsPage = () => {
         if (status === 'confirmed') color = 'blue';
         if (status === 'completed') color = 'gray';
         if (status === 'rescheduled') color = 'gold';
-          
+
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
             {status}
@@ -136,7 +139,7 @@ const CustomerBookingsPage = () => {
         <Space size="small" wrap>
           {record.status !== 'cancelled' && (
             <>
-              <Button 
+              <Button
                 size="small"
                 type="primary"
                 ghost
@@ -147,7 +150,7 @@ const CustomerBookingsPage = () => {
               >
                 Confirm
               </Button>
-              <Button 
+              <Button
                 size="small"
                 danger
                 onClick={() => {
@@ -157,7 +160,7 @@ const CustomerBookingsPage = () => {
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 size="small"
                 onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
               >
@@ -165,7 +168,7 @@ const CustomerBookingsPage = () => {
               </Button>
             </>
           )}
-          <Button 
+          <Button
             size="small"
             type="default"
             onClick={() => router.push(`/bookings/${record.id}/details`)}
@@ -176,7 +179,7 @@ const CustomerBookingsPage = () => {
       ),
     },
   ];
-  
+
   // Columns for confirmed bookings tab
   const confirmedColumns = [
     {
@@ -233,7 +236,7 @@ const CustomerBookingsPage = () => {
         if (status === 'confirmed') color = 'blue';
         if (status === 'completed') color = 'gray';
         if (status === 'rescheduled') color = 'gold';
-          
+
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
             {status}
@@ -248,13 +251,13 @@ const CustomerBookingsPage = () => {
         <Space size="small" wrap>
           {record.status !== 'cancelled' && (
             <>
-              <Button 
+              <Button
                 size="small"
                 onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
               >
                 Reschedule
               </Button>
-              <Button 
+              <Button
                 size="small"
                 danger
                 onClick={() => {
@@ -266,7 +269,7 @@ const CustomerBookingsPage = () => {
               </Button>
             </>
           )}
-          <Button 
+          <Button
             size="small"
             type="default"
             onClick={() => router.push(`/bookings/${record.id}/details`)}
@@ -284,7 +287,7 @@ const CustomerBookingsPage = () => {
       if (!token) {
         throw new Error('Authentication token not found');
       }
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
         method: 'PATCH',
         headers: {
@@ -296,20 +299,20 @@ const CustomerBookingsPage = () => {
           status: 'cancelled'
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Failed to cancel booking');
       }
-      
+
       // Update local state to reflect cancellation
-      setBookings(bookings.map(booking => 
-        booking.id === bookingToCancel.id 
-          ? { ...booking, status: 'cancelled' } 
+      setBookings(bookings.map(booking =>
+        booking.id === bookingToCancel.id
+          ? { ...booking, status: 'cancelled' }
           : booking
       ));
-      
+
       setCancelModalVisible(false);
       setBookingToCancel(null);
     } catch (error: any) {
@@ -324,11 +327,11 @@ const CustomerBookingsPage = () => {
       if (formData.paymentDetails) {
         // Razorpay payment was successful
         const { paymentDetails } = formData;
-        
+
         // Update local state to reflect the confirmed booking
-        setBookings(bookings.map(booking => 
-          booking.id === bookingToConfirm.id 
-            ? { ...booking, status: 'confirmed' } 
+        setBookings(bookings.map(booking =>
+          booking.id === bookingToConfirm.id
+            ? { ...booking, status: 'confirmed' }
             : booking
         ));
 
@@ -341,11 +344,11 @@ const CustomerBookingsPage = () => {
         // Fallback to original behavior if no payment details
         message.success('Booking confirmed successfully!');
       }
-      
+
       // Close modal
       setConfirmModalVisible(false);
       setBookingToConfirm(null);
-      
+
     } catch (error: any) {
       console.error('Error confirming booking:', error);
       message.error('Failed to confirm booking. Please try again.');
@@ -364,8 +367,8 @@ const CustomerBookingsPage = () => {
     <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
       <Title level={2}>My Bookings</Title>
       <Text>View and manage your appointments</Text>
-      
-      <Tabs 
+
+      <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={[
@@ -374,10 +377,10 @@ const CustomerBookingsPage = () => {
             label: 'Booking Requests',
             children: (
               <Card style={{ marginTop: 24 }}>
-                <Table 
-                  columns={requestColumns} 
-                  dataSource={bookingRequests} 
-                  rowKey="id" 
+                <Table
+                  columns={requestColumns}
+                  dataSource={bookingRequests}
+                  rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 10 }}
                 />
@@ -389,10 +392,10 @@ const CustomerBookingsPage = () => {
             label: 'Confirmed Bookings',
             children: (
               <Card style={{ marginTop: 24 }}>
-                <Table 
-                  columns={confirmedColumns} 
-                  dataSource={confirmedBookings} 
-                  rowKey="id" 
+                <Table
+                  columns={confirmedColumns}
+                  dataSource={confirmedBookings}
+                  rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 10 }}
                 />
