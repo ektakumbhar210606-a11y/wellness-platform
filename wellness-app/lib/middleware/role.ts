@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthenticatedRequest } from './auth'; // Import the authenticated request interface from our auth middleware
+import { AuthenticatedRequest } from './authMiddleware'; // Import the authenticated request interface from our auth middleware
 import { UserRole } from '../../models/User'; // Import the UserRole enum from the User model
 
 /**

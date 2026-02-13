@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Table, Tag, Space, Typography, Modal, Skeleton, Tabs, message } from 'antd';
 import { useAuth } from '@/app/context/AuthContext';
-import { formatTimeTo12Hour, isWithin24Hours } from '@/app/utils/timeUtils';
+import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
 import { formatCurrency } from '../../../../utils/currencyFormatter';
 import BookingConfirmationModal from '@/app/components/BookingConfirmationModal';
 
@@ -160,22 +160,12 @@ const CustomerBookingsPage = () => {
               >
                 Cancel
               </Button>
-              {!isWithin24Hours(record.date, record.time) ? (
-                <Button
-                  size="small"
-                  onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
-                >
-                  Reschedule
-                </Button>
-              ) : (
-                <Button
-                  size="small"
-                  disabled
-                  title="Rescheduling is not allowed within 24 hours of the booking time"
-                >
-                  Reschedule (Unavailable)
-                </Button>
-              )}
+              <Button
+                size="small"
+                onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+              >
+                Reschedule
+              </Button>
             </>
           )}
           <Button
@@ -261,22 +251,12 @@ const CustomerBookingsPage = () => {
         <Space size="small" wrap>
           {record.status !== 'cancelled' && (
             <>
-              {!isWithin24Hours(record.date, record.time) ? (
-                <Button
-                  size="small"
-                  onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
-                >
-                  Reschedule
-                </Button>
-              ) : (
-                <Button
-                  size="small"
-                  disabled
-                  title="Rescheduling is not allowed within 24 hours of the booking time"
-                >
-                  Reschedule (Unavailable)
-                </Button>
-              )}
+              <Button
+                size="small"
+                onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+              >
+                Reschedule
+              </Button>
               <Button
                 size="small"
                 danger
