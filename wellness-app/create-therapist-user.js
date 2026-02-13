@@ -1,8 +1,8 @@
 // Script to create a test therapist user
 // Run with: node create-therapist-user.js
 
-const { MongoClient } = require('mongodb');
-const bcrypt = require('bcryptjs');
+import { MongoClient } from 'mongodb';
+import bcrypt from 'bcryptjs';
 
 async function createTherapistUser() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/wellness-platform';

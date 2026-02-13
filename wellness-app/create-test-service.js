@@ -1,6 +1,7 @@
-const axios = require('axios');
-const { MongoClient } = require('mongodb');
-require('dotenv').config({ path: '.env.local' });
+import axios from 'axios';
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 async function createTestService() {
   try {

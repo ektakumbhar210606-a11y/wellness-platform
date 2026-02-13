@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as jwt from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 
 /**
  * GET endpoint to check if the current user has completed business onboarding
@@ -21,34 +23,32 @@ export async function GET(request: NextRequest) {
     // Extract the token from the header
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Import jsonwebtoken dynamically and verify the token using the JWT secret
-    const jwt = (await import('jsonwebtoken')).default;
-
-    let decoded: any;
+    let decoded: string | JwtPayload;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    } catch (verificationError: any) {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch (verificationError: unknown) {
       // Handle different types of JWT errors
-      if (verificationError.name === 'TokenExpiredError') {
-        return NextResponse.json(
-          { error: 'Token has expired. Please log in again.' },
-          { status: 401 }
-        );
-      } else if (verificationError.name === 'JsonWebTokenError') {
-        return NextResponse.json(
-          { error: 'Invalid token. Access denied.' },
-          { status: 401 }
-        );
-      } else {
-        return NextResponse.json(
-          { error: 'Authentication failed. Invalid token.' },
-          { status: 401 }
-        );
+      if (verificationError instanceof Error) {
+        if (verificationError.name === 'TokenExpiredError') {
+          return NextResponse.json(
+            { error: 'Token has expired. Please log in again.' },
+            { status: 401 }
+          );
+        } else if (verificationError.name === 'JsonWebTokenError') {
+          return NextResponse.json(
+            { error: 'Invalid token. Access denied.' },
+            { status: 401 }
+          );
+        }
       }
+      return NextResponse.json(
+        { error: 'Authentication failed. Invalid token.' },
+        { status: 401 }
+      );
     }
 
     // Extract user information from the decoded token
-    const userId = decoded.id;
+    const userId = (decoded as JwtPayload).id;
 
     // Connect to database
     const dbModule = await import('@/lib/db');
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       completed: !!business,
       hasBusiness: !!business
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error checking onboarding status:', error);
 
     // Generic server error

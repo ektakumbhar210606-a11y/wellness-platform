@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Use Node.js runtime instead of Edge runtime to support bcrypt
 export const runtime = 'nodejs';
 
@@ -180,19 +181,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Password reset error:', error);
 
     // Handle specific error types
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
-      );
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationErrors },
-        { status: 400 }
-      );
-    }
+if (error instanceof Error && error.name === 'ValidationError') {
+  const validationErrors = (Object.values((error as any).errors) as { message: string }[])
+    .map(err => err.message);
+
+  return NextResponse.json(
+    { error: 'Validation failed', details: validationErrors },
+    { status: 400 }
+  );
+}
+
 
     // Log the full error for debugging
     console.error('Full error details:', error);

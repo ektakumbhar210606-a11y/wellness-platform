@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import ServiceModel from '@/models/Service';
-import ServiceCategoryModel from '@/models/ServiceCategory';
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
     
@@ -17,7 +16,7 @@ export async function GET(req: NextRequest) {
       nameExists: service.name !== undefined,
       serviceCategory: service.serviceCategory ? {
         id: service.serviceCategory._id.toString(),
-        name: service.serviceCategory.name
+        name: (service.serviceCategory as any).name
       } : null,
       price: service.price,
       duration: service.duration,
@@ -35,10 +34,10 @@ export async function GET(req: NextRequest) {
       schema: ServiceModel.schema.obj
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Debug services error:', error);
     return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
+      { error: 'Internal server error: ' + ((error instanceof Error) ? error.message : 'Unknown error') },
       { status: 500 }
     );
   }

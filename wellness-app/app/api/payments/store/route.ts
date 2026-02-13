@@ -4,7 +4,6 @@ import PaymentModel, { PaymentMethod, PaymentStatus } from '@/models/Payment';
 import BookingModel from '@/models/Booking';
 import CustomerModel from '@/models/Customer';
 import UserModel from '@/models/User';
-import mongoose from 'mongoose';
 
 export async function POST(req: NextRequest) {
   try {
@@ -119,12 +118,12 @@ export async function POST(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error storing payment data:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Failed to store payment data' 
+        error: (error instanceof Error) ? error.message : 'Failed to store payment data' 
       }, 
       { status: 500 }
     );

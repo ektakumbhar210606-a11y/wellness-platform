@@ -34,7 +34,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -173,10 +173,10 @@ export async function POST(
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error approving booking:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

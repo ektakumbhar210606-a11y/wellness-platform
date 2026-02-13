@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import BookingModel, { BookingStatus } from '@/models/Booking';
-import ServiceModel from '@/models/Service';
+import BookingModel, { BookingStatus, IBooking } from '@/models/Booking';
+import ServiceModel, { IService } from '@/models/Service';
 import BusinessModel from '@/models/Business';
-import UserModel from '@/models/User';
+import UserModel, { IUser } from '@/models/User';
+import { ITherapist } from '@/models/Therapist';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import NotificationService from '@/app/utils/notifications';
@@ -35,7 +36,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -76,7 +77,7 @@ async function requireBusinessAuth(request: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { bookingId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ bookingId: string }> }) {
   try {
     // Authenticate and authorize business user
     const authResult = await requireBusinessAuth(req);
@@ -95,7 +96,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       );
     }
 
-    const bookingId = params.bookingId;
+    const { bookingId } = await params;
 
     // Parse request body
     const body = await req.json();
@@ -155,7 +156,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
     }
 
     // Prepare update data, preserving original date/time if not already stored
-    const updateData: any = {
+    const updateData: Partial<IBooking> = {
       date: new Date(newDate),
       time: newTime
     };
@@ -195,17 +196,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
     // Split the full name into first and last name
     let firstName = '';
     let lastName = '';
-    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as any).name) {
-      const nameParts = (updatedBooking.customer as any).name.trim().split(/\s+/);
+    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as IUser).name) {
+      const nameParts = (updatedBooking.customer as IUser).name.trim().split(/\s+/);
       firstName = nameParts[0] || '';
       lastName = nameParts.slice(1).join(' ') || '';
     }
     
     // Handle phone number - try to get from Customer model if not in User model
-    let phoneNumber = (updatedBooking!.customer as any).phone;
+    let phoneNumber = (updatedBooking!.customer as IUser).phone;
     if (!phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
-      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
+      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as IUser)._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
         phoneNumber = customerProfile.phoneNumber;
       }
@@ -235,24 +236,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       data: {
         id: updatedBooking!._id.toString(),
         customer: {
-          id: (updatedBooking!.customer as any)._id.toString(),
-          name: (updatedBooking!.customer as any).name,
-          email: (updatedBooking!.customer as any).email,
+          id: (updatedBooking!.customer as IUser)._id.toString(),
+          name: (updatedBooking!.customer as IUser).name,
+          email: (updatedBooking!.customer as IUser).email,
           phone: phoneNumber,
           firstName: firstName,
           lastName: lastName
         },
         service: {
-          id: (updatedBooking!.service as any)._id.toString(),
-          name: (updatedBooking!.service as any).name,
-          price: (updatedBooking!.service as any).price,
-          duration: (updatedBooking!.service as any).duration,
-          description: (updatedBooking!.service as any).description
+          id: (updatedBooking!.service as IService)._id.toString(),
+          name: (updatedBooking!.service as IService).name,
+          price: (updatedBooking!.service as IService).price,
+          duration: (updatedBooking!.service as IService).duration,
+          description: (updatedBooking!.service as IService).description
         },
         therapist: {
-          id: (updatedBooking!.therapist as any)._id.toString(),
-          fullName: (updatedBooking!.therapist as any).fullName,
-          professionalTitle: (updatedBooking!.therapist as any).professionalTitle
+          id: (updatedBooking!.therapist as ITherapist)._id.toString(),
+          fullName: (updatedBooking!.therapist as ITherapist).fullName,
+          professionalTitle: (updatedBooking!.therapist as ITherapist).professionalTitle
         },
         date: updatedBooking!.date,
         time: updatedBooking!.time,
@@ -263,10 +264,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { bookingId:
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error rescheduling booking:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

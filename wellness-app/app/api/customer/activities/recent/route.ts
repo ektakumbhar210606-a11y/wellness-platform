@@ -10,6 +10,27 @@ interface JwtPayload {
   role: string;
 }
 
+interface IActivity {
+  id: string;
+  type: 'completed' | 'visited';
+  service: {
+    id?: string;
+    name?: string;
+  };
+  therapist: {
+    id?: string;
+    name?: string;
+  };
+  business: {
+    id?: string;
+    name?: string;
+  };
+  date: Date;
+  rating?: number;
+  notes?: string;
+  tags?: string[];
+}
+
 /**
  * Middleware to authenticate and authorize customer requests
  */
@@ -25,7 +46,7 @@ async function requireCustomerAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return { authenticated: false, error: 'Invalid or expired token', status: 401 };
     }
 
@@ -43,9 +64,9 @@ async function requireCustomerAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
-    return { authenticated: false, error: error.message || 'Internal server error', status: 500 };
+    return { authenticated: false, error: (error instanceof Error) ? error.message : 'Internal server error', status: 500 };
   }
 }
 
@@ -83,7 +104,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Process wellness history to create recent activities
-    let activities: any[] = [];
+    let activities: IActivity[] = [];
     
     if (customer.wellnessHistory && customer.wellnessHistory.length > 0) {
       // Sort by date descending (most recent first)
@@ -132,10 +153,10 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error retrieving recent activities:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

@@ -88,19 +88,21 @@ export async function POST(request: NextRequest) {
       { message: 'Password reset email sent if user exists' },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Forgot password error:', error);
 
     // Handle specific error types
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
-      );
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationErrors },
-        { status: 400 }
-      );
-    }
+    if (error instanceof Error && error.name === 'ValidationError') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const validationErrors = (Object.values((error as any).errors) as { message: string }[])
+    .map(err => err.message);
+
+  return NextResponse.json(
+    { error: 'Validation failed', details: validationErrors },
+    { status: 400 }
+  );
+}
+
 
     // Generic server error
     return NextResponse.json(

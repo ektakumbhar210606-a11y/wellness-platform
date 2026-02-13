@@ -4,10 +4,10 @@
  * Usage: node testCancelExpiredBookings.js
  */
 
-const { connectToDatabase } = require('../lib/db');
-const BookingModel = require('../models/Booking').default;
-const { cancelExpiredBookings, isBookingExpired } = require('../utils/cancelExpiredBookings');
-const { BookingStatus } = require('../models/Booking');
+import { connectToDatabase } from '../lib/db.js';
+import BookingModel from '../models/Booking.js';
+import { cancelExpiredBookings, isBookingExpired } from '../utils/cancelExpiredBookings.js';
+import { BookingStatus } from '../models/Booking.js';
 
 async function runTests() {
   try {
@@ -142,12 +142,9 @@ async function runTests() {
   }
 }
 
-// Run tests if this script is executed directly
-if (require.main === module) {
-  runTests().then(() => {
+runTests().then(() => {
     console.log('\nTest completed successfully!');
     process.exit(0);
   });
-}
 
-module.exports = { runTests };
+export { runTests };

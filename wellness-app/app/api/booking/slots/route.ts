@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BusinessModel from '@/models/Business';
 import ServiceModel from '@/models/Service';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import UserModel from '@/models/User';
 import { calculateTimeSlots } from '@/app/utils/slotCalculator';
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     if (business.businessHours && Object.keys(business.businessHours).length > 0) {
       // Assuming we're getting the current day's hours
       const dayOfWeek = new Date().toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
-      const dayHours = business.businessHours[dayOfWeek];
+      const dayHours = (business.businessHours as Record<string, any>)[dayOfWeek]; // Cast to any to access properties dynamically
       
       if (dayHours && dayHours.open && dayHours.close) {
         businessStartTime = dayHours.open;
@@ -94,10 +94,10 @@ export async function GET(request: NextRequest) {
       data: timeSlots
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating booking slots:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
@@ -121,10 +121,10 @@ async function requireCustomerAuth(request: NextRequest) {
     }
 
     // Verify token
-    let decoded: any;
+    let decoded: string | jwt.JwtPayload;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    } catch (err) {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -133,7 +133,7 @@ async function requireCustomerAuth(request: NextRequest) {
     }
 
     // Get user from database
-    const user = await UserModel.findById(decoded.id);
+    const user = await UserModel.findById((decoded as jwt.JwtPayload).id);
     if (!user) {
       return {
         authenticated: false,
@@ -156,7 +156,7 @@ async function requireCustomerAuth(request: NextRequest) {
       authenticated: true,
       user: user
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,

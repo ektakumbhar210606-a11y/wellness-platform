@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
           await newTherapist.save();
           console.log(`Therapist profile created for user: ${savedUser._id}`);
         }
-      } catch (therapistError: any) {
+      } catch (therapistError: unknown) {
         // Log the error but don't fail the registration
         console.error('Error creating therapist profile:', therapistError);
       }
@@ -181,22 +181,25 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
 
     // Handle specific Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
-      );
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationErrors },
-        { status: 400 }
-      );
-    }
+    if (error instanceof Error && error.name === 'ValidationError') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const validationErrors = (Object.values((error as any).errors) as { message: string }[])
+    .map(err => err.message);
+
+  return NextResponse.json(
+    { error: 'Validation failed', details: validationErrors },
+    { status: 400 }
+  );
+}
+
 
     // Handle duplicate key error (MongoDB error)
-    if (error.code === 11000) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((error as any).code === 11000) {
       return NextResponse.json(
         { error: 'A user with this email already exists' },
         { status: 409 }

@@ -1,5 +1,6 @@
-const mongoose = require('mongoose');
-require('dotenv').config({ path: '.env.local' });
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 async function testData() {
   try {
@@ -7,8 +8,8 @@ async function testData() {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/serenity_db');
     console.log('Connected to database');
     
-    const Service = require('./models/Service');
-    const Therapist = require('./models/Therapist');
+    const Service = (await import('./models/Service.js')).default;
+    const Therapist = (await import('./models/Therapist.js')).default;
     
     // Find all services and their therapists
     console.log('\n=== Services and their assigned therapists ===');

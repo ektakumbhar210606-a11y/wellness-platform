@@ -1,14 +1,13 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BookingModel, { BookingStatus } from '@/models/Booking';
-import TherapistModel from '@/models/Therapist';
-import UserModel from '@/models/User';
-import ServiceModel from '@/models/Service';
-import BusinessModel from '@/models/Business';
+import UserModel, { IUser } from '@/models/User';
+import ServiceModel, { IService } from '@/models/Service';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import NotificationService from '@/app/utils/notifications';
+import BusinessModel, { IBusiness } from '@/models/Business';
 
 async function requireBusinessAuth(request: NextRequest) {
   try {
@@ -28,7 +27,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -59,11 +58,11 @@ async function requireBusinessAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -124,8 +123,8 @@ export async function PATCH(
     }
 
     // Check if the booking belongs to a service of this business
-    const service = await ServiceModel.findById(booking.service);
-    if (!service || service.business.toString() !== business._id.toString()) {
+    const bookingService = await ServiceModel.findById(booking.service);
+    if (!bookingService || bookingService.business.toString() !== business._id.toString()) {
       return Response.json(
         { success: false, error: 'Booking does not belong to your business' },
         { status: 403 }
@@ -172,38 +171,45 @@ export async function PATCH(
     // Split the full name into first and last name
     let firstName = '';
     let lastName = '';
-    if (bookingWithPopulatedData && bookingWithPopulatedData.customer && (bookingWithPopulatedData.customer as any).name) {
-      const nameParts = (bookingWithPopulatedData.customer as any).name.trim().split(/\s+/);
+    if (bookingWithPopulatedData && bookingWithPopulatedData.customer && (bookingWithPopulatedData.customer as IUser).name) {
+      const nameParts = (bookingWithPopulatedData.customer as IUser).name.trim().split(/\s+/);
       firstName = nameParts[0] || '';
       lastName = nameParts.slice(1).join(' ') || '';
     }
 
     // Handle phone number - try to get from Customer model if not in User model
-    let phoneNumber = (bookingWithPopulatedData!.customer as any).phone;
+    let phoneNumber = (bookingWithPopulatedData!.customer as IUser).phone;
     if (!phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
-      const customerProfile = await CustomerModel.findOne({ user: (bookingWithPopulatedData!.customer as any)._id }).select('phoneNumber');
+      const customerProfile = await CustomerModel.findOne({ user: (bookingWithPopulatedData!.customer as IUser)._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
         phoneNumber = customerProfile.phoneNumber;
       }
     }
 
     // Manually populate business data to avoid Mongoose schema registration issues
-    let updatedBooking = bookingWithPopulatedData.toObject();
-    if (updatedBooking.service && updatedBooking.service.business) {
+    const updatedBooking = bookingWithPopulatedData.toObject();
+    const service = updatedBooking.service as Record<string, unknown>;
+    if (updatedBooking.service && service.business) {
       try {
-        const business = await BusinessModel.findById(updatedBooking.service.business)
+        const businessPopulated = await BusinessModel.findById(service.business as Types.ObjectId)
           .select('name')
           .lean();
-        
-        if (business) {
-          updatedBooking.service.business = business;
+
+        if (businessPopulated) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (service as any).business = {
+            id: businessPopulated._id.toString(),
+            name: businessPopulated.name
+          };
         } else {
-          updatedBooking.service.business = null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (service as any).business = undefined;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error populating business data:', error);
-        updatedBooking.service.business = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (service as any).business = undefined;
       }
     }
 
@@ -222,21 +228,21 @@ export async function PATCH(
       data: {
         id: updatedBooking._id.toString(),
         customer: {
-          id: (updatedBooking.customer as any)._id.toString(),
+          id: (updatedBooking.customer as IUser)._id.toString(),
           firstName: firstName,
           lastName: lastName,
-          email: (updatedBooking.customer as any).email,
+          email: (updatedBooking.customer as IUser).email,
           phone: phoneNumber
         },
         service: {
-          id: (updatedBooking.service as any)._id.toString(),
-          name: (updatedBooking.service as any).name,
-          price: (updatedBooking.service as any).price,
-          duration: (updatedBooking.service as any).duration,
-          description: (updatedBooking.service as any).description,
-          business: updatedBooking.service.business && (updatedBooking.service.business as any)._id ? {
-            id: (updatedBooking.service.business as any)._id.toString(),
-            name: (updatedBooking.service.business as any).name
+          id: (updatedBooking.service as IService)._id.toString(),
+          name: (updatedBooking.service as IService).name,
+          price: (updatedBooking.service as IService).price,
+          duration: (updatedBooking.service as IService).duration,
+          description: (updatedBooking.service as IService).description,
+          business: updatedBooking.service.business && (updatedBooking.service.business as IBusiness)._id ? {
+            id: (updatedBooking.service.business as IBusiness)._id.toString(),
+            name: (updatedBooking.service.business as IBusiness).name
           } : null
         },
         date: updatedBooking.date,
@@ -249,10 +255,10 @@ export async function PATCH(
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error confirming booking:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

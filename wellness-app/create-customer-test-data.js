@@ -1,9 +1,10 @@
 // Script to create test data for customer dashboard testing
 // Run with: node create-customer-test-data.js
 
-require('dotenv').config({ path: '.env.local' }); // Load environment variables from .env.local
-const { MongoClient } = require('mongodb');
-const bcrypt = require('bcryptjs');
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' }); // Load environment variables from .env.local
+import { MongoClient } from 'mongodb';
+import bcrypt from 'bcryptjs';
 
 async function createCustomerTestData() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/wellness-platform';

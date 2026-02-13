@@ -2,12 +2,13 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BookingModel from '@/models/Booking';
 import BusinessModel from '@/models/Business';
-import TherapistModel from '@/models/Therapist';
-import ServiceModel from '@/models/Service';
-import UserModel from '@/models/User';
+import ServiceModel, { IService } from '@/models/Service';
+import UserModel, { IUser } from '@/models/User';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { formatBookingId } from '@/utils/bookingIdFormatter';
+import { ITherapist } from '@/models/Therapist';
+import { Types } from 'mongoose';
 
 async function requireBusinessAuth(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -58,11 +59,11 @@ async function requireBusinessAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -108,15 +109,25 @@ export async function GET(req: NextRequest) {
 
     // Find services associated with this business
     const businessServices = await ServiceModel.find({ business: business._id }).select('_id');
-    const serviceIds = businessServices.map((service: any) => service._id);
+    const serviceIds = businessServices.map((service: IService) => service._id);
 
     // Build query for assigned bookings
-    const query: any = {
+    const query: {
+      service: { $in: Types.ObjectId[] };
+      assignedByAdmin: boolean;
+      therapist?: { $exists: boolean; $ne: null } | string;
+      therapistResponded: boolean;
+      status?: string;
+    } = {
       service: { $in: serviceIds },
       assignedByAdmin: true,  // Only bookings explicitly assigned by admin
-      therapist: { $exists: true, $ne: null },  // Only bookings with assigned therapist
       therapistResponded: true  // Only bookings where therapist has responded
     };
+
+    // Only add therapist filter if not filtering by specific therapist
+    if (!therapistId) {
+      query.therapist = { $exists: true, $ne: null };  // Only bookings with assigned therapist
+    }
 
     // Filter by status if provided
     if (status && ['pending', 'confirmed', 'cancelled', 'rescheduled'].includes(status)) {
@@ -155,9 +166,9 @@ export async function GET(req: NextRequest) {
 
     // Handle phone number for all bookings asynchronously
     const formattedBookings = await Promise.all(bookings.map(async (booking) => {
-      const customer = booking.customer as any;
-      const therapist = booking.therapist as any;
-      const service = booking.service as any;
+      const customer = booking.customer as IUser;
+      const therapist = booking.therapist as ITherapist;
+      const service = booking.service as IService;
 
       // Split the full name into first and last name
       let firstName = '';
@@ -255,10 +266,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching assigned bookings:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

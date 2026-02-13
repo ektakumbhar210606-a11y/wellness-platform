@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import BookingModel from '../../../../models/Booking';
 import UserModel from '../../../../models/User';
-import ServiceModel from '../../../../models/Service';
-import TherapistModel from '../../../../models/Therapist';
-import BusinessModel from '../../../../models/Business';
+import ServiceModel, { IService } from '../../../../models/Service';
+import TherapistModel, { ITherapist } from '../../../../models/Therapist';
+import BusinessModel, { IBusiness } from '../../../../models/Business';
 import * as jwt from 'jsonwebtoken';
 import { formatBookingId } from '../../../../utils/bookingIdFormatter';
+import { Types } from 'mongoose';
 
 interface JwtPayload {
   id: string;
@@ -33,7 +34,7 @@ async function requireCustomerAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -64,11 +65,11 @@ async function requireCustomerAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build query for all bookings
-    const query: any = {
+    const query: { customer: string; status?: string } = {
       customer: customerId
     };
 
@@ -134,29 +135,33 @@ export async function GET(request: NextRequest) {
     // Manually populate business data for each service to avoid Mongoose schema registration issues
     const populatedBookings = await Promise.all(bookings.map(async (booking) => {
       const populatedBooking = booking.toObject();
-      
-      if (populatedBooking.service && populatedBooking.service.business) {
+
+      const service = populatedBooking.service as Record<string, unknown>;
+      if (populatedBooking.service && service.business) {
         try {
-          const business = await BusinessModel.findById(populatedBooking.service.business)
+          const business = await BusinessModel.findById(service.business as Types.ObjectId)
             .select('name address currency')
             .lean();
-          
+
           if (business) {
-            populatedBooking.service.business = {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (service as any).business = {
               id: business._id.toString(),
               name: business.name,
               address: business.address,
               currency: business.currency
             };
           } else {
-            populatedBooking.service.business = null;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (service as any).business = undefined;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Error populating business data:', error);
-          populatedBooking.service.business = null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (service as any).business = undefined;
         }
       }
-      
+
       return populatedBooking;
     }));
 
@@ -165,9 +170,9 @@ export async function GET(request: NextRequest) {
 
     // Format the bookings for the response
     const formattedBookings = populatedBookings.map(booking => {
-      const service = booking.service as any;
-      const therapist = booking.therapist as any;
-      const business = service?.business as any;
+      const service = booking.service as IService;
+      const therapist = booking.therapist as ITherapist;
+      const business = service?.business as IBusiness;
 
       return {
         id: booking._id.toString(),
@@ -217,13 +222,13 @@ export async function GET(request: NextRequest) {
       }
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching customer bookings:', error);
     
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Internal server error: ' + error.message 
+        error: 'Internal server error: ' + ((error instanceof Error) ? error.message : 'Unknown error') 
       },
       { status: 500 }
     );

@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
 // Set environment variables directly
 process.env.MONGODB_URI = 'mongodb+srv://serenity_admin:serenity1234@cluster0.bfwkcc7.mongodb.net/serenity_db';

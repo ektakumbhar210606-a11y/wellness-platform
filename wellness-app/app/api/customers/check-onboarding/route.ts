@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; email: string; role: string };
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return Response.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
       message: 'Onboarding status retrieved successfully'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error checking onboarding status:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

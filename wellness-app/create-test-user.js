@@ -1,7 +1,8 @@
-require('dotenv').config({ path: '.env.local' });
-const mongoose = require('mongoose');
-const User = require('./models/User.ts');
-const bcrypt = require('bcryptjs');
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+import mongoose from 'mongoose';
+import User from './models/User.js';
+import bcrypt from 'bcryptjs';
 
 async function createTestUser() {
   try {

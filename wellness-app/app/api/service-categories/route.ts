@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import ServiceCategoryModel from '@/models/ServiceCategory';
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // Connect to database
     await connectToDatabase();
@@ -28,14 +28,14 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching service categories:', error);
     
     return NextResponse.json(
       { 
         success: false,
         error: 'Failed to retrieve service categories',
-        message: error.message || 'Internal server error'
+        message: (error instanceof Error) ? error.message : 'Internal server error'
       },
       { status: 500 }
     );

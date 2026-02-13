@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import CustomerModel from '@/models/Customer';
 import * as jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import UserModel from '@/models/User';
 
 interface JwtPayload {
@@ -43,8 +44,8 @@ async function requireCustomerAuth(request: NextRequest) {
   }
 }
 
-// GET /api/customers/goals - Get customer wellness goals
-export async function GET(request: NextRequest) {
+// PUT /api/customers/goals/[id] - Update a specific wellness goal
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authResult = await requireCustomerAuth(request);
     if (!authResult.authenticated) {
@@ -55,7 +56,18 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authResult.user!.id;
-    const customer = await CustomerModel.findOne({ user: userId }, 'wellnessGoals wellnessGoalsList');
+
+    const { id: goalId } = await params;
+    if (!mongoose.Types.ObjectId.isValid(goalId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid goal ID' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    
+    const customer = await CustomerModel.findOne({ user: userId });
     
     if (!customer) {
       return NextResponse.json(
@@ -64,24 +76,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Find the goal
+    const goal = customer.wellnessGoalsList.id(goalId);
+    if (!goal) {
+      return NextResponse.json(
+        { success: false, error: 'Goal not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update goal fields
+    if (body.title !== undefined) goal.title = body.title;
+    if (body.description !== undefined) goal.description = body.description;
+    if (body.targetDate !== undefined) goal.targetDate = body.targetDate ? new Date(body.targetDate) : undefined;
+    if (body.progress !== undefined) {
+      goal.progress = body.progress;
+      goal.completed = body.progress >= 100;
+    }
+    if (body.completed !== undefined) goal.completed = body.completed;
+
+    await customer.save();
+
     return NextResponse.json({
       success: true,
-      data: {
-        wellnessGoals: customer.wellnessGoals,
-        goals: customer.wellnessGoalsList
-      }
+      message: 'Wellness goal updated successfully',
+      data: goal
     });
   } catch (error: unknown) {
-    console.error('Error fetching customer goals:', error);
+    console.error('Error updating wellness goal:', error);
     return NextResponse.json(
-      { success: false, error: (error instanceof Error) ? error.message : 'Failed to fetch customer goals' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Failed to update wellness goal' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/customers/goals - Add a new wellness goal
-export async function POST(request: NextRequest) {
+// DELETE /api/customers/goals/[id] - Delete a specific wellness goal
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authResult = await requireCustomerAuth(request);
     if (!authResult.authenticated) {
@@ -93,12 +124,10 @@ export async function POST(request: NextRequest) {
 
     const userId = authResult.user!.id;
 
-    const body = await request.json();
-    
-    // Validate required fields
-    if (!body.title) {
+    const { id: goalId } = await params;
+    if (!mongoose.Types.ObjectId.isValid(goalId)) {
       return NextResponse.json(
-        { success: false, error: 'Goal title is required' },
+        { success: false, error: 'Invalid goal ID' },
         { status: 400 }
       );
     }
@@ -112,28 +141,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add new goal
-    const newGoal = {
-      title: body.title,
-      description: body.description || '',
-      targetDate: body.targetDate ? new Date(body.targetDate) : undefined,
-      progress: body.progress || 0,
-      completed: body.completed || false,
-      createdAt: new Date()
-    };
+    // Check if goal exists
+    const goal = customer.wellnessGoalsList.id(goalId);
+    if (!goal) {
+      return NextResponse.json(
+        { success: false, error: 'Goal not found' },
+        { status: 404 }
+      );
+    }
 
-    customer.wellnessGoalsList.push(newGoal);
+    // Remove the goal
+    customer.wellnessGoalsList.pull({ _id: goalId });
     await customer.save();
 
     return NextResponse.json({
       success: true,
-      message: 'Wellness goal added successfully',
-      data: newGoal
+      message: 'Wellness goal deleted successfully'
     });
   } catch (error: unknown) {
-    console.error('Error adding wellness goal:', error);
+    console.error('Error deleting wellness goal:', error);
     return NextResponse.json(
-      { success: false, error: (error instanceof Error) ? error.message : 'Failed to add wellness goal' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Failed to delete wellness goal' },
       { status: 500 }
     );
   }

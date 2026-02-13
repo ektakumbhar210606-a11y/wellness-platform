@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
 import { cancelExpiredBookings, isBookingExpired } from '@/utils/cancelExpiredBookings';
 import { connectToDatabase } from '@/lib/db';
-import UserModel from '@/models/User';
+import UserModel, { IUser } from '@/models/User';
 import * as jwt from 'jsonwebtoken';
 import { BookingStatus } from '@/models/Booking';
 import BookingModel from '@/models/Booking';
 import { formatBookingId } from '@/utils/bookingIdFormatter';
+import { IService } from '@/models/Service';
 
 interface JwtPayload {
   id: string;
@@ -34,7 +35,7 @@ async function requireAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -66,11 +67,11 @@ async function requireAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -110,8 +111,8 @@ export async function POST(request: NextRequest) {
         cancelledBookings: result.cancelledBookings.map(booking => ({
           id: booking._id.toString(),
           displayId: formatBookingId(booking._id.toString()),
-          customer: (booking.customer as any).name || 'Unknown Customer',
-          service: (booking.service as any).name || 'Unknown Service',
+          customer: (booking.customer as IUser).name || 'Unknown Customer',
+          service: (booking.service as IService).name || 'Unknown Service',
           date: booking.date,
           time: booking.time,
           previousStatus: booking.status,
@@ -120,10 +121,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in cancel-expired-bookings API:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
@@ -174,8 +175,8 @@ export async function GET(request: NextRequest) {
         expiredCount: expiredBookings.length,
         expiredBookings: expiredBookings.map(booking => ({
           id: booking._id.toString(),
-          customer: (booking.customer as any).name || 'Unknown Customer',
-          service: (booking.service as any).name || 'Unknown Service',
+          customer: (booking.customer as IUser).name || 'Unknown Customer',
+          service: (booking.service as IService).name || 'Unknown Service',
           date: booking.date,
           time: booking.time,
           currentStatus: booking.status,
@@ -184,10 +185,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in cancel-expired-bookings check API:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import BusinessModel from '../../../../models/Business';
 import TherapistModel, { IBusinessAssociation } from '../../../../models/Therapist';
-import UserModel from '../../../../models/User';
+import UserModel, { IUser } from '../../../../models/User';
 import * as jwt from 'jsonwebtoken';
 
 interface JwtPayload {
@@ -32,7 +32,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -63,11 +63,11 @@ async function requireBusinessAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -126,11 +126,11 @@ export async function GET(req: NextRequest) {
         const therapistData = {
           id: therapist._id,
           therapistId: therapist._id,
-          userId: therapist.user._id,
-          firstName: (therapist.user as any).firstName,
-          lastName: (therapist.user as any).lastName,
-          email: (therapist.user as any).email,
-          phone: (therapist.user as any).phone,
+          userId: (therapist.user as IUser)._id,
+          firstName: (therapist.user as IUser).firstName,
+          lastName: (therapist.user as IUser).lastName,
+          email: (therapist.user as IUser).email,
+          phone: (therapist.user as IUser).phone,
           experience: therapist.experience,
           skills: therapist.skills,
           rating: therapist.rating,
@@ -182,10 +182,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error retrieving business therapists:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

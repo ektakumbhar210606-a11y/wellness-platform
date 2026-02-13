@@ -3,7 +3,6 @@ import { connectToDatabase } from '../../../lib/db';
 import BusinessModel from '../../../models/Business';
 import UserModel from '../../../models/User';
 import * as jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
 
 interface JwtPayload {
   id: string;
@@ -32,7 +31,7 @@ async function requireTherapistAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -63,11 +62,11 @@ async function requireTherapistAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -115,10 +114,10 @@ export async function GET(req: NextRequest) {
       data: businesses
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching businesses:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

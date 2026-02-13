@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 async function testTherapistDisplay() {
   try {
@@ -7,8 +7,8 @@ async function testTherapistDisplay() {
     console.log('Connected to database');
     
     // Import models
-    const Service = require('./models/Service').default;
-    const Therapist = require('./models/Therapist').default;
+    const Service = (await import('./models/Service.js')).default;
+    const Therapist = (await import('./models/Therapist.js')).default;
     
     // Find a service with therapists assigned
     const service = await Service.findOne({ therapists: { $exists: true, $ne: [] } })

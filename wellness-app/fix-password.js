@@ -1,6 +1,7 @@
-require('dotenv').config({ path: '.env.local' }); // Load environment variables from .env.local
-const { MongoClient } = require('mongodb');
-const bcrypt = require('bcryptjs');
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' }); // Load environment variables from .env.local
+import { MongoClient } from 'mongodb';
+import bcrypt from 'bcryptjs';
 
 async function fixPassword() {
   const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017/wellness-platform');

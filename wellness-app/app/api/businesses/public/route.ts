@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import BusinessModel from '../../../../models/Business';
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
 
@@ -29,10 +29,10 @@ export async function GET(req: NextRequest) {
       count: businesses.length
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching businesses:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

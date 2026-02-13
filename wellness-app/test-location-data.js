@@ -1,11 +1,11 @@
 // Test script to verify location data functionality
-const {
+import {
   getAllCountries,
   getStatesForCountry,
   getCitiesForState,
   getCountryCode,
   getCountryName
-} = require('./app/utils/locationData');
+} from './app/utils/locationData.js';
 
 console.log('=== Location Data Test ===\n');
 

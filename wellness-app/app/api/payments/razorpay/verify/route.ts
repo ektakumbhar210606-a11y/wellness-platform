@@ -144,10 +144,10 @@ export async function POST(req: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error verifying Razorpay payment:', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Failed to verify payment' },
+            { success: false, error: (error instanceof Error) ? error.message : 'Failed to verify payment' },
             { status: 500 }
         );
     }

@@ -2,27 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
 import Business from '../../../../models/Business';
 import User from '../../../../models/User';
-
-// Simple JWT verification (for demo purposes)
-// In production, use a proper JWT library like 'jsonwebtoken'
-function verifyToken(token: string, secret: string): any {
-  try {
-    // For demo purposes, we'll just decode the payload
-    // In production, use a proper JWT library
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      throw new Error('Invalid token format');
-    }
-    
-    // Decode the payload (second part)
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    
-    // In a real implementation, you would verify the signature here
-    return payload;
-  } catch (error) {
-    throw new Error('Invalid token');
-  }
-}
+import * as jwt from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,10 +22,10 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify JWT token
-    let decodedToken: any;
+    let decodedToken: JwtPayload;
     try {
-      decodedToken = verifyToken(token, process.env.JWT_SECRET || 'fallback_secret_key');
-    } catch (error) {
+      decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key') as JwtPayload;
+    } catch (verificationError: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -70,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, description, serviceType, address, openingTime, closingTime } = body;
+    const { name, description, serviceType, address, openingTime, closingTime, businessHours } = body;
 
     // Validate required fields
     if (!name || !address || !openingTime || !closingTime) {
@@ -112,6 +93,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prepare business hours
+    const constFormattedBusinessHours: Record<string, { open?: string; close?: string; closed: boolean }> = {};
+    if (businessHours) {
+        Object.keys(businessHours).forEach(day => {
+            const dayData = businessHours[day];
+            constFormattedBusinessHours[day] = {
+                open: dayData.open,
+                close: dayData.close,
+                closed: dayData.closed || false
+            };
+        });
+    }
+
     // Create new business profile
     const newBusiness = new Business({
       owner: user._id,
@@ -121,6 +115,7 @@ export async function POST(request: NextRequest) {
       address,
       openingTime,
       closingTime,
+      businessHours: Object.keys(constFormattedBusinessHours).length > 0 ? constFormattedBusinessHours : undefined,
       status: 'active' // Default status
     });
 
@@ -140,6 +135,7 @@ export async function POST(request: NextRequest) {
           address: savedBusiness.address,
           openingTime: savedBusiness.openingTime,
           closingTime: savedBusiness.closingTime,
+          businessHours: savedBusiness.businessHours,
           status: savedBusiness.status,
           createdAt: savedBusiness.createdAt,
           updatedAt: savedBusiness.updatedAt
@@ -147,13 +143,13 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Business creation error:', error);
 
     // Handle specific Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
+    if (error instanceof Error && error.name === 'ValidationError') {
+      const validationErrors = Object.values((error as unknown as { errors: Record<string, { message: string }> }).errors).map(
+        (err: { message: string }) => err.message
       );
       return NextResponse.json(
         { error: 'Validation failed', details: validationErrors },
@@ -162,7 +158,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle duplicate key error (MongoDB error)
-    if (error.code === 11000) {
+    if (error instanceof Error && (error as { code?: number }).code === 11000) {
       return NextResponse.json(
         { error: 'A business with this name already exists' },
         { status: 409 }

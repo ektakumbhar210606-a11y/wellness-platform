@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '../../../../lib/db';
-import User, { IUser } from '../../../../models/User';
-import mongoose from 'mongoose';
+import User from '../../../../models/User';
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,7 +92,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
 
     // Generic server error

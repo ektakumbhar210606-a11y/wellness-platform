@@ -108,10 +108,10 @@ export async function POST(req: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error processing Cash payment:', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Failed to process cash payment' },
+            { success: false, error: (error instanceof Error) ? error.message : 'Failed to process cash payment' },
             { status: 500 }
         );
     }

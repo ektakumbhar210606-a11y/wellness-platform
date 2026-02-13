@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Layout, Typography, Row, Col, Card, Button, Spin, Alert, message, DatePicker } from 'antd';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
@@ -9,7 +9,7 @@ import type { Dayjs } from 'dayjs';
 
 const { Title, Text } = Typography;
 
-export default function BookingSlotSelectorPage() {
+function BookingSlotSelector() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -57,6 +57,8 @@ export default function BookingSlotSelectorPage() {
     // Only fetch slots when a date is selected
     if (selectedDate) {
       fetchAvailableSlots();
+    } else {
+        setLoading(false);
     }
   }, [businessId, serviceId, therapistId, selectedDate]);
   
@@ -416,4 +418,12 @@ export default function BookingSlotSelectorPage() {
       </Layout.Content>
     </Layout>
   );
+}
+
+export default function BookingSlotSelectorPage() {
+    return (
+        <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}><Spin size="large" /><Text style={{ display: 'block', marginTop: 16 }}>Loading...</Text></div>}>
+            <BookingSlotSelector />
+        </Suspense>
+    )
 }

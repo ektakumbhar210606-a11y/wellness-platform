@@ -1,15 +1,16 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../../../../lib/db';
-import BookingModel from '../../../../models/Booking';
-import BusinessModel from '../../../../models/Business';
-import ServiceModel from '../../../../models/Service';
-import UserModel from '../../../../models/User';
+import BookingModel, { IBooking } from '../../../../models/Booking';
+import ServiceModel, { IService } from '../../../../models/Service';
+import UserModel, { IUser } from '../../../../models/User';
 import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
 import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '@/models/TherapistAvailability';
 import NotificationService from '@/app/utils/notifications';
 import { formatBookingId } from '@/utils/bookingIdFormatter';
+import { ITherapist } from '@/models/Therapist';
+import BusinessModel from '../../../../models/Business';
 
 interface JwtPayload {
   id: string;
@@ -38,7 +39,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -69,11 +70,11 @@ async function requireBusinessAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -124,17 +125,16 @@ export async function GET(req: NextRequest) {
     // Parse query parameters for filtering
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
-    const includeAssigned = searchParams.get('includeAssigned') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // First get all services for this business
     const services = await ServiceModel.find({ business: business._id });
-    const serviceIds = services.map((service: any) => service._id);
-    
+    const serviceIds = services.map((service: IService) => service._id);
+
     // Build query for bookings of these services
     // This ensures we get all bookings related to services offered by this business
-    let query: any = { service: { $in: serviceIds } };
+    const query: { service?: { $in: Types.ObjectId[] }; status?: string | { $in: string[] } } = { service: { $in: serviceIds } };
     
     // Add status filter if provided
     if (status && ['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
@@ -235,38 +235,41 @@ export async function GET(req: NextRequest) {
 
     // For each booking, if customer doesn't have phone, try to get from associated Customer profile
     for (const booking of bookings) {
-      if (!booking.customer.phone) {
+      if (!(booking.customer as IUser).phone) {
         // Import Customer model here
         const CustomerModel = (await import('@/models/Customer')).default;
-        const customerProfile = await CustomerModel.findOne({ user: booking.customer._id }).select('phoneNumber');
+        const customerProfile = await CustomerModel.findOne({ user: (booking.customer as IUser)._id }).select('phoneNumber');
         if (customerProfile && customerProfile.phoneNumber) {
-          (booking.customer as any).phone = customerProfile.phoneNumber;
+          (booking.customer as IUser).phone = customerProfile.phoneNumber;
         }
       }
     }
 
     // Manually populate business data for each service to include currency information
     for (const booking of bookings) {
-      if (booking.service && (booking.service as any).business) {
+      const service = booking.service as Record<string, unknown>;
+      if (booking.service && service.business) {
         try {
-          const BusinessModel = (await import('@/models/Business')).default;
-          const business = await BusinessModel.findById((booking.service as any).business)
+          const businessPopulated = await BusinessModel.findById(service.business as Types.ObjectId)
             .select('name address currency')
             .lean();
-          
-          if (business) {
-            (booking.service as any).business = {
-              id: business._id.toString(),
-              name: business.name,
-              address: business.address,
-              currency: business.currency
+
+          if (businessPopulated) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (service as any).business = {
+              id: businessPopulated._id.toString(),
+              name: businessPopulated.name,
+              address: businessPopulated.address,
+              currency: businessPopulated.currency
             };
           } else {
-            (booking.service as any).business = null;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (service as any).business = undefined;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Error populating business data for booking:', booking._id, error);
-          (booking.service as any).business = null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (service as any).business = undefined;
         }
       }
     }
@@ -285,24 +288,24 @@ export async function GET(req: NextRequest) {
       id: booking._id.toString(),
       displayId: formatBookingId(booking._id.toString()),
       customer: {
-        id: (booking.customer as any)._id.toString(),
-        name: (booking.customer as any).name,
-        email: (booking.customer as any).email,
-        phone: (booking.customer as any).phone,
-        firstName: (booking.customer as any).name.split(' ')[0] || (booking.customer as any).name,
-        lastName: (booking.customer as any).name.split(' ').slice(1).join(' ') || ''
+        id: (booking.customer as IUser)._id.toString(),
+        name: (booking.customer as IUser).name,
+        email: (booking.customer as IUser).email,
+        phone: (booking.customer as IUser).phone,
+        firstName: (booking.customer as IUser).name.split(' ')[0] || (booking.customer as IUser).name,
+        lastName: (booking.customer as IUser).name.split(' ').slice(1).join(' ') || ''
       },
       service: {
-        id: (booking.service as any)._id.toString(),
-        name: (booking.service as any).name,
-        price: (booking.service as any).price,
-        duration: (booking.service as any).duration,
-        description: (booking.service as any).description
+        id: (booking.service as IService)._id.toString(),
+        name: (booking.service as IService).name,
+        price: (booking.service as IService).price,
+        duration: (booking.service as IService).duration,
+        description: (booking.service as IService).description
       },
       therapist: {
-        id: (booking.therapist as any)._id.toString(),
-        fullName: (booking.therapist as any).fullName,
-        professionalTitle: (booking.therapist as any).professionalTitle
+        id: (booking.therapist as ITherapist)._id.toString(),
+        fullName: (booking.therapist as ITherapist).fullName,
+        professionalTitle: (booking.therapist as ITherapist).professionalTitle
       },
       // Show original request date/time for business communication with customers
       date: booking.originalDate ? booking.originalDate : booking.date,
@@ -310,7 +313,7 @@ export async function GET(req: NextRequest) {
       // Current date/time for reference (in case of rescheduling)
       currentDate: booking.date,
       currentTime: booking.time,
-      duration: booking.duration || (booking.service as any).duration,
+      duration: booking.duration || (booking.service as IService).duration,
       status: booking.status,
       notes: booking.notes,
       createdAt: booking.createdAt,
@@ -333,10 +336,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching business bookings:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
@@ -429,7 +432,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Update booking status
-    const updateData: any = { status };
+    const updateData: Partial<IBooking> = { status };
     if (notes !== undefined) {
       updateData.notes = notes;
     }
@@ -497,17 +500,17 @@ export async function PATCH(req: NextRequest) {
     // Split the full name into first and last name
     let firstName = '';
     let lastName = '';
-    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as any).name) {
-      const nameParts = (updatedBooking.customer as any).name.trim().split(/\s+/);
+    if (updatedBooking && updatedBooking.customer && (updatedBooking.customer as IUser).name) {
+      const nameParts = (updatedBooking.customer as IUser).name.trim().split(/\s+/);
       firstName = nameParts[0] || '';
       lastName = nameParts.slice(1).join(' ') || '';
     }
     
     // Handle phone number - try to get from Customer model if not in User model
-    let phoneNumber = (updatedBooking!.customer as any).phone;
+    let phoneNumber = (updatedBooking!.customer as IUser).phone;
     if (!phoneNumber) {
       const CustomerModel = (await import('@/models/Customer')).default;
-      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as any)._id }).select('phoneNumber');
+      const customerProfile = await CustomerModel.findOne({ user: (updatedBooking!.customer as IUser)._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
         phoneNumber = customerProfile.phoneNumber;
       }
@@ -538,28 +541,28 @@ export async function PATCH(req: NextRequest) {
       data: {
         id: updatedBooking._id.toString(),
         customer: {
-          id: (updatedBooking.customer as any)._id.toString(),
-          name: (updatedBooking.customer as any).name,
-          email: (updatedBooking.customer as any).email,
+          id: (updatedBooking.customer as IUser)._id.toString(),
+          name: (updatedBooking.customer as IUser).name,
+          email: (updatedBooking.customer as IUser).email,
           phone: phoneNumber,
           firstName: firstName,
           lastName: lastName
         },
         service: {
-          id: (updatedBooking.service as any)._id.toString(),
-          name: (updatedBooking.service as any).name,
-          price: (updatedBooking.service as any).price,
-          duration: (updatedBooking.service as any).duration,
-          description: (updatedBooking.service as any).description
+          id: (updatedBooking.service as IService)._id.toString(),
+          name: (updatedBooking.service as IService).name,
+          price: (updatedBooking.service as IService).price,
+          duration: (updatedBooking.service as IService).duration,
+          description: (updatedBooking.service as IService).description
         },
         therapist: {
-          id: (updatedBooking.therapist as any)._id.toString(),
-          fullName: (updatedBooking.therapist as any).fullName,
-          professionalTitle: (updatedBooking.therapist as any).professionalTitle
+          id: (updatedBooking.therapist as ITherapist)._id.toString(),
+          fullName: (updatedBooking.therapist as ITherapist).fullName,
+          professionalTitle: (updatedBooking.therapist as ITherapist).professionalTitle
         },
         date: updatedBooking.date,
         time: updatedBooking.time,
-        duration: updatedBooking.duration || (updatedBooking.service as any).duration,
+        duration: updatedBooking.duration || (updatedBooking.service as IService).duration,
         originalDate: updatedBooking.originalDate ? new Date(updatedBooking.originalDate) : null,
         originalTime: updatedBooking.originalTime || null,
         status: updatedBooking.status,
@@ -568,10 +571,10 @@ export async function PATCH(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating booking:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

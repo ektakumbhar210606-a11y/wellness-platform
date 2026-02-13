@@ -1,7 +1,8 @@
-require('dotenv').config({ path: '.env.local' });
-const mongoose = require('mongoose');
-const User = require('./models/User'); // Updated path to be relative to current directory
-const bcrypt = require('bcryptjs');
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+import mongoose from 'mongoose';
+import User from './models/User.js'; // Updated path to be relative to current directory
+import bcrypt from 'bcryptjs';
 
 async function createTestTherapist() {
   try {

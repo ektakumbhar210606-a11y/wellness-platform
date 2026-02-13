@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import BookingModel, { BookingStatus } from '@/models/Booking';
+import BookingModel, { BookingStatus, IBooking } from '@/models/Booking';
 import BusinessModel from '@/models/Business';
-import ServiceModel from '@/models/Service';
-import TherapistModel from '@/models/Therapist';
-import UserModel from '@/models/User';
+import ServiceModel, { IService } from '@/models/Service';
+import TherapistModel, { IBusinessAssociation, ITherapist } from '@/models/Therapist';
+import UserModel, { IUser } from '@/models/User';
 import { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
@@ -28,7 +28,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -59,11 +59,11 @@ async function requireBusinessAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -138,7 +138,7 @@ export async function GET(
 
     // Check if therapist is associated with the business
     const isTherapistAssociated = therapist.associatedBusinesses?.some(
-      (assoc: any) => 
+      (assoc: IBusinessAssociation) => 
         assoc.businessId.toString() === business._id.toString() && 
         assoc.status === 'approved'
     );
@@ -152,7 +152,7 @@ export async function GET(
     
     // Find services associated with this business
     const businessServices = await ServiceModel.find({ business: business._id }).select('_id').lean();
-    const serviceIds = businessServices.map((service: any) => service._id);
+    const serviceIds = businessServices.map((service: IService) => service._id);
     
     // Find bookings that have a service from this business and the specific therapist assigned with pending status
     // These would be customer booking requests where the therapist was specifically selected
@@ -180,23 +180,23 @@ export async function GET(
       id: booking._id.toString(),
       displayId: formatBookingId(booking._id.toString()),
       customer: {
-        id: (booking.customer as any)._id.toString(),
-        firstName: (booking.customer as any).firstName,
-        lastName: (booking.customer as any).lastName,
-        email: (booking.customer as any).email,
-        phone: (booking.customer as any).phone
+        id: (booking.customer as IUser)._id.toString(),
+        firstName: (booking.customer as IUser).firstName,
+        lastName: (booking.customer as IUser).lastName,
+        email: (booking.customer as IUser).email,
+        phone: (booking.customer as IUser).phone
       },
       service: {
-        id: (booking.service as any)._id.toString(),
-        name: (booking.service as any).name,
-        price: (booking.service as any).price,
-        duration: (booking.service as any).duration,
-        description: (booking.service as any).description
+        id: (booking.service as IService)._id.toString(),
+        name: (booking.service as IService).name,
+        price: (booking.service as IService).price,
+        duration: (booking.service as IService).duration,
+        description: (booking.service as IService).description
       },
       therapist: {
-        id: (booking.therapist as any)._id.toString(),
-        fullName: (booking.therapist as any).fullName,
-        professionalTitle: (booking.therapist as any).professionalTitle
+        id: (booking.therapist as ITherapist)._id.toString(),
+        fullName: (booking.therapist as ITherapist).fullName,
+        professionalTitle: (booking.therapist as ITherapist).professionalTitle
       },
       date: booking.date,
       time: booking.time,
@@ -210,10 +210,10 @@ export async function GET(
       data: formattedBookings
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching bookings by therapist:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

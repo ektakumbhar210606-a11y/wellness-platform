@@ -1,5 +1,6 @@
-const { MongoClient } = require('mongodb');
-require('dotenv').config({ path: '.env.local' });
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 const defaultCategories = [
   {

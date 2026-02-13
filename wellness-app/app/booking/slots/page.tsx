@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Layout, Typography, Row, Col, Card, Button, Spin, Alert, message } from 'antd';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
@@ -8,7 +8,7 @@ import moment from 'moment';
 
 const { Title, Text } = Typography;
 
-export default function BookingSlotPage() {
+function BookingSlot() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -242,4 +242,13 @@ export default function BookingSlotPage() {
       </Layout.Content>
     </Layout>
   );
+}
+
+
+export default function BookingSlotPage() {
+    return (
+        <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}><Spin size="large" /><Text style={{ display: 'block', marginTop: 16 }}>Loading...</Text></div>}>
+            <BookingSlot />
+        </Suspense>
+    )
 }

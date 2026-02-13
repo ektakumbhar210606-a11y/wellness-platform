@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { cancelExpiredBookings } from '@/utils/cancelExpiredBookings';
 import { formatBookingId } from '@/utils/bookingIdFormatter';
+import { IUser } from '@/models/User';
+import { IService } from '@/models/Service';
 
 /**
  * API endpoint for automatic background task
@@ -36,8 +38,8 @@ export async function POST(request: NextRequest) {
         cancelledBookings: result.cancelledBookings.map(booking => ({
           id: booking._id.toString(),
           displayId: formatBookingId(booking._id.toString()),
-          customer: (booking.customer as any)?.name || 'Unknown Customer',
-          service: (booking.service as any)?.name || 'Unknown Service',
+          customer: (booking.customer as IUser)?.name || 'Unknown Customer',
+          service: (booking.service as IService)?.name || 'Unknown Service',
           date: booking.date,
           time: booking.time,
           previousStatus: booking.status,
@@ -46,10 +48,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in background cancel-expired-bookings task:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

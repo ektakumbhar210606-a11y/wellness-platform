@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { IUser } from './User'; // Import the User interface
 import { IBusiness } from './Business'; // Import the Business interface
+import fs from 'fs';
+import path from 'path';
 
 // Define the possible availability status values for a therapist
 export enum TherapistAvailability {
@@ -200,10 +202,6 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
         validator: function(areaOfExpertise: string[]) {
           // Ensure all expertise IDs are valid
           if (!areaOfExpertise) return true; // Allow undefined/empty
-          
-          // Load expertise constants from the file system
-          const fs = require('fs');
-          const path = require('path');
           
           // Since this is a server-side validation, we need to load the constants differently
           // We'll use a static import at the top of the file to avoid dynamic imports in validators

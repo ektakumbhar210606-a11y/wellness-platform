@@ -1,7 +1,7 @@
 // Simple MongoDB script to check and fix therapist roles
 // Save this as check-users.js and run with: node check-users.js
 
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
 async function checkUsers() {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/wellness-platform';

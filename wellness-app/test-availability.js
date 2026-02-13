@@ -1,8 +1,9 @@
-const mongoose = require('mongoose');
-require('dotenv').config({ path: '.env.local' });
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 // Import the Therapist model
-const TherapistModel = require('./models/Therapist');
+import TherapistModel from './models/Therapist.js';
 
 async function testAvailability() {
   try {

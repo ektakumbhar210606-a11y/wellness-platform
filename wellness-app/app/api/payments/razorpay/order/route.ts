@@ -76,10 +76,10 @@ export async function POST(req: NextRequest) {
             key: key_id,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating Razorpay order:', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Failed to create order' },
+            { success: false, error: (error instanceof Error) ? error.message : 'Failed to create order' },
             { status: 500 }
         );
     }

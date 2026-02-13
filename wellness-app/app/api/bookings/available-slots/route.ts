@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import BusinessModel from '@/models/Business';
 import ServiceModel from '@/models/Service';
 import TherapistModel from '@/models/Therapist';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import UserModel from '@/models/User';
 import { generateSlots } from '@/app/utils/generateSlots';
 import { checkTherapistAvailability } from '@/app/utils/checkTherapistAvailability';
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const dayOfWeek = daysOfWeek[selectedDate.getDay()];
       
-      const dayHours = business.businessHours[dayOfWeek];
+      const dayHours = (business.businessHours as Record<string, { open: string; close: string; }>)[dayOfWeek];
       
       if (dayHours && dayHours.open && dayHours.close) {
         businessOpenTime = dayHours.open;
@@ -161,10 +161,10 @@ export async function GET(request: NextRequest) {
       data: resolvedSlots
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching available booking slots:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
@@ -188,10 +188,10 @@ async function requireCustomerAuth(request: NextRequest) {
     }
 
     // Verify token
-    let decoded: any;
+    let decoded: string | jwt.JwtPayload;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    } catch (err) {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -200,7 +200,7 @@ async function requireCustomerAuth(request: NextRequest) {
     }
 
     // Get user from database
-    const user = await UserModel.findById(decoded.id);
+    const user = await UserModel.findById((decoded as jwt.JwtPayload).id);
     if (!user) {
       return {
         authenticated: false,
@@ -223,7 +223,7 @@ async function requireCustomerAuth(request: NextRequest) {
       authenticated: true,
       user: user
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,

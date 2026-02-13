@@ -1,7 +1,7 @@
 /**
  * Test script to validate the expertise validation implementation
  */
-const { EXPERTISE_OPTIONS, validateExpertiseIds } = require('./lib/constants/expertiseConstants');
+import { EXPERTISE_OPTIONS, validateExpertiseIds } from './lib/constants/expertiseConstants.js';
 
 console.log('Testing expertise validation implementation...\n');
 

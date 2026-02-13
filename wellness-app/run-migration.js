@@ -2,15 +2,14 @@
 // This sets assignedByAdmin: false for all existing bookings that don't have this field
 // Usage: node run-migration.js
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // Connect to database
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/serenity_db')
   .then(async () => {
     console.log('Connected to database');
     
-    // Import the Booking model
-    const BookingModel = require('./models/Booking').default;
+    import BookingModel from './models/Booking.js';
     
     // Update all existing bookings to have assignedByAdmin: false by default
     // This is because they were created by customers, not explicitly assigned by admins

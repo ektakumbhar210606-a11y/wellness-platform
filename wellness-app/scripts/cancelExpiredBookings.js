@@ -3,7 +3,7 @@
  * This can be run via command line: node cancelExpiredBookings.js
  */
 
-const { cancelExpiredBookings } = require('../utils/cancelExpiredBookings');
+import { cancelExpiredBookings } from '../utils/cancelExpiredBookings.js';
 
 async function runManualCancellation() {
   try {
@@ -38,9 +38,6 @@ async function runManualCancellation() {
   }
 }
 
-// Run the function if this script is executed directly
-if (require.main === module) {
-  runManualCancellation();
-}
+runManualCancellation();
 
-module.exports = { runManualCancellation };
+export { runManualCancellation };

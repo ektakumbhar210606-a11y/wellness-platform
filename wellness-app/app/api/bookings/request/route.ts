@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BookingModel from '@/models/Booking';
-import UserModel from '@/models/User';
-import ServiceModel from '@/models/Service';
-import TherapistModel from '@/models/Therapist';
+import UserModel, { IUser } from '@/models/User';
+import ServiceModel, { IService } from '@/models/Service';
+import TherapistModel, { ITherapist } from '@/models/Therapist';
 import BusinessModel from '@/models/Business';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
@@ -28,7 +28,7 @@ async function requireCustomerAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -59,11 +59,11 @@ async function requireCustomerAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { businessId, serviceId, therapistId, date, startTime, endTime } = body;
+    const { businessId, serviceId, therapistId, date, startTime } = body;
 
     // Validate required fields
     if (!businessId || !serviceId || !therapistId || !date || !startTime) {
@@ -186,11 +186,11 @@ export async function POST(request: NextRequest) {
       });
     
     // If customer doesn't have phone, try to get from associated Customer profile
-    if (populatedBooking && !populatedBooking.customer.phone) {
+    if (populatedBooking && !(populatedBooking.customer as IUser).phone) {
       const CustomerModel = (await import('@/models/Customer')).default;
-      const customerProfile = await CustomerModel.findOne({ user: populatedBooking.customer._id }).select('phoneNumber');
+      const customerProfile = await CustomerModel.findOne({ user: (populatedBooking.customer as IUser)._id }).select('phoneNumber');
       if (customerProfile && customerProfile.phoneNumber) {
-        (populatedBooking.customer as any).phone = customerProfile.phoneNumber;
+        (populatedBooking.customer as IUser).phone = customerProfile.phoneNumber;
       }
     }
 
@@ -198,24 +198,24 @@ export async function POST(request: NextRequest) {
     const formattedBooking = {
       id: populatedBooking!._id.toString(),
       customer: {
-        id: (populatedBooking!.customer as any)._id.toString(),
-        name: (populatedBooking!.customer as any).name,
-        email: (populatedBooking!.customer as any).email,
-        phone: (populatedBooking!.customer as any).phone,
-        firstName: (populatedBooking!.customer as any).name.split(' ')[0] || (populatedBooking!.customer as any).name,
-        lastName: (populatedBooking!.customer as any).name.split(' ').slice(1).join(' ') || ''
+        id: (populatedBooking!.customer as IUser)._id.toString(),
+        name: (populatedBooking!.customer as IUser).name,
+        email: (populatedBooking!.customer as IUser).email,
+        phone: (populatedBooking!.customer as IUser).phone,
+        firstName: (populatedBooking!.customer as IUser).name.split(' ')[0] || (populatedBooking!.customer as IUser).name,
+        lastName: (populatedBooking!.customer as IUser).name.split(' ').slice(1).join(' ') || ''
       },
       service: {
-        id: (populatedBooking!.service as any)._id.toString(),
-        name: (populatedBooking!.service as any).name,
-        price: (populatedBooking!.service as any).price,
-        duration: (populatedBooking!.service as any).duration,
-        description: (populatedBooking!.service as any).description
+        id: (populatedBooking!.service as IService)._id.toString(),
+        name: (populatedBooking!.service as IService).name,
+        price: (populatedBooking!.service as IService).price,
+        duration: (populatedBooking!.service as IService).duration,
+        description: (populatedBooking!.service as IService).description
       },
       therapist: {
-        id: (populatedBooking!.therapist as any)._id.toString(),
-        fullName: (populatedBooking!.therapist as any).fullName,
-        professionalTitle: (populatedBooking!.therapist as any).professionalTitle
+        id: (populatedBooking!.therapist as ITherapist)._id.toString(),
+        fullName: (populatedBooking!.therapist as ITherapist).fullName,
+        professionalTitle: (populatedBooking!.therapist as ITherapist).professionalTitle
       },
       business: {
         id: businessId,
@@ -233,13 +233,13 @@ export async function POST(request: NextRequest) {
       data: formattedBooking
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating booking request:', error);
     
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Internal server error: ' + error.message 
+        error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') 
       },
       { status: 500 }
     );

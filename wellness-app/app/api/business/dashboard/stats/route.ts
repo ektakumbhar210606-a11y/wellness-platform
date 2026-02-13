@@ -36,7 +36,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -69,11 +69,11 @@ async function requireBusinessAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: error.message || 'Internal server error',
+      error: (error instanceof Error) ? error.message : 'Internal server error',
       status: 500
     };
   }
@@ -225,11 +225,11 @@ export async function GET(request: NextRequest) {
       pendingTherapistRequests: pendingRequests
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching business dashboard stats:', error);
     
     return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
+      { error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

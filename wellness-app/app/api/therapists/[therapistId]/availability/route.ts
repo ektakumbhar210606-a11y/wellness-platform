@@ -4,7 +4,7 @@ import TherapistModel from '@/models/Therapist';
 import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '@/models/TherapistAvailability';
 import { requireCustomerAuth } from '@/lib/middleware/authMiddleware';
 
-export async function GET(request: NextRequest, { params }: { params: { therapistId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ therapistId: string }> }) {
   try {
     // Authenticate and authorize customer
     const authResult = await requireCustomerAuth(request);
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { therapis
       );
     }
     
-    const { therapistId } = params;
+    const { therapistId } = await params;
     const { searchParams } = new URL(request.url);
     const serviceId = searchParams.get('serviceId');
     const date = searchParams.get('date');

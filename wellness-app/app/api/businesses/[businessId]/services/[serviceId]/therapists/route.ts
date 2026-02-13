@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import ServiceModel from '@/models/Service';
-import TherapistModel from '@/models/Therapist';
+import TherapistModel, { ITherapist } from '@/models/Therapist';
 import BusinessModel from '@/models/Business';
 import jwt from 'jsonwebtoken';
 import UserModel from '@/models/User';
+import type { JwtPayload } from 'jsonwebtoken';
 
 export async function GET(
   request: NextRequest,
@@ -15,9 +16,9 @@ export async function GET(
     const awaitedParams = await params;
     console.log('API Route - Awaited params:', awaitedParams);
     const { businessId, serviceId } = awaitedParams;
-    
+
     await connectToDatabase();
-    
+
     // Force model registration by accessing them
     console.log('Registering models...');
     console.log('ServiceModel name:', ServiceModel.modelName);
@@ -34,10 +35,10 @@ export async function GET(
     }
 
     // Verify token
-    let decoded: any;
+    let decoded: JwtPayload;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    } catch (err) {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    } catch (verificationError: unknown) {
       return Response.json(
         { message: 'Invalid or expired token' },
         { status: 401 }
@@ -155,7 +156,7 @@ export async function GET(
       '_id': { $in: therapistIds }
     }).select('fullName user business experience skills availabilityStatus email phoneNumber professionalTitle bio certifications licenseNumber weeklyAvailability areaOfExpertise');
     
-    console.log('API Route - Found therapists:', therapists.map((t: any) => ({
+    console.log('API Route - Found therapists:', therapists.map((t: ITherapist) => ({
       id: t._id,
       fullName: t.fullName,
       professionalTitle: t.professionalTitle
@@ -164,7 +165,7 @@ export async function GET(
 
     // Return the therapists
     return Response.json(
-      therapists.map((therapist: any) => ({
+      therapists.map((therapist: ITherapist) => ({
         _id: therapist._id,
         firstName: therapist.fullName || '',
         lastName: '',
@@ -177,10 +178,10 @@ export async function GET(
       })),
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching therapists for service:', error);
     return Response.json(
-      { message: 'Internal server error' },
+      { message: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

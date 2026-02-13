@@ -6,7 +6,7 @@ import CustomerModel from '@/models/Customer';
 import UserModel from '@/models/User';
 
 // Mock Razorpay payment simulation
-const simulateRazorpayPayment = async (amount: number, customerData: any) => {
+const simulateRazorpayPayment = async (amount: number, customerData: { fullName?: string; email?: string; phone?: string; }) => {
   // Simulate payment processing delay
   await new Promise(resolve => setTimeout(resolve, 2000));
   
@@ -173,12 +173,12 @@ export async function POST(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error processing Razorpay payment:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Failed to process payment' 
+        error: (error instanceof Error) ? error.message : 'Failed to process payment' 
       }, 
       { status: 500 }
     );

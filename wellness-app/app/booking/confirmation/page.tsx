@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Layout, Typography, Row, Col, Card, Button, Alert } from 'antd';
+import { useState, useEffect, Suspense } from 'react';
+import { Layout, Typography, Row, Col, Card, Button, Alert, Spin } from 'antd';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import moment from 'moment';
@@ -9,7 +9,7 @@ import { formatBookingId } from '../../../utils/bookingIdFormatter';
 
 const { Title, Text } = Typography;
 
-export default function BookingConfirmationPage() {
+function BookingConfirmation() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -148,4 +148,12 @@ export default function BookingConfirmationPage() {
       </Layout.Content>
     </Layout>
   );
+}
+
+export default function BookingConfirmationPage() {
+    return (
+        <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px' }}><Spin size="large" /><Text style={{ display: 'block', marginTop: 16 }}>Loading...</Text></div>}>
+            <BookingConfirmation />
+        </Suspense>
+    )
 }

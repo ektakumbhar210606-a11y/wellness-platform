@@ -1,8 +1,9 @@
 // Script to test customer model creation
 // Run with: node test-create-customer.js
 
-require('dotenv').config();
-const { MongoClient } = require('mongodb');
+import dotenv from 'dotenv';
+dotenv.config();
+import { MongoClient } from 'mongodb';
 
 async function testCustomerCollection() {
   const client = new MongoClient(process.env.MONGODB_URI);

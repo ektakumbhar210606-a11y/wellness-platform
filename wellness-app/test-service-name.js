@@ -1,10 +1,11 @@
 // Test script to check service name handling
-const mongoose = require('mongoose');
-require('dotenv').config();
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Import models
-const ServiceModel = require('./models/Service');
-const ServiceCategoryModel = require('./models/ServiceCategory');
+import ServiceModel from './models/Service.js';
+import ServiceCategoryModel from './models/ServiceCategory.js';
 
 async function testServiceName() {
   try {

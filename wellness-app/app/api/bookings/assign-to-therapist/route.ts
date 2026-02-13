@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BookingModel, { BookingStatus } from '@/models/Booking';
 import BusinessModel from '@/models/Business';
-import TherapistModel from '@/models/Therapist';
+import TherapistModel, { IBusinessAssociation, ITherapist } from '@/models/Therapist';
 import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '@/models/TherapistAvailability';
-import UserModel from '@/models/User';
+import UserModel, { IUser } from '@/models/User';
+import ServiceModel, { IService } from '@/models/Service';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 
@@ -26,7 +28,7 @@ async function requireBusinessAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -142,7 +144,7 @@ export async function POST(req: NextRequest) {
 
     // Check if therapist is associated with the business
     const isTherapistAssociated = therapist.associatedBusinesses?.some(
-      (assoc: any) => 
+      (assoc: IBusinessAssociation) => 
         assoc.businessId.toString() === business._id.toString() && 
         assoc.status === 'approved'
     );
@@ -216,23 +218,23 @@ export async function POST(req: NextRequest) {
       data: {
         id: updatedBooking._id.toString(),
         customer: {
-          id: (updatedBooking.customer as any)._id.toString(),
-          firstName: (updatedBooking.customer as any).firstName,
-          lastName: (updatedBooking.customer as any).lastName,
-          email: (updatedBooking.customer as any).email,
-          phone: (updatedBooking.customer as any).phone
+          id: (updatedBooking.customer as IUser)._id.toString(),
+          firstName: (updatedBooking.customer as IUser).firstName,
+          lastName: (updatedBooking.customer as IUser).lastName,
+          email: (updatedBooking.customer as IUser).email,
+          phone: (updatedBooking.customer as IUser).phone
         },
         service: {
-          id: (updatedBooking.service as any)._id.toString(),
-          name: (updatedBooking.service as any).name,
-          price: (updatedBooking.service as any).price,
-          duration: (updatedBooking.service as any).duration,
-          description: (updatedBooking.service as any).description
+          id: (updatedBooking.service as IService)._id.toString(),
+          name: (updatedBooking.service as IService).name,
+          price: (updatedBooking.service as IService).price,
+          duration: (updatedBooking.service as IService).duration,
+          description: (updatedBooking.service as IService).description
         },
         therapist: {
-          id: (updatedBooking.therapist as any)._id.toString(),
-          fullName: (updatedBooking.therapist as any).fullName,
-          professionalTitle: (updatedBooking.therapist as any).professionalTitle
+          id: (updatedBooking.therapist as ITherapist)._id.toString(),
+          fullName: (updatedBooking.therapist as ITherapist).fullName,
+          professionalTitle: (updatedBooking.therapist as ITherapist).professionalTitle
         },
         date: updatedBooking.date,
         time: updatedBooking.time,
@@ -241,10 +243,10 @@ export async function POST(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error assigning booking to therapist:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

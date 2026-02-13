@@ -5,13 +5,14 @@ import { ServiceType } from '../../../../models/Business';
 import ReviewModel from '../../../../models/Review';
 import BookingModel from '../../../../models/Booking';
 import ServiceModel from '../../../../models/Service';
+import type { SortOrder } from 'mongoose';
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
-    
+
     const { searchParams } = new URL(req.url);
-    
+
     // Extract query parameters
     const searchTerm = searchParams.get('search') || '';
     const location = searchParams.get('location') || '';
@@ -27,7 +28,16 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '12');
 
     // Build query object
-    const query: any = { status: 'active' };
+    type MongoRegexQuery = { $regex: string; $options: string };
+    type BusinessQuery = {
+      status: string;
+      $or?: Array<Record<string, string | MongoRegexQuery>>;
+      'address.country'?: string;
+      'address.state'?: string;
+      'address.city'?: string;
+      serviceType?: string;
+    };
+    const query: BusinessQuery = { status: 'active' };
 
     // Add search term filter (search in business name and description)
     if (searchTerm) {
@@ -68,7 +78,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Build sort object
-    const sort: any = {};
+    const sort: { [key: string]: SortOrder } = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
     // Calculate pagination
@@ -102,7 +112,7 @@ export async function GET(req: NextRequest) {
       const businessIds = businesses.map(business => business._id);
 
       // Calculate ratings for these businesses
-      const ratingMap = new Map();
+      const businessReviews = new Map<string, number[]>();
       
       // Get all services for these businesses
       const services = await ServiceModel.find({
@@ -124,7 +134,6 @@ export async function GET(req: NextRequest) {
       }, { rating: 1, booking: 1 });
 
       // Group reviews by business
-      const businessReviews = new Map();
       
       for (const review of reviews) {
         // Find which business this review belongs to
@@ -136,7 +145,7 @@ export async function GET(req: NextRequest) {
             if (!businessReviews.has(businessId)) {
               businessReviews.set(businessId, []);
             }
-            businessReviews.get(businessId).push(review.rating);
+            businessReviews.get(businessId)!.push(review.rating);
           }
         }
       }
@@ -173,7 +182,7 @@ export async function GET(req: NextRequest) {
       }).lean();
 
       // Calculate ratings for all businesses
-      const ratingMap = new Map();
+      const businessReviews = new Map<string, number[]>();
       
       // Get all services for all businesses
       const services = await ServiceModel.find({
@@ -195,7 +204,6 @@ export async function GET(req: NextRequest) {
       }, { rating: 1, booking: 1 });
 
       // Group reviews by business
-      const businessReviews = new Map();
       
       for (const review of reviews) {
         // Find which business this review belongs to
@@ -207,7 +215,7 @@ export async function GET(req: NextRequest) {
             if (!businessReviews.has(businessId)) {
               businessReviews.set(businessId, []);
             }
-            businessReviews.get(businessId).push(review.rating);
+            businessReviews.get(businessId)!.push(review.rating);
           }
         }
       }
@@ -282,10 +290,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error searching businesses:', error);
     return Response.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

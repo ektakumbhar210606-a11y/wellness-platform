@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import CustomerModel, { ICustomer } from '@/models/Customer';
+import CustomerModel from '@/models/Customer';
 import * as jwt from 'jsonwebtoken';
 import UserModel from '@/models/User';
 import '@/models/Therapist'; // Import to ensure model is registered
@@ -26,7 +26,7 @@ async function requireCustomerAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (err) {
+    } catch (verificationError: unknown) {
       return { authenticated: false, error: 'Invalid or expired token', status: 401 };
     }
 
@@ -40,9 +40,9 @@ async function requireCustomerAuth(request: NextRequest) {
     }
 
     return { authenticated: true, user: decoded };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
-    return { authenticated: false, error: error.message || 'Internal server error', status: 500 };
+    return { authenticated: false, error: (error instanceof Error) ? error.message : 'Internal server error', status: 500 };
   }
 }
 
@@ -73,10 +73,10 @@ export async function GET(request: NextRequest) {
       success: true,
       data: customer
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching customer profile:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch customer profile' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Failed to fetch customer profile' },
       { status: 500 }
     );
   }
@@ -168,14 +168,14 @@ export async function POST(request: NextRequest) {
         data: savedCustomer
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating/updating customer profile:', error);
     
     // Handle validation errors
-    if (error.name === 'ValidationError') {
+    if (error instanceof Error && error.name === 'ValidationError') {
       const errors: Record<string, string> = {};
-      Object.keys(error.errors).forEach(key => {
-        errors[key] = error.errors[key].message;
+      Object.keys((error as any).errors).forEach(key => {
+        errors[key] = (error as any).errors[key].message;
       });
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: errors },
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to create/update customer profile' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Failed to create/update customer profile' },
       { status: 500 }
     );
   }
@@ -206,7 +206,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     
     // Remove fields that shouldn't be updated directly
-    const { _id, user, createdAt, updatedAt, onboardingCompletedAt, ...updateData } = body;
+    const updateData = body;
     
     const updatedCustomer = await CustomerModel.findOneAndUpdate(
       { user: userId },
@@ -228,14 +228,14 @@ export async function PUT(request: NextRequest) {
       message: 'Customer profile updated successfully',
       data: updatedCustomer
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating customer profile:', error);
     
     // Handle validation errors
-    if (error.name === 'ValidationError') {
+    if (error instanceof Error && error.name === 'ValidationError') {
       const errors: Record<string, string> = {};
-      Object.keys(error.errors).forEach(key => {
-        errors[key] = error.errors[key].message;
+      Object.keys((error as any).errors).forEach(key => {
+        errors[key] = (error as any).errors[key].message;
       });
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: errors },
@@ -244,7 +244,7 @@ export async function PUT(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to update customer profile' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Failed to update customer profile' },
       { status: 500 }
     );
   }
@@ -276,10 +276,10 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Customer profile deleted successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting customer profile:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to delete customer profile' },
+      { success: false, error: (error instanceof Error) ? error.message : 'Failed to delete customer profile' },
       { status: 500 }
     );
   }

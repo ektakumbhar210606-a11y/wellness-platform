@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import ServiceModel from '@/models/Service';
+import ServiceModel, { IService } from '@/models/Service';
 import BusinessModel from '@/models/Business';
-import TherapistModel from '@/models/Therapist';
-import jwt from 'jsonwebtoken';
+import TherapistModel, { ITherapist } from '@/models/Therapist';
+import * as jwt from 'jsonwebtoken';
 import UserModel from '@/models/User';
+import type { JwtPayload } from 'jsonwebtoken';
 
 export async function GET(
   request: NextRequest,
@@ -32,10 +33,10 @@ export async function GET(
     }
 
     // Verify token
-    let decoded: any;
+    let decoded: JwtPayload;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    } catch (err) {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    } catch (verificationError: unknown) {
       return Response.json(
         { message: 'Invalid or expired token' },
         { status: 401 }
@@ -78,16 +79,15 @@ export async function GET(
 
     // Return the services
     return Response.json(
-      services.map((service: any) => ({
+      services.map((service: IService) => ({
         _id: service._id,
         name: service.name,
         description: service.description,
         price: service.price,
         duration: service.duration,
         category: service.serviceCategory,
-        status: service.status,
-        businessCountry: business.address.country, // Include business country for currency formatting
-        therapists: service.therapists ? (service.therapists as any[]).map((therapist: any) => {
+        businessCountry: business.address?.country, // Include business country for currency formatting
+        therapists: service.therapists ? (service.therapists as ITherapist[]).map((therapist: ITherapist) => {
           return {
             _id: therapist._id,
             firstName: therapist.fullName || '',
@@ -103,10 +103,10 @@ export async function GET(
       })),
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching business services:', error);
     return Response.json(
-      { message: 'Internal server error' },
+      { message: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
