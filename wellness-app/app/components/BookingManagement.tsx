@@ -15,6 +15,7 @@ import {
   Descriptions
 } from 'antd';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import { isWithin24Hours } from '@/app/utils/timeUtils';
 import { 
   CheckCircleOutlined, 
   ClockCircleOutlined, 
@@ -419,14 +420,25 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
           >
             {record.hasBeenRescheduled ? 'Confirm Original Request' : 'Confirm Request'}
           </Button>
-          <Button 
-            type="default"
-            size="small"
-            loading={actionLoading === record.id}
-            onClick={() => handleRescheduleBooking(record)}
-          >
-            {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
-          </Button>
+          {!isWithin24Hours(record.date, record.time) ? (
+            <Button 
+              type="default"
+              size="small"
+              loading={actionLoading === record.id}
+              onClick={() => handleRescheduleBooking(record)}
+            >
+              {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
+            </Button>
+          ) : (
+            <Button 
+              type="default"
+              size="small"
+              disabled
+              title="Rescheduling is not allowed within 24 hours of the booking time"
+            >
+              {record.hasBeenRescheduled ? 'Reschedule Original (Unavailable)' : 'Reschedule (Unavailable)'}
+            </Button>
+          )}
           <Button 
             danger 
             size="small"

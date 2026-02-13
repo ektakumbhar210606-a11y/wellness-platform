@@ -7,6 +7,7 @@ import {
   ClockCircleOutlined
 } from '@ant-design/icons';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import { isWithin24Hours } from '@/app/utils/timeUtils';
 
 const { Text, Title } = Typography;
 
@@ -130,13 +131,23 @@ const CustomerUpcomingAppointmentCard: React.FC<CustomerUpcomingAppointmentCardP
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {appointment.status.toLowerCase() === 'confirmed' && (
+          {appointment.status.toLowerCase() === 'confirmed' && !isWithin24Hours(appointment.date, appointment.time) && (
             <Button 
               type="primary" 
               size="small"
               onClick={() => onReschedule?.(appointment.id)}
             >
               Reschedule
+            </Button>
+          )}
+          {appointment.status.toLowerCase() === 'confirmed' && isWithin24Hours(appointment.date, appointment.time) && (
+            <Button 
+              type="primary" 
+              size="small"
+              disabled
+              title="Rescheduling is not allowed within 24 hours of the booking time"
+            >
+              Reschedule (Unavailable)
             </Button>
           )}
           {appointment.status.toLowerCase() !== 'completed' && 

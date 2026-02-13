@@ -93,6 +93,34 @@ export function formatTimeRange(startTime: string, endTime: string): string {
 }
 
 /**
+ * Check if a booking is within 24 hours from now
+ * @param bookingDate - Date of the booking
+ * @param bookingTime - Time of the booking in HH:MM format
+ * @returns True if the booking is within 24 hours from now, false otherwise
+ */
+export function isWithin24Hours(bookingDate: Date | string, bookingTime: string): boolean {
+  // Convert bookingDate to a Date object if it's a string
+  const bookingDateTime = typeof bookingDate === 'string' ? new Date(bookingDate) : new Date(bookingDate);
+  
+  // Parse the booking time (HH:MM format)
+  const [hours, minutes] = bookingTime.split(':').map(Number);
+  
+  // Set the time on the booking date
+  bookingDateTime.setHours(hours, minutes, 0, 0);
+  
+  // Calculate the difference in milliseconds
+  const currentTime = new Date();
+  const timeDifferenceMs = bookingDateTime.getTime() - currentTime.getTime();
+  
+  // Convert to hours
+  const timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
+  
+  // Return true if the booking is within 24 hours (and hasn't passed)
+  return timeDifferenceHours <= 24 && timeDifferenceHours >= 0;
+}
+
+
+/**
  * Format business hours object to 12-hour format
  * @param businessHours - Business hours object with open/close times
  * @returns Formatted business hours string

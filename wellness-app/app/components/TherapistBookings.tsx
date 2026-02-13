@@ -32,6 +32,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
+import { isWithin24Hours } from '@/app/utils/timeUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -439,7 +440,7 @@ const TherapistBookings: React.FC = () => {
                         </Button>
                       </>
                     )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && !isWithin24Hours(booking.date, booking.time) && (
                       <Button
                         onClick={() => {
                           setSelectedBooking(booking);
@@ -449,6 +450,15 @@ const TherapistBookings: React.FC = () => {
                         style={{ width: 120 }}
                       >
                         Reschedule
+                      </Button>
+                    )}
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && isWithin24Hours(booking.date, booking.time) && (
+                      <Button
+                        disabled
+                        title="Rescheduling is not allowed within 24 hours of the booking time"
+                        style={{ width: 120 }}
+                      >
+                        Reschedule (Unavailable)
                       </Button>
                     )}
                   </Space>

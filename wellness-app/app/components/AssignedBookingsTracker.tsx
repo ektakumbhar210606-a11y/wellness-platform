@@ -35,6 +35,7 @@ import {
 import dayjs from 'dayjs';
 import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import { isWithin24Hours } from '@/app/utils/timeUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -655,7 +656,7 @@ const AssignedBookingsTracker: React.FC = () => {
                         Confirm
                       </Button>
                     )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && !isWithin24Hours(booking.date, booking.time) && (
                       <Button 
                         size="small"
                         onClick={async () => {
@@ -665,6 +666,15 @@ const AssignedBookingsTracker: React.FC = () => {
                         loading={actionLoading === booking.id}
                       >
                         Reschedule
+                      </Button>
+                    )}
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && isWithin24Hours(booking.date, booking.time) && (
+                      <Button 
+                        size="small"
+                        disabled
+                        title="Rescheduling is not allowed within 24 hours of the booking time"
+                      >
+                        Reschedule (Unavailable)
                       </Button>
                     )}
                     {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
