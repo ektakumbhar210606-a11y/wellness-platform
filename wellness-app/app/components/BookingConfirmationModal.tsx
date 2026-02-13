@@ -319,7 +319,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
               Booking Details
             </Title>
 
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
               <div>
                 <Text strong style={{ display: 'block', marginBottom: 4 }}>
                   <UserOutlined style={{ marginRight: 8 }} />
@@ -453,7 +453,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
             onChange={e => setPaymentMethod(e.target.value)}
             style={{ width: '100%' }}
           >
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Radio value="online" style={{
                 border: '1px solid #d9d9d9',
                 borderRadius: '8px',
