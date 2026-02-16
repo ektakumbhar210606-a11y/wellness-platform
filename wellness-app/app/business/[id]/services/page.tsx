@@ -236,7 +236,7 @@ export default function BusinessServicesPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                             <div style={{ display: 'flex', gap: '16px', color: '#8c8c8c', fontSize: '14px' }}>
                               <span>⏱️ {service.duration} min</span>
-                              <span>💰 {formatCurrency(service.price, service.businessCountry || 'USA')}</span>
+                              <span>💰 {formatCurrency(service.price, service.businessCountry || 'default')}</span>
                             </div>
                           </div>
                         </div>

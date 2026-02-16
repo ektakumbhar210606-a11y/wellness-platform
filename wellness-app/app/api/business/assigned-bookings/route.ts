@@ -247,8 +247,8 @@ export async function GET(req: NextRequest) {
         bookings: formattedBookings,
         business: {
           id: business._id.toString(),
-          country: business.country || 'USA', // Default to USA if not set
-          currency: business.currency || 'USD' // Default to USD if not set
+          country: business.country || 'default', // Default to default if not set
+          currency: business.currency || 'INR' // Default to INR if not set
         },
         pagination: {
           page,

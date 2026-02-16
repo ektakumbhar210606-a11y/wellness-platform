@@ -109,7 +109,7 @@ const CustomerBookingsPage = () => {
       dataIndex: ['service', 'price'],
       key: 'price',
       render: (price: number, record: any) => {
-        const country = record.business?.address?.country || 'USA';
+        const country = record.business?.address?.country || 'default';
         return price ? formatCurrency(price, country) : 'N/A';
       },
     },
@@ -214,7 +214,7 @@ const CustomerBookingsPage = () => {
       dataIndex: ['service', 'price'],
       key: 'price',
       render: (price: number, record: any) => {
-        const country = record.business?.address?.country || 'USA';
+        const country = record.business?.address?.country || 'default';
         return price ? formatCurrency(price, country) : 'N/A';
       },
     },
@@ -337,7 +337,7 @@ const CustomerBookingsPage = () => {
 
         // Show success message with payment details
         message.success(
-          `Booking confirmed successfully! Payment of ${formatCurrency(paymentDetails.amount, 'INR')} completed. ` +
+          `Booking confirmed successfully! Payment completed. ` +
           `Payment ID: ${paymentDetails.razorpayPaymentId}`
         );
       } else {

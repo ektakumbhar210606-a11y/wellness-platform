@@ -126,7 +126,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
         address: initialData.address?.street || '',
         state: initialData.address?.state || '',
         pincode: initialData.address?.zipCode || '',
-        country: initialData.address?.country || 'USA', // Default to USA if not provided
+        country: initialData.address?.country || 'default', // Default to default if not provided
         businessHours: initialData.businessHours || [],
       };
     }
@@ -143,7 +143,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
       address: '',
       state: '',
       pincode: '',
-      country: 'USA', // Default to USA
+      country: 'default', // Default to default
       businessHours: [],
     };
   });
@@ -169,7 +169,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           address: initialData.address?.street || '',
           state: initialData.address?.state || '',
           pincode: initialData.address?.zipCode || '',
-          country: initialData.address?.country || 'USA', // Default to USA if not provided
+          country: initialData.address?.country || 'default', // Default to default if not provided
           businessHours: initialData.businessHours || [],
         };
         
@@ -519,7 +519,7 @@ const ProviderOnboarding: React.FC<ProviderOnboardingProps> = ({ onComplete, use
           zipCode: formData.pincode,
           country: formData.country // Use selected country
         },
-        currency: formData.country === 'India' ? 'INR' : 'USD', // Set currency based on country
+        currency: formData.country === 'USA' ? 'USD' : 'INR', // Set currency based on country
         opening_time: hourRows.length > 0 ? hourRows[0].openingTime.format('HH:mm') : '09:00',
         closing_time: hourRows.length > 0 ? hourRows[0].closingTime.format('HH:mm') : '17:00',
         status: 'active',

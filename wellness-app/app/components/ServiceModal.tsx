@@ -31,7 +31,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   onSubmit,
   loading,
   editingService,
-  businessCountry = 'USA',
+  businessCountry = 'default',
 }) => {
   const [current, setCurrent] = useState(0);
   const [approvedTherapists, setApprovedTherapists] = useState<any[]>([]);
@@ -149,6 +149,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             onSubmit={handleSubmit}
             loading={loading}
             isEditing={!!editingService}
+            businessCountry={businessCountry}
           />
         );
 

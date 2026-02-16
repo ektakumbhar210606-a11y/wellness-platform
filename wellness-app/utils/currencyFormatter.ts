@@ -1,6 +1,6 @@
 /**
  * Currency formatter utility for the wellness platform
- * Formats prices based on the business's selected country
+ * Formats prices with hardcoded Indian Rupee symbol (₹)
  */
 
 interface CurrencyConfig {
@@ -23,9 +23,9 @@ const CURRENCY_CONFIG: Record<string, CurrencyConfig> = {
   },
   // Add more countries as needed
   'default': {
-    locale: 'en-US',
-    currency: 'USD',
-    currencySymbol: '$',
+    locale: 'en-IN',
+    currency: 'INR',
+    currencySymbol: '₹',
   }
 };
 

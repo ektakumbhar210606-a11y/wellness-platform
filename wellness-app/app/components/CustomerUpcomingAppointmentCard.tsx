@@ -123,7 +123,7 @@ const CustomerUpcomingAppointmentCard: React.FC<CustomerUpcomingAppointmentCardP
             
             {appointment.service && (
               <Text type="secondary">
-                Duration: {appointment.service.duration} mins • {formatCurrency(appointment.service.price, appointment.business?.address?.country || 'USA')}
+                Duration: {appointment.service.duration} mins • {formatCurrency(appointment.service.price, appointment.business?.address?.country || 'default')}
               </Text>
             )}
           </Space>

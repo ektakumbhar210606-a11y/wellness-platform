@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       closingTime: closing_time || '17:00',
       businessHours: formattedBusinessHours, // Store the formatted business hours
       status: status || 'active', // Default to active status
-      currency: currency || (address.country === 'India' ? 'INR' : 'USD') // Set currency based on country, default to USD
+      currency: currency || (address.country === 'USA' ? 'USD' : 'INR') // Set currency based on country, default to INR
     });
 
     const savedBusiness = await newBusiness.save();
