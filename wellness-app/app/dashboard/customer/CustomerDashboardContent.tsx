@@ -358,7 +358,7 @@ const CustomerDashboardContent = () => {
                   <div>
                     {upcomingBookings.map((booking) => (
                       <div key={booking._id} style={{ marginBottom: '12px' }}>
-                        <CustomerUpcomingAppointmentCard 
+                        <CustomerUpcomingAppointmentCard
                           appointment={{
                             id: booking._id,
                             service: booking.service ? {

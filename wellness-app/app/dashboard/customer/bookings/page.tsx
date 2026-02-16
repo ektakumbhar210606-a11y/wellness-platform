@@ -117,17 +117,24 @@ const CustomerBookingsPage = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status: string, record: any) => {
+        // If therapist response should only be visible to business, show the original status
+        const displayStatus = record.responseVisibleToBusinessOnly ? 'pending' : status;
         let color = 'green';
-        if (status === 'cancelled') color = 'red';
-        if (status === 'pending') color = 'orange';
-        if (status === 'confirmed') color = 'blue';
-        if (status === 'completed') color = 'gray';
-        if (status === 'rescheduled') color = 'gold';
-
+        if (displayStatus === 'cancelled') color = 'red';
+        if (displayStatus === 'pending') color = 'orange';
+        if (displayStatus === 'confirmed') color = 'blue';
+        if (displayStatus === 'completed') color = 'gray';
+        if (displayStatus === 'rescheduled') color = 'gold';
+    
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
-            {status}
+            {displayStatus}
+            {record.responseVisibleToBusinessOnly && (
+              <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.7 }}>
+                (Processing)
+              </span>
+            )}
           </Tag>
         );
       },
@@ -137,44 +144,67 @@ const CustomerBookingsPage = () => {
       key: 'actions',
       render: (record: any) => (
         <Space size="small" wrap>
-          {record.status !== 'cancelled' && (
+          {/* Show different actions based on whether therapist response should be visible to business only */}
+          {record.responseVisibleToBusinessOnly ? (
             <>
               <Button
                 size="small"
-                type="primary"
-                ghost
-                onClick={() => {
-                  setBookingToConfirm(record);
-                  setConfirmModalVisible(true);
-                }}
+                type="default"
+                disabled
+                title="This booking is being processed by the business"
               >
-                Confirm
+                Processing
               </Button>
               <Button
                 size="small"
-                danger
-                onClick={() => {
-                  setBookingToCancel(record);
-                  setCancelModalVisible(true);
-                }}
+                type="default"
+                onClick={() => router.push(`/bookings/${record.id}/details`)}
               >
-                Cancel
+                View Details
               </Button>
+            </>
+          ) : (
+            <>
+              {record.status !== 'cancelled' && (
+                <>
+                  <Button
+                    size="small"
+                    type="primary"
+                    ghost
+                    onClick={() => {
+                      setBookingToConfirm(record);
+                      setConfirmModalVisible(true);
+                    }}
+                  >
+                    Confirm
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    onClick={() => {
+                      setBookingToCancel(record);
+                      setCancelModalVisible(true);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+                  >
+                    Reschedule
+                  </Button>
+                </>
+              )}
               <Button
                 size="small"
-                onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+                type="default"
+                onClick={() => router.push(`/bookings/${record.id}/details`)}
               >
-                Reschedule
+                View Details
               </Button>
             </>
           )}
-          <Button
-            size="small"
-            type="default"
-            onClick={() => router.push(`/bookings/${record.id}/details`)}
-          >
-            View Details
-          </Button>
         </Space>
       ),
     },
@@ -229,17 +259,24 @@ const CustomerBookingsPage = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status: string, record: any) => {
+        // If therapist response should only be visible to business, show the original status
+        const displayStatus = record.responseVisibleToBusinessOnly ? 'pending' : status;
         let color = 'blue';
-        if (status === 'cancelled') color = 'red';
-        if (status === 'pending') color = 'orange';
-        if (status === 'confirmed') color = 'blue';
-        if (status === 'completed') color = 'gray';
-        if (status === 'rescheduled') color = 'gold';
+        if (displayStatus === 'cancelled') color = 'red';
+        if (displayStatus === 'pending') color = 'orange';
+        if (displayStatus === 'confirmed') color = 'blue';
+        if (displayStatus === 'completed') color = 'gray';
+        if (displayStatus === 'rescheduled') color = 'gold';
 
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
-            {status}
+            {displayStatus}
+            {record.responseVisibleToBusinessOnly && (
+              <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.7 }}>
+                (Processing)
+              </span>
+            )}
           </Tag>
         );
       },
@@ -249,33 +286,56 @@ const CustomerBookingsPage = () => {
       key: 'actions',
       render: (record: any) => (
         <Space size="small" wrap>
-          {record.status !== 'cancelled' && (
+          {/* Show different actions based on whether therapist response should be visible to business only */}
+          {record.responseVisibleToBusinessOnly ? (
             <>
               <Button
                 size="small"
-                onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+                type="default"
+                disabled
+                title="This booking is being processed by the business"
               >
-                Reschedule
+                Processing
               </Button>
               <Button
                 size="small"
-                danger
-                onClick={() => {
-                  setBookingToCancel(record);
-                  setCancelModalVisible(true);
-                }}
+                type="default"
+                onClick={() => router.push(`/bookings/${record.id}/details`)}
               >
-                Cancel
+                View Details
+              </Button>
+            </>
+          ) : (
+            <>
+              {record.status !== 'cancelled' && (
+                <>
+                  <Button
+                    size="small"
+                    onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+                  >
+                    Reschedule
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    onClick={() => {
+                      setBookingToCancel(record);
+                      setCancelModalVisible(true);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+              <Button
+                size="small"
+                type="default"
+                onClick={() => router.push(`/bookings/${record.id}/details`)}
+              >
+                View Details
               </Button>
             </>
           )}
-          <Button
-            size="small"
-            type="default"
-            onClick={() => router.push(`/bookings/${record.id}/details`)}
-          >
-            View Details
-          </Button>
         </Space>
       ),
     },
@@ -283,41 +343,14 @@ const CustomerBookingsPage = () => {
 
   const handleCancelBooking = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          bookingId: bookingToCancel.id,
-          status: 'cancelled'
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to cancel booking');
-      }
-
-      // Update local state to reflect cancellation
-      setBookings(bookings.map(booking =>
-        booking.id === bookingToCancel.id
-          ? { ...booking, status: 'cancelled' }
-          : booking
-      ));
-
-      setCancelModalVisible(false);
-      setBookingToCancel(null);
+      // For customer-initiated cancellations, we should use the proper customer booking cancellation endpoint
+      // However, since this is a business-assigned booking, the customer shouldn't be able to cancel it directly
+      // The business should handle cancellations through their assigned-bookings interface
+      throw new Error('Cannot cancel business-assigned bookings directly. Please contact the business.');
     } catch (error: any) {
       console.error('Error cancelling booking:', error);
       // Optionally show error message to user
+      message.error(error.message || 'Failed to cancel booking');
     }
   };
 
@@ -359,9 +392,19 @@ const CustomerBookingsPage = () => {
     return null; // Or render a redirect message
   }
 
-  // Filter bookings based on active tab
-  const bookingRequests = bookings.filter(booking => booking.status !== 'confirmed');
-  const confirmedBookings = bookings.filter(booking => booking.status === 'confirmed');
+  // Filter bookings based on active tab - respect responseVisibleToBusinessOnly flag
+  const bookingRequests = bookings.filter(booking => {
+    // If therapist response should only be visible to business, treat as pending regardless of actual status
+    if (booking.responseVisibleToBusinessOnly) {
+      return true; // Show in requests tab
+    }
+    return booking.status !== 'confirmed';
+  });
+  
+  const confirmedBookings = bookings.filter(booking => {
+    // Only show as confirmed if not restricted to business visibility
+    return booking.status === 'confirmed' && !booking.responseVisibleToBusinessOnly;
+  });
 
   return (
     <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
