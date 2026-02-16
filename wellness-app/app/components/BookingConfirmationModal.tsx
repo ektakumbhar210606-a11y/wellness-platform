@@ -20,8 +20,7 @@ import {
   DollarCircleOutlined,
   PhoneOutlined,
   MailOutlined,
-  CreditCardOutlined,
-  MoneyCollectOutlined
+  CreditCardOutlined
 } from '@ant-design/icons';
 import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
@@ -44,7 +43,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
   loading = false
 }) => {
   const [form] = Form.useForm();
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('online');
+  const [paymentMethod, setPaymentMethod] = useState<'online'>('online');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -192,36 +191,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     }
   };
 
-  const processCashPayment = async (amount: number, values: any) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/cash/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingId: booking.id,
-          amount: amount,
-          customerData: {
-            fullName: values.fullName,
-            email: values.email,
-            phone: values.phone
-          }
-        })
-      });
 
-      const result = await response.json();
-      if (result.success) {
-        message.success('Booking confirmed!');
-        onConfirm({ ...values, paymentDetails: result.data });
-      } else {
-        message.error(result.error || 'Failed to confirm booking');
-      }
-    } catch (error) {
-      console.error('Cash Payment Error:', error);
-      message.error('Failed to process request');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleConfirm = async () => {
     try {
@@ -229,12 +199,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
       setIsProcessing(true);
 
       const amount = booking.service?.price || 0;
-
-      if (paymentMethod === 'online') {
-        await processRazorpayPayment(amount, values);
-      } else {
-        await processCashPayment(amount, values);
-      }
+      await processRazorpayPayment(amount, values);
 
     } catch (error: any) {
       console.error('Validation Error:', error);
@@ -279,7 +244,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
           onClick={handleConfirm}
           loading={isProcessing}
         >
-          {paymentMethod === 'online' ? 'Pay Now' : 'Confirm Booking'}
+          Pay Now
         </Button>
       ]}
       width={600}
@@ -448,50 +413,23 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
           <Title level={5} style={{ marginBottom: 16 }}>
             Payment Method
           </Title>
-          <Radio.Group
-            value={paymentMethod}
-            onChange={e => setPaymentMethod(e.target.value)}
-            style={{ width: '100%' }}
-          >
-            <Space orientation="vertical" style={{ width: '100%' }}>
-              <Radio value="online" style={{
-                border: '1px solid #d9d9d9',
-                borderRadius: '8px',
-                padding: '12px',
-                width: '100%',
-                backgroundColor: paymentMethod === 'online' ? '#e6f7ff' : 'transparent',
-                borderColor: paymentMethod === 'online' ? '#1890ff' : '#d9d9d9'
-              }}>
-                <Space>
-                  <CreditCardOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
-                  <div>
-                    <Text strong>Pay Online</Text>
-                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                      Secure payment via Razorpay
-                    </div>
-                  </div>
-                </Space>
-              </Radio>
-              <Radio value="cash" style={{
-                border: '1px solid #d9d9d9',
-                borderRadius: '8px',
-                padding: '12px',
-                width: '100%',
-                backgroundColor: paymentMethod === 'cash' ? '#e6f7ff' : 'transparent',
-                borderColor: paymentMethod === 'cash' ? '#1890ff' : '#d9d9d9'
-              }}>
-                <Space>
-                  <MoneyCollectOutlined style={{ color: '#52c41a', fontSize: '18px' }} />
-                  <div>
-                    <Text strong>Pay at Venue</Text>
-                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                      Pay cash when you arrive
-                    </div>
-                  </div>
-                </Space>
-              </Radio>
+          <div style={{
+            border: '1px solid #d9d9d9',
+            borderRadius: '8px',
+            padding: '16px',
+            backgroundColor: '#e6f7ff',
+            borderColor: '#1890ff'
+          }}>
+            <Space>
+              <CreditCardOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+              <div>
+                <Text strong>Pay Online</Text>
+                <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                  Secure payment via Razorpay
+                </div>
+              </div>
             </Space>
-          </Radio.Group>
+          </div>
         </div>
 
       </div>
