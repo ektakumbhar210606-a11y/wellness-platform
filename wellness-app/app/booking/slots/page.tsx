@@ -225,15 +225,6 @@ function BookingSlot() {
               {selectedSlot && (
                 <div style={{ marginTop: 24, textAlign: 'center' }}>
                   <Text>Selected slot: {selectedSlot.date} from {selectedSlot.startTime} to {selectedSlot.endTime}</Text>
-                  <div style={{ marginTop: 16 }}>
-                    <Button 
-                      type="primary" 
-                      size="large" 
-                      onClick={handleConfirmSelection}
-                    >
-                      Confirm Slot
-                    </Button>
-                  </div>
                 </div>
               )}
             </>

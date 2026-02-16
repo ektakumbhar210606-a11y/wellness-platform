@@ -163,7 +163,7 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
       type: String,
       trim: true,
       maxlength: [3, 'Currency code cannot exceed 3 characters'],
-      default: 'USD' // Default to USD
+      default: 'INR' // Default to INR
     }
   },
   openingTime: {
@@ -231,7 +231,7 @@ const BusinessSchema: Schema<IBusiness> = new Schema({
     type: String,
     trim: true,
     maxlength: [3, 'Currency code cannot exceed 3 characters'],
-    default: 'USD' // Default to USD
+    default: 'INR' // Default to INR
   },
   therapists: [{
     therapistId: {

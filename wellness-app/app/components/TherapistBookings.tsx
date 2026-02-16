@@ -379,7 +379,7 @@ const TherapistBookings: React.FC = () => {
                         <div style={{ marginLeft: 24, marginTop: 4 }}>
                           <Text type="secondary">
                             <DollarCircleOutlined style={{ marginRight: 4 }} />
-                            {formatCurrency(booking.service.price, booking.business?.address?.country || 'USA')} • {booking.service.duration} mins
+                            {formatCurrency(booking.service.price, booking.business?.address?.country || 'default')} • {booking.service.duration} mins
                           </Text>
                           {booking.business && (
                             <div>

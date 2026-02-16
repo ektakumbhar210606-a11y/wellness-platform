@@ -34,7 +34,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
-import { formatCurrency } from '../../utils/currencyFormatter';
+import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -527,7 +527,7 @@ const AssignedBookingsTracker: React.FC = () => {
                             <DollarCircleOutlined style={{ marginRight: 4 }} />
                             {businessInfo ? 
                               formatCurrency(booking.service.price, businessInfo.country) : 
-                              `$${booking.service.price}`
+                              `${getCurrencySymbol('default')}${booking.service.price}`
                             } • {booking.service.duration} mins
                           </Text>
                         </div>
@@ -746,10 +746,10 @@ const AssignedBookingsTracker: React.FC = () => {
             <Descriptions.Item label="Service Description">
               {selectedBooking.service.description}
             </Descriptions.Item>
-            <Descriptions.Item label="Service Price">
+            <Descriptions.Item label={`Service Price (${getCurrencySymbol(businessInfo?.country || 'default')})`}>
               {selectedBooking && businessInfo ? 
                 formatCurrency(selectedBooking.service.price, businessInfo.country) : 
-                `$${selectedBooking?.service.price || 0}`
+                `${getCurrencySymbol('default')}${selectedBooking?.service.price || 0}`
               }
             </Descriptions.Item>
             <Descriptions.Item label="Service Duration">

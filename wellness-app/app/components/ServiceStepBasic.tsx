@@ -1,7 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Select, Typography, Button } from 'antd';
-import { getCurrencySymbol } from '../../utils/currencyFormatter';
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -36,7 +35,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
   onPrev,
   current,
   totalSteps,
-  businessCountry = 'USA' // Default to USA if not provided
+  businessCountry = 'default' // Default to default if not provided
 }) => {
   const [form] = Form.useForm();
   const [serviceCategories, setServiceCategories] = useState<{id: string, name: string}[]>([]);
@@ -232,7 +231,7 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
         </Form.Item>
 
         <Form.Item 
-          label={`Price (${getCurrencySymbol(businessCountry)})`} 
+          label="Price (₹)" 
           name="price"
           rules={[
             { 
@@ -247,12 +246,12 @@ const ServiceStepBasic: React.FC<ServiceStepBasicProps> = ({
             { 
               type: 'number',
               max: 9999.99, 
-              message: `Price cannot exceed ${getCurrencySymbol(businessCountry)}9,999.99` 
+              message: 'Price cannot exceed ₹9,999.99' 
             }
           ]}
         >
           <InputNumber
-            placeholder={`Enter price in ${getCurrencySymbol(businessCountry)}`}
+            placeholder="Enter price in ₹"
             min={0}
             step={0.01}
             style={{ width: '100%' }}

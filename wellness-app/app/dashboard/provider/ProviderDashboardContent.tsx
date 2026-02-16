@@ -506,7 +506,7 @@ const ProviderDashboardContent = () => {
           city: formData.city || business?.address.city || 'Default City',
           state: formData.state,
           zipCode: formData.pincode,
-          country: formData.country || business?.address.country || 'USA',
+          country: formData.country || business?.address.country || 'default',
         },
         opening_time: formData.openingTime,
         closing_time: formData.closingTime,
@@ -670,7 +670,7 @@ const ProviderDashboardContent = () => {
                         value={dashboardStats?.totalRevenue || 0}
                         precision={2}
                         prefix={<DollarOutlined />}
-                        suffix="USD"
+                        suffix="INR"
                       />
                     )}
                   </Card>
@@ -699,7 +699,7 @@ const ProviderDashboardContent = () => {
                           <Col key={service.id} xs={24} sm={12} md={8} lg={6} xl={6}>
                             <ServiceCard
                               service={service}
-                              businessCountry={business?.address?.country || 'USA'} // Pass business country for currency formatting
+                              businessCountry={business?.address?.country || 'default'} // Pass business country for currency formatting
                               onEdit={(serviceData) => {
                                 setEditingService(serviceData);
                                 setModalVisible(true);
@@ -788,7 +788,7 @@ const ProviderDashboardContent = () => {
                         <Col key={service.id} xs={24} sm={12} md={8} lg={6} xl={6}>
                           <ServiceCard
                             service={service}
-                            businessCountry={business?.address?.country || 'USA'} // Pass business country for currency formatting
+                            businessCountry={business?.address?.country || 'default'} // Pass business country for currency formatting
                             onEdit={(serviceData) => {
                               setEditingService(serviceData);
                               setModalVisible(true);
@@ -1091,6 +1091,7 @@ const ProviderDashboardContent = () => {
         onSubmit={handleSubmitService}
         loading={submitting}
         editingService={editingService}
+        businessCountry={business?.address?.country || 'default'}
       />
       
       {/* Business Profile Edit Modal */}

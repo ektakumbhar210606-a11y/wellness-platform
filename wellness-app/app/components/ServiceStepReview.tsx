@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography, Descriptions, Tag, Space, Divider, Button } from 'antd';
-import { formatCurrency } from '../../utils/currencyFormatter';
+import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
 
 const { Title, Text } = Typography;
 
@@ -32,8 +32,8 @@ const ServiceStepReview: React.FC<ServiceStepReviewProps> = ({
           <Descriptions.Item label="Service Name">
             {formData.name || <Text type="secondary">Not provided</Text>}
           </Descriptions.Item>
-          <Descriptions.Item label="Price">
-            {formData.price !== undefined ? formatCurrency(formData.price, businessCountry || 'USA') : <Text type="secondary">Not provided</Text>}
+          <Descriptions.Item label={`Price (${getCurrencySymbol(businessCountry || 'default')})`}>
+            {formData.price !== undefined ? formatCurrency(formData.price, businessCountry || 'default') : <Text type="secondary">Not provided</Text>}
           </Descriptions.Item>
           <Descriptions.Item label="Duration">
             {formData.duration ? `${formData.duration} minutes` : <Text type="secondary">Not provided</Text>}

@@ -150,22 +150,7 @@ function BookingSlotSelector() {
     setSelectedSlot(slot);
   };
   
-  const handleConfirmSelection = () => {
-    if (!selectedSlot) {
-      message.warning('Please select a time slot first');
-      return;
-    }
-    
-    // Validate slot selection
-    if (!businessId || !serviceId || !therapistId) {
-      message.error('Missing required booking parameters');
-      return;
-    }
-    
-    // Navigate to booking confirmation page
-    // Pass: businessId, serviceId, therapistId, selectedSlot
-    router.push(`/booking/confirmation?businessId=${businessId}&serviceId=${serviceId}&therapistId=${therapistId}&startTime=${selectedSlot.startTime}&endTime=${selectedSlot.endTime}&date=${selectedSlot.date}`);
-  };
+
   
   const handleSendBookingRequest = async () => {
     if (!selectedSlot) {
@@ -395,13 +380,6 @@ function BookingSlotSelector() {
                 <div style={{ marginTop: 24, textAlign: 'center' }}>
                   <Text>Selected slot: {selectedSlot.date} from {selectedSlot.startTime} to {selectedSlot.endTime}</Text>
                   <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: '12px' }}>
-                    <Button 
-                      type="primary" 
-                      size="large" 
-                      onClick={handleConfirmSelection}
-                    >
-                      Confirm Slot
-                    </Button>
                     <Button 
                       type="default" 
                       size="large" 

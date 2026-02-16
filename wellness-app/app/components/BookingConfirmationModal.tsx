@@ -23,7 +23,7 @@ import {
   CreditCardOutlined,
   MoneyCollectOutlined
 } from '@ant-design/icons';
-import { formatCurrency } from '../../utils/currencyFormatter';
+import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
 
 const { Title, Text } = Typography;
@@ -363,10 +363,10 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
                     <DollarCircleOutlined style={{ marginRight: 8 }} />
-                    Price
+                    Price ({getCurrencySymbol(booking.business?.address?.country || 'default')})
                   </Text>
                   <Text type="success" strong>
-                    {formatCurrency(booking.service.price, booking.business?.address?.country || 'USA')}
+                    {formatCurrency(booking.service.price, booking.business?.address?.country || 'default')}
                   </Text>
                 </div>
               )}
