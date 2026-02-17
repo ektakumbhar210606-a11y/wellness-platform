@@ -237,7 +237,9 @@ export async function GET(req: NextRequest) {
             timestamp: booking.updatedAt || booking.createdAt,
             changedBy: 'system'
           }
-        ]
+        ],
+        // Add response visibility flag
+        responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly
       };
     }));
 

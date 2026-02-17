@@ -167,16 +167,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         throw new Error('Authentication token not found');
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/assigned-bookings/confirm/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          bookingId,
-          status: 'confirmed'
-        }),
+        }
       });
       
       const result = await response.json();
@@ -206,16 +202,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         throw new Error('Authentication token not found');
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/assigned-bookings/cancel/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          bookingId,
-          status: 'cancelled'
-        }),
+        }
       });
       
       const result = await response.json();

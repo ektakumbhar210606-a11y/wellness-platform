@@ -154,6 +154,7 @@ export async function PATCH(
       { 
         status: BookingStatus.Cancelled,
         therapistResponded: true, // Mark that therapist has responded
+        responseVisibleToBusinessOnly: true, // Therapist responses should only be visible to business
         // Track who cancelled and when
         cancelledBy: decoded.id,
         cancelledAt: new Date()

@@ -27,6 +27,7 @@ export interface IBooking extends Document {
   assignedById?: string; // ID of the admin who assigned the booking
   therapistResponded?: boolean; // Whether the therapist has responded to the assignment
   notificationDestination?: 'customer' | 'business'; // Who should receive notifications for this booking
+  responseVisibleToBusinessOnly?: boolean; // Whether therapist responses should only be visible to business (not customer)
   originalDate?: Date; // Original booking date (for tracking reschedules)
   originalTime?: string; // Original booking time (for tracking reschedules)
   rescheduledBy?: string; // ID of the user who rescheduled the booking (therapist or business)
@@ -104,6 +105,10 @@ const BookingSchema: Schema<IBooking> = new Schema({
     type: String,
     enum: ['customer', 'business'],
     default: 'customer' // By default, notifications go to customer
+  },
+  responseVisibleToBusinessOnly: {
+    type: Boolean,
+    default: false // By default, responses are visible to customer
   },
   originalDate: {
     type: Date, // Original booking date (for tracking reschedules)

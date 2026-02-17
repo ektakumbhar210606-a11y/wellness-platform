@@ -176,6 +176,7 @@ export async function PATCH(
     // Update the booking status to rescheduled
     updateData.status = BookingStatus.Rescheduled;
     updateData.therapistResponded = true; // Mark that therapist has responded
+    updateData.responseVisibleToBusinessOnly = true; // Therapist responses should only be visible to business
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,

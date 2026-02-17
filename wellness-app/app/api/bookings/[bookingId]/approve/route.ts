@@ -152,8 +152,26 @@ export async function POST(
       );
     }
 
-    // Update the booking status to confirmed
+    // Check if this is a business-assigned booking
+    const isBusinessAssigned = booking.assignedByAdmin === true;
+    
+    // Update the booking status to confirmed with proper visibility handling
     booking.status = BookingStatus.Confirmed;
+    
+    // For business-assigned bookings, therapist response should be visible to business only initially
+    // For direct customer bookings, response should be visible to customer immediately
+    if (isBusinessAssigned) {
+      booking.therapistResponded = true;
+      booking.responseVisibleToBusinessOnly = true; // Therapist responses should only be visible to business
+    } else {
+      booking.therapistResponded = false;
+      booking.responseVisibleToBusinessOnly = false; // Direct bookings are visible to customer
+    }
+    
+    // Track who confirmed and when
+    booking.confirmedBy = user.id;
+    booking.confirmedAt = new Date();
+    
     await booking.save();
 
     // Return success response

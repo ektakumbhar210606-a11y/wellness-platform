@@ -446,8 +446,17 @@ export async function PATCH(req: NextRequest) {
       updateData.cancelledAt = new Date();
     }
     
-    // Mark that therapist has responded (business confirming or cancelling the booking)
-    updateData.therapistResponded = true;
+    // Check if this is a business-assigned booking
+    if (booking.assignedByAdmin) {
+      // For business-assigned bookings, mark that therapist has responded
+      updateData.therapistResponded = true;
+      // Set response visibility to business only initially
+      updateData.responseVisibleToBusinessOnly = true;
+    } else {
+      // For direct customer bookings, make response visible to customer immediately
+      updateData.therapistResponded = false;
+      updateData.responseVisibleToBusinessOnly = false;
+    }
     
     // For rescheduled bookings, ensure we preserve the original date/time information
     // This maintains the distinction between the original customer request and current state

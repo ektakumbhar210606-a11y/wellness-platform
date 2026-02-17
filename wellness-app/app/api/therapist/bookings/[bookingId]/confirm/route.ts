@@ -153,6 +153,7 @@ export async function PATCH(
       { 
         status: BookingStatus.Confirmed,
         therapistResponded: true, // Mark that therapist has responded
+        responseVisibleToBusinessOnly: true, // Therapist responses should only be visible to business
         // Track who confirmed and when
         confirmedBy: decoded.id,
         confirmedAt: new Date()
