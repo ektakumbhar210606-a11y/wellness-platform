@@ -158,14 +158,19 @@ export async function POST(
     // Update the booking status to confirmed with proper visibility handling
     booking.status = BookingStatus.Confirmed;
     
-    // For business-assigned bookings, therapist response should be visible to business only initially
-    // For direct customer bookings, response should be visible to customer immediately
+    // For business-assigned bookings, they should go through the proper therapist -> business workflow
+    // Direct customer bookings are visible to customer immediately
     if (isBusinessAssigned) {
-      booking.therapistResponded = true;
-      booking.responseVisibleToBusinessOnly = true; // Therapist responses should only be visible to business
+      // Business-assigned bookings should NOT be directly approved
+      // They must go through therapist confirmation first, then business processing
+      return NextResponse.json(
+        { error: 'Business-assigned bookings must be processed through therapist confirmation workflow first' },
+        { status: 400 }
+      );
     } else {
+      // Direct customer bookings are visible to customer immediately
       booking.therapistResponded = false;
-      booking.responseVisibleToBusinessOnly = false; // Direct bookings are visible to customer
+      booking.responseVisibleToBusinessOnly = false;
     }
     
     // Track who confirmed and when

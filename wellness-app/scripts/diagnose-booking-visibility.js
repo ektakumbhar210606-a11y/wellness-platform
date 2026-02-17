@@ -1,4 +1,4 @@
-// Diagnostic script to check current booking state and visibility logic
+// Diagnostic script to check current booking visibility issues
 const mongoose = require('mongoose');
 
 // Load environment variables
@@ -21,7 +21,8 @@ const bookingSchema = new mongoose.Schema({
   therapistResponded: {
     type: Boolean,
     default: false
-  }
+  },
+  confirmedBy: String
 }, {
   timestamps: true
 });
@@ -36,72 +37,106 @@ async function diagnoseBookingVisibility() {
     await mongoose.connect(process.env.MONGODB_URI);
     
     console.log('Connected to database');
-    console.log('Diagnosing booking visibility issue...\n');
+    console.log('Diagnosing booking visibility issues...\n');
     
-    // Find recent bookings to analyze
-    const recentBookings = await Booking.find({})
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .select('status assignedByAdmin responseVisibleToBusinessOnly therapistResponded createdAt');
+    // Check 1: Find all confirmed bookings with responseVisibleToBusinessOnly = false
+    console.log('=== CHECK 1: Confirmed bookings visible to customers ===');
+    const visibleConfirmedBookings = await Booking.find({
+      status: 'confirmed',
+      responseVisibleToBusinessOnly: false
+    }).select('_id status assignedByAdmin therapistResponded confirmedBy createdAt');
     
-    console.log('=== RECENT BOOKINGS ANALYSIS ===\n');
-    
-    if (recentBookings.length === 0) {
-      console.log('No bookings found in database');
-      return;
-    }
-    
-    recentBookings.forEach((booking, index) => {
-      console.log(`Booking ${index + 1}:`);
-      console.log(`  ID: ${booking._id}`);
-      console.log(`  Status: ${booking.status}`);
-      console.log(`  Assigned by Admin: ${booking.assignedByAdmin}`);
-      console.log(`  Response Visible to Business Only: ${booking.responseVisibleToBusinessOnly}`);
-      console.log(`  Therapist Responded: ${booking.therapistResponded}`);
-      console.log(`  Created: ${booking.createdAt}`);
+    console.log(`Found ${visibleConfirmedBookings.length} confirmed bookings visible to customers:`);
+    visibleConfirmedBookings.forEach(booking => {
+      console.log(`  - ID: ${booking._id}`);
+      console.log(`    Status: ${booking.status}`);
+      console.log(`    Assigned by Admin: ${booking.assignedByAdmin}`);
+      console.log(`    Therapist Responded: ${booking.therapistResponded}`);
+      console.log(`    Confirmed By: ${booking.confirmedBy || 'N/A'}`);
+      console.log(`    Created: ${booking.createdAt}`);
       console.log('');
-      
-      // Check if this booking would be visible to customer
+    });
+    
+    // Check 2: Find bookings with undefined responseVisibleToBusinessOnly
+    console.log('=== CHECK 2: Bookings with undefined visibility flags ===');
+    const undefinedVisibilityBookings = await Booking.find({
+      responseVisibleToBusinessOnly: { $exists: false }
+    }).select('_id status assignedByAdmin createdAt');
+    
+    console.log(`Found ${undefinedVisibilityBookings.length} bookings with undefined visibility:`);
+    undefinedVisibilityBookings.forEach(booking => {
+      console.log(`  - ID: ${booking._id}`);
+      console.log(`    Status: ${booking.status}`);
+      console.log(`    Assigned by Admin: ${booking.assignedByAdmin}`);
+      console.log(`    Created: ${booking.createdAt}`);
+      console.log('');
+    });
+    
+    // Check 3: Find recent bookings that might be bypassing the workflow
+    console.log('=== CHECK 3: Recent confirmed bookings (last 24 hours) ===');
+    const recentConfirmed = await Booking.find({
+      status: 'confirmed',
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    }).select('_id status assignedByAdmin responseVisibleToBusinessOnly therapistResponded confirmedBy createdAt');
+    
+    console.log(`Found ${recentConfirmed.length} recent confirmed bookings:`);
+    recentConfirmed.forEach(booking => {
+      console.log(`  - ID: ${booking._id}`);
+      console.log(`    Status: ${booking.status}`);
+      console.log(`    Assigned by Admin: ${booking.assignedByAdmin}`);
+      console.log(`    Visible to Business Only: ${booking.responseVisibleToBusinessOnly}`);
+      console.log(`    Therapist Responded: ${booking.therapistResponded}`);
+      console.log(`    Confirmed By: ${booking.confirmedBy || 'N/A'}`);
+      console.log(`    Created: ${booking.createdAt}`);
+      console.log('');
+    });
+    
+    // Check 4: Test the filtering logic that customer dashboard uses
+    console.log('=== CHECK 4: Customer dashboard filtering simulation ===');
+    
+    // Get all bookings for a sample customer (or all bookings for analysis)
+    const allBookings = await Booking.find({}).limit(20).select('_id status responseVisibleToBusinessOnly');
+    
+    console.log('Booking visibility simulation for customer dashboard:');
+    allBookings.forEach(booking => {
       const isVisibleToCustomer = !booking.responseVisibleToBusinessOnly;
       const displayStatus = isVisibleToCustomer ? booking.status : 'pending';
-      const statusTag = isVisibleToCustomer ? '✅ VISIBLE' : '❌ HIDDEN';
+      const inRequestsTab = booking.responseVisibleToBusinessOnly || booking.status !== 'confirmed';
+      const inConfirmedTab = booking.status === 'confirmed' && !booking.responseVisibleToBusinessOnly;
       
-      console.log(`  Customer View: ${statusTag} (shows as "${displayStatus}")`);
-      console.log(`  Should be in Confirmed tab: ${isVisibleToCustomer && booking.status === 'confirmed' ? 'YES' : 'NO'}`);
+      console.log(`  - ID: ${booking._id}`);
+      console.log(`    Actual Status: ${booking.status}`);
+      console.log(`    Visible to Customer: ${isVisibleToCustomer ? 'YES' : 'NO'}`);
+      console.log(`    Display Status: "${displayStatus}"`);
+      console.log(`    In Requests Tab: ${inRequestsTab ? 'YES' : 'NO'}`);
+      console.log(`    In Confirmed Tab: ${inConfirmedTab ? 'YES' : 'NO'}`);
       console.log('');
     });
     
-    // Test the filtering logic that customer dashboard uses
-    console.log('=== CUSTOMER DASHBOARD FILTERING LOGIC TEST ===\n');
+    console.log('=== DIAGNOSIS COMPLETE ===');
     
-    const testBookings = [
-      { status: 'pending', responseVisibleToBusinessOnly: false, description: 'Normal pending booking' },
-      { status: 'confirmed', responseVisibleToBusinessOnly: false, description: 'Confirmed by business/customer' },
-      { status: 'confirmed', responseVisibleToBusinessOnly: true, description: 'Confirmed by therapist (should be hidden)' },
-      { status: 'cancelled', responseVisibleToBusinessOnly: true, description: 'Cancelled by therapist (should be hidden)' },
-      { status: 'rescheduled', responseVisibleToBusinessOnly: true, description: 'Rescheduled by therapist (should be hidden)' }
-    ];
+    // Summary
+    if (visibleConfirmedBookings.length > 0) {
+      console.log('🚨 ISSUE: Found confirmed bookings that are visible to customers');
+      console.log('   These should only be visible after business processing');
+    }
     
-    console.log('Booking Requests Filter (should show pending + hidden confirmed):');
-    testBookings.forEach(booking => {
-      const shouldShow = booking.responseVisibleToBusinessOnly || booking.status !== 'confirmed';
-      console.log(`  ${booking.description}: ${shouldShow ? '✅ SHOW' : '❌ HIDE'}`);
-    });
+    if (undefinedVisibilityBookings.length > 0) {
+      console.log('🚨 ISSUE: Found bookings with undefined visibility flags');
+      console.log('   These need to be corrected to ensure proper filtering');
+    }
     
-    console.log('\nConfirmed Bookings Filter (should only show visible confirmed):');
-    testBookings.forEach(booking => {
-      const shouldShow = booking.status === 'confirmed' && !booking.responseVisibleToBusinessOnly;
-      console.log(`  ${booking.description}: ${shouldShow ? '✅ SHOW' : '❌ HIDE'}`);
-    });
+    if (recentConfirmed.length > 0) {
+      console.log('⚠️  Found recent confirmed bookings - check if they follow proper workflow');
+    }
     
-    console.log('\n=== POTENTIAL ISSUE AREAS ===');
-    console.log('1. Check if responseVisibleToBusinessOnly is being set correctly in therapist routes');
-    console.log('2. Verify customer dashboard is using the updated filtering logic');
-    console.log('3. Ensure no other routes are bypassing the visibility logic');
-    console.log('4. Confirm business processing routes are setting responseVisibleToBusinessOnly = false');
+    if (visibleConfirmedBookings.length === 0 && undefinedVisibilityBookings.length === 0) {
+      console.log('✅ No immediate visibility issues found');
+      console.log('   The system appears to be working correctly');
+    }
     
   } catch (error) {
-    console.error('Error diagnosing booking visibility:', error);
+    console.error('❌ Error during diagnosis:', error);
     process.exit(1);
   } finally {
     await mongoose.connection.close();

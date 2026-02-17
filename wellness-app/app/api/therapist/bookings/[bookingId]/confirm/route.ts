@@ -147,11 +147,11 @@ export async function PATCH(
       );
     }
 
-    // Update booking status to confirmed
+    // Update booking status to therapist confirmed
     const bookingWithPopulatedData = await BookingModel.findByIdAndUpdate(
       bookingId,
       { 
-        status: BookingStatus.Confirmed,
+        status: BookingStatus.TherapistConfirmed,
         therapistResponded: true, // Mark that therapist has responded
         responseVisibleToBusinessOnly: true, // Therapist responses should only be visible to business
         // Track who confirmed and when
@@ -218,7 +218,7 @@ export async function PATCH(
 
     return Response.json({
       success: true,
-      message: 'Booking confirmed successfully',
+      message: 'Booking confirmed by therapist. Awaiting business approval.',
       data: {
         id: updatedBooking._id.toString(),
         customer: {

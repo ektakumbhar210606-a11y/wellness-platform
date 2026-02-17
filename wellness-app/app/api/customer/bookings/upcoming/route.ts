@@ -111,10 +111,11 @@ export async function GET(request: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of today for date comparison
 
-    const query: { customer: string; date: { $gte: Date }; status: string } = {
+    const query: { customer: string; date: { $gte: Date }; status: string; responseVisibleToBusinessOnly?: { $ne: boolean } } = {
       customer: customerId,
       date: { $gte: today },
-      status: 'confirmed'
+      status: 'confirmed',
+      responseVisibleToBusinessOnly: { $ne: true } // Only show confirmed bookings that are visible to customers
     };
 
     // Fetch upcoming bookings with populated data

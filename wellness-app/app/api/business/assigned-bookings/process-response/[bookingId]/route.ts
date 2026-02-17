@@ -139,25 +139,40 @@ export async function PATCH(
       );
     }
 
-    // Check if booking is in therapist confirmed status
-    if (booking.status !== BookingStatus.TherapistConfirmed) {
+    // Check if booking is in therapist confirmed or therapist rejected status
+    if (booking.status !== BookingStatus.TherapistConfirmed && booking.status !== BookingStatus.TherapistRejected) {
       return Response.json(
-        { success: false, error: 'Only therapist confirmed bookings can be approved by business' },
+        { success: false, error: 'Only therapist confirmed or rejected bookings can be processed by business' },
         { status: 400 }
       );
     }
 
-    // Update booking status from therapist_confirmed to confirmed
+    // Parse request body for additional options
+    const body = await req.json();
+    const { action } = body; // Options: 'reject_with_customer_notification', 'revert_to_pending_for_reassignment'
+
+    let updateData: any = {
+      therapistResponded: true, // Mark that therapist has responded
+      confirmedBy: decoded.id,
+      confirmedAt: new Date()
+    };
+
+    if (action === 'revert_to_pending') {
+      // Revert to pending so it can be reassigned to another therapist
+      updateData.status = BookingStatus.Pending;
+      updateData.responseVisibleToBusinessOnly = false; // So customer knows it's being worked on again
+      updateData.assignedByAdmin = false; // Clear assignment so it can be reassigned
+      updateData.assignedById = undefined;
+      updateData.therapist = null; // Clear therapist assignment
+    } else {
+      // Default action: reject the therapist's response and make visible to customer
+      updateData.status = BookingStatus.Cancelled; // Or we could set it to a specific rejected status
+      updateData.responseVisibleToBusinessOnly = false; // Make response visible to customer so they know the status
+    }
+
     const bookingWithPopulatedData = await BookingModel.findByIdAndUpdate(
       bookingId,
-      { 
-        status: BookingStatus.Confirmed,
-        therapistResponded: true, // Mark that therapist has responded
-        responseVisibleToBusinessOnly: false, // Make response visible to customer
-        // Track who confirmed and when
-        confirmedBy: decoded.id,
-        confirmedAt: new Date()
-      },
+      updateData,
       { new: true, runValidators: true }
     )
     .populate({
@@ -214,18 +229,28 @@ export async function PATCH(
       }
     }
 
-    // Send notification based on notification destination
+    // Send notification based on the action
     try {
       const notificationService = new NotificationService();
-      await notificationService.sendBookingNotification(bookingId, 'confirm');
+      if (action === 'revert_to_pending') {
+        // Send notification about reassignment
+        await notificationService.sendBookingNotification(bookingId, 'reschedule');
+      } else {
+        // Send cancellation notification
+        await notificationService.sendBookingNotification(bookingId, 'cancel');
+      }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
       // Continue with response even if notification fails
     }
 
+    const actionMessage = action === 'revert_to_pending' 
+      ? 'Booking reverted to pending for reassignment' 
+      : 'Therapist response processed and customer notified';
+
     return Response.json({
       success: true,
-      message: 'Booking approved and confirmed for customer',
+      message: actionMessage,
       data: {
         id: updatedBooking._id.toString(),
         customer: {
@@ -257,7 +282,7 @@ export async function PATCH(
     });
 
   } catch (error: unknown) {
-    console.error('Error confirming booking:', error);
+    console.error('Error processing therapist response:', error);
     return Response.json(
       { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
       { status: 500 }

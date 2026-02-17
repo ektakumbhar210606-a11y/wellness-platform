@@ -145,8 +145,8 @@ export async function GET(req: NextRequest) {
     // This ensures businesses can track all pending requests and rescheduled bookings
     // Both assigned and unassigned bookings should appear for proper business tracking
     if (status === 'pending' || (!status && !query.status)) {
-      query.status = { $in: ['pending', 'rescheduled'] }; // Include both pending and rescheduled bookings
-      console.log('Querying for all pending and rescheduled bookings (both assigned and unassigned)');
+      query.status = { $in: ['pending', 'rescheduled', 'therapist_confirmed', 'therapist_rejected'] }; // Include both pending and rescheduled bookings, plus therapist responses
+      console.log('Querying for all pending, rescheduled, and therapist response bookings (both assigned and unassigned)');
     }
     
     // Explicitly ensure that the query includes both assigned and unassigned bookings

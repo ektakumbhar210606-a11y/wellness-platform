@@ -92,21 +92,15 @@ export async function POST(req: NextRequest) {
         await payment.save();
 
         // Update Booking Status
-        // Check if this is a business-assigned booking
-        if (booking.assignedByAdmin) {
-          // For business-assigned bookings, set response visibility to business only
-          booking.status = 'confirmed';
-          booking.confirmedAt = new Date();
-          booking.confirmedBy = booking.customer.toString();
-          booking.responseVisibleToBusinessOnly = true;
-          booking.therapistResponded = true;
-        } else {
-          // For direct customer bookings, make response visible to customer immediately
-          booking.status = 'confirmed';
-          booking.confirmedAt = new Date();
-          booking.confirmedBy = booking.customer.toString();
-          booking.responseVisibleToBusinessOnly = false;
-        }
+        // For cash payments, the customer is confirming their own booking
+        // This should follow normal customer booking flow, not therapist response flow
+        booking.status = 'confirmed';
+        booking.confirmedAt = new Date();
+        booking.confirmedBy = booking.customer.toString();
+        // Cash payments by customers should be visible to customers immediately
+        // Only therapist responses should be hidden from customers initially
+        booking.responseVisibleToBusinessOnly = false;
+        booking.therapistResponded = false;
         await booking.save();
 
         return NextResponse.json({

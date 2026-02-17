@@ -45,22 +45,22 @@ interface DashboardStats {
 }
 
 interface UpcomingBooking {
-  _id: string;
+  id: string;
   service: {
+    id: string;
     name: string;
     description?: string;
     price?: number;
     duration?: number;
   } | null;
   business: {
-    business_name: string;
-    location?: string;
-    address?: {
-      country: string;
-    };
+    id: string;
+    name: string;
+    address?: string;
     currency?: string;
   } | null;
   therapist: {
+    id: string;
     fullName: string;
     professionalTitle?: string;
   } | null;
@@ -357,26 +357,28 @@ const CustomerDashboardContent = () => {
                 ) : upcomingBookings.length > 0 ? (
                   <div>
                     {upcomingBookings.map((booking) => (
-                      <div key={booking._id} style={{ marginBottom: '12px' }}>
+                      <div key={booking.id} style={{ marginBottom: '12px' }}>
                         <CustomerUpcomingAppointmentCard
                           appointment={{
-                            id: booking._id,
+                            id: booking.id,
                             service: booking.service ? {
-                              id: booking._id,
+                              id: booking.service.id,
                               name: booking.service.name,
                               price: booking.service.price || 0,
                               duration: booking.service.duration || 60,
                               description: booking.service.description || ''
                             } : null,
                             therapist: booking.therapist ? {
-                              id: booking._id,
+                              id: booking.therapist.id,
                               fullName: booking.therapist.fullName,
                               professionalTitle: booking.therapist.professionalTitle || ''
                             } : null,
                             business: booking.business ? {
-                              id: booking._id,
-                              name: booking.business.business_name,
-                              address: booking.business.address,
+                              id: booking.business.id,
+                              name: booking.business.name,
+                              address: booking.business.address ? {
+                                country: booking.business.address
+                              } : undefined,
                               currency: booking.business.currency
                             } : null,
                             date: new Date(booking.date),
@@ -409,7 +411,7 @@ const CustomerDashboardContent = () => {
       </Content>
     </Layout>
   </Layout>
-  );
+);
 };
 
 export default CustomerDashboardContent;

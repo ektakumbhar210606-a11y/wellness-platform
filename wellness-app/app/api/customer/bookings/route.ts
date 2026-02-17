@@ -5,6 +5,7 @@ import UserModel from '../../../../models/User';
 import ServiceModel, { IService } from '../../../../models/Service';
 import TherapistModel, { ITherapist } from '../../../../models/Therapist';
 import BusinessModel, { IBusiness } from '../../../../models/Business';
+import PaymentModel from '../../../../models/Payment';
 import * as jwt from 'jsonwebtoken';
 import { formatBookingId } from '../../../../utils/bookingIdFormatter';
 import { Types } from 'mongoose';
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // Optional status filter
     const skip = (page - 1) * limit;
 
-    // Build query for all bookings
+    // Build query for customer bookings - show all bookings for the customer
     const query: { customer: string; status?: string } = {
       customer: customerId
     };
@@ -169,10 +170,16 @@ export async function GET(request: NextRequest) {
     const total = await BookingModel.countDocuments(query);
 
     // Format the bookings for the response
-    const formattedBookings = populatedBookings.map(booking => {
+    const formattedBookings = await Promise.all(populatedBookings.map(async (booking) => {
       const service = booking.service as IService;
       const therapist = booking.therapist as ITherapist;
       const business = service?.business as IBusiness;
+
+      // Check if there's a completed payment for this booking
+      const payment = await PaymentModel.findOne({ 
+        booking: booking._id, 
+        status: 'completed' 
+      }).lean();
 
       return {
         id: booking._id.toString(),
@@ -204,9 +211,17 @@ export async function GET(request: NextRequest) {
         updatedAt: booking.updatedAt,
         originalDate: booking.originalDate,
         originalTime: booking.originalTime,
-        hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime
+        hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime,
+        responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly,
+        paymentStatus: payment ? 'completed' : 'pending',
+        confirmedBy: booking.confirmedBy,
+        confirmedAt: booking.confirmedAt,
+        cancelledBy: booking.cancelledBy,
+        cancelledAt: booking.cancelledAt,
+        rescheduledBy: booking.rescheduledBy,
+        rescheduledAt: booking.rescheduledAt
       };
-    });
+    }));
 
     // Return clean JSON response with bookings and pagination info
     return NextResponse.json({

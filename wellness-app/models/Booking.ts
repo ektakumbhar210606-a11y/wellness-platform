@@ -6,6 +6,8 @@ import { IService } from './Service'; // Import the Service interface
 // Define the possible status values for a booking
 export enum BookingStatus {
   Pending = 'pending',
+  TherapistConfirmed = 'therapist_confirmed',
+  TherapistRejected = 'therapist_rejected',
   Confirmed = 'confirmed',
   Completed = 'completed',
   Cancelled = 'cancelled',
@@ -75,8 +77,8 @@ const BookingSchema: Schema<IBooking> = new Schema({
   status: {
     type: String,
     enum: {
-      values: ['pending', 'confirmed', 'completed', 'cancelled', 'no-show', 'rescheduled'],
-      message: 'Status must be either pending, confirmed, completed, cancelled, no-show, or rescheduled'
+      values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'completed', 'cancelled', 'no-show', 'rescheduled'],
+      message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, completed, cancelled, no-show, or rescheduled'
     },
     default: BookingStatus.Pending
   },

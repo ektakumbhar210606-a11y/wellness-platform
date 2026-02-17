@@ -111,33 +111,32 @@ export async function GET(req: NextRequest) {
     const businessServices = await ServiceModel.find({ business: business._id }).select('_id');
     const serviceIds = businessServices.map((service: IService) => service._id);
 
-    // Build query for assigned bookings
-    const query: {
-      service: { $in: Types.ObjectId[] };
-      assignedByAdmin: boolean;
-      therapist?: { $exists: boolean; $ne: null } | string;
-      therapistResponded: boolean;
-      status?: string;
-    } = {
+    // Build query for assigned bookings - show therapist responses (confirmed/rejected)
+    const query: any = {
       service: { $in: serviceIds },
-      assignedByAdmin: true,  // Only bookings explicitly assigned by admin
-      therapistResponded: true  // Only bookings where therapist has responded
+      assignedByAdmin: true  // Only bookings explicitly assigned by admin
     };
-
+        
     // Only add therapist filter if not filtering by specific therapist
     if (!therapistId) {
       query.therapist = { $exists: true, $ne: null };  // Only bookings with assigned therapist
     }
-
-    // Filter by status if provided
-    if (status && ['pending', 'confirmed', 'cancelled', 'rescheduled'].includes(status)) {
+    
+    // Filter for therapist response statuses by default, but allow override
+    if (status && ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'cancelled', 'rescheduled'].includes(status)) {
       query.status = status;
+    } else if (status === 'all') {
+      // If specifically requesting all, show all statuses
+      query.status = { $in: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'cancelled', 'rescheduled'] };
+    } else {
+      // Default to showing therapist responses
+      query.status = { $in: ['therapist_confirmed', 'therapist_rejected'] };
     }
-
+        
     // Filter by specific therapist if provided
     if (therapistId) {
       query.therapist = therapistId;
-    }
+    };
 
     console.log('Assigned bookings query:', JSON.stringify(query, null, 2));
 
@@ -260,10 +259,12 @@ export async function GET(req: NextRequest) {
         },
         summary: {
           totalAssigned: total,
-          pending: await BookingModel.countDocuments({ ...query, status: 'pending' }),
-          confirmed: await BookingModel.countDocuments({ ...query, status: 'confirmed' }),
-          cancelled: await BookingModel.countDocuments({ ...query, status: 'cancelled' }),
-          rescheduled: await BookingModel.countDocuments({ ...query, status: 'rescheduled' })
+          therapistConfirmed: await BookingModel.countDocuments({ service: { $in: serviceIds }, assignedByAdmin: true, status: 'therapist_confirmed' }),
+          therapistRejected: await BookingModel.countDocuments({ service: { $in: serviceIds }, assignedByAdmin: true, status: 'therapist_rejected' }),
+          confirmed: await BookingModel.countDocuments({ service: { $in: serviceIds }, assignedByAdmin: true, status: 'confirmed' }),
+          pending: await BookingModel.countDocuments({ service: { $in: serviceIds }, assignedByAdmin: true, status: 'pending' }),
+          cancelled: await BookingModel.countDocuments({ service: { $in: serviceIds }, assignedByAdmin: true, status: 'cancelled' }),
+          rescheduled: await BookingModel.countDocuments({ service: { $in: serviceIds }, assignedByAdmin: true, status: 'rescheduled' })
         }
       }
     });
