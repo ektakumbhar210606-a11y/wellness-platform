@@ -32,6 +32,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
+import { shouldRestrictReschedule } from '@/app/utils/bookingTimeUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
