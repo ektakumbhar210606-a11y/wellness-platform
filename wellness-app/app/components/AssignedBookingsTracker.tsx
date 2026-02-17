@@ -35,6 +35,7 @@ import {
 import dayjs from 'dayjs';
 import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
 import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
+import { shouldRestrictReschedule } from '@/app/utils/bookingTimeUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -655,7 +656,7 @@ const AssignedBookingsTracker: React.FC = () => {
                         Confirm
                       </Button>
                     )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
+                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && !shouldRestrictReschedule(booking.date, booking.time, 'business') && (
                       <Button 
                         size="small"
                         onClick={async () => {

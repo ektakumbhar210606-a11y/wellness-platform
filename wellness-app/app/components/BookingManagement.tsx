@@ -15,6 +15,7 @@ import {
   Descriptions
 } from 'antd';
 import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
+import { shouldRestrictReschedule } from '../utils/bookingTimeUtils';
 import { 
   CheckCircleOutlined, 
   ClockCircleOutlined, 
@@ -411,14 +412,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
           >
             {record.hasBeenRescheduled ? 'Confirm Original Request' : 'Confirm Request'}
           </Button>
-          <Button 
-            type="default"
-            size="small"
-            loading={actionLoading === record.id}
-            onClick={() => handleRescheduleBooking(record)}
-          >
-            {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
-          </Button>
+          {!shouldRestrictReschedule(record.date, record.time, 'business') && (
+            <Button 
+              type="default"
+              size="small"
+              loading={actionLoading === record.id}
+              onClick={() => handleRescheduleBooking(record)}
+            >
+              {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
+            </Button>
+          )}
           <Button 
             danger 
             size="small"
