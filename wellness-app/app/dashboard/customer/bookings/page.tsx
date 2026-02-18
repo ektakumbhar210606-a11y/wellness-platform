@@ -576,6 +576,7 @@ const CustomerBookingsPage = () => {
         onCancel={() => setCancelModalVisible(false)}
         okText="Yes, Cancel"
         cancelText="No, Keep Booking"
+        destroyOnHidden
       >
         <p>Are you sure you want to cancel the booking for <strong>{bookingToCancel?.service?.name || 'N/A'}</strong> on {bookingToCancel?.date ? new Date(bookingToCancel.date).toLocaleDateString() : 'N/A'} at {formatTimeTo12Hour(bookingToCancel?.time || '')}?</p>
         <p>Please note that cancellation policies may apply depending on how far in advance you cancel.</p>
@@ -602,7 +603,7 @@ const CustomerBookingsPage = () => {
           </Button>
         ]}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         {loadingDetails ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
