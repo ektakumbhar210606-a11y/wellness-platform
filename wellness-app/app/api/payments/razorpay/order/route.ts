@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Calculate advance amount (50% of total)
+        const advanceAmount = Math.round(amount * 0.5);
+
         // Initialize Razorpay inside the handler to gracefully handle missing keys
         // or environment loading issues
         const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -47,7 +50,7 @@ export async function POST(req: NextRequest) {
                 success: true,
                 order: {
                     id: `order_mock_${Date.now()}`,
-                    amount: Math.round(amount * 100),
+                    amount: Math.round(advanceAmount * 100), // Send only advance amount to Razorpay
                     currency: 'INR',
                 },
                 key: 'rzp_test_mock_key',
@@ -62,7 +65,7 @@ export async function POST(req: NextRequest) {
 
         // Create Razorpay order
         const options = {
-            amount: Math.round(amount * 100), // amount in the smallest currency unit (paise)
+            amount: Math.round(advanceAmount * 100), // Send only advance amount to Razorpay (in paise)
             currency: 'INR',
             receipt: `receipt_${bookingId}`,
             payment_capture: 1, // Auto capture
@@ -74,6 +77,8 @@ export async function POST(req: NextRequest) {
             success: true,
             order,
             key: key_id,
+            advanceAmount, // Return the calculated advance amount for reference
+            totalAmount: amount // Return the total amount for reference
         });
 
     } catch (error: unknown) {

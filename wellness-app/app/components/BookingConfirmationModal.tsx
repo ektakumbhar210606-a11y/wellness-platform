@@ -77,7 +77,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId: booking.id,
-          amount: amount
+          amount: booking.service?.price || amount // Send total amount for calculation, not advance
         })
       });
 
@@ -100,7 +100,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 razorpay_payment_id: `pay_mock_${Date.now()}`,
                 razorpay_signature: 'mock_signature',
                 bookingId: booking.id,
-                amount: amount,
+                amount: amount, // This is the advance amount
                 customerData: {
                   fullName: values.fullName,
                   email: values.email,
@@ -145,7 +145,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
                 bookingId: booking.id,
-                amount: amount,
+                amount: amount, // This is the advance amount
                 customerData: {
                   fullName: values.fullName,
                   email: values.email,
@@ -198,8 +198,9 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
       const values = await form.validateFields();
       setIsProcessing(true);
 
-      const amount = booking.service?.price || 0;
-      await processRazorpayPayment(amount, values);
+      const totalAmount = booking.service?.price || 0;
+      const advanceAmount = totalAmount * 0.5; // 50% advance
+      await processRazorpayPayment(advanceAmount, values);
 
     } catch (error: any) {
       console.error('Validation Error:', error);
@@ -328,11 +329,22 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
                     <DollarCircleOutlined style={{ marginRight: 8 }} />
-                    Price ({getCurrencySymbol(booking.business?.address?.country || 'default')})
+                    Payment Summary
                   </Text>
-                  <Text type="success" strong>
-                    {formatCurrency(booking.service.price, booking.business?.address?.country || 'default')}
-                  </Text>
+                  <div style={{ paddingLeft: 20 }}>
+                    <div style={{ marginBottom: 4 }}>
+                      <Text>Total: </Text>
+                      <Text strong>{formatCurrency(booking.service.price, booking.business?.address?.country || 'default')}</Text>
+                    </div>
+                    <div style={{ marginBottom: 4 }}>
+                      <Text>Advance (50%): </Text>
+                      <Text strong type="success">{formatCurrency(booking.service.price * 0.5, booking.business?.address?.country || 'default')}</Text>
+                    </div>
+                    <div>
+                      <Text>Remaining at Venue: </Text>
+                      <Text strong>{formatCurrency(booking.service.price * 0.5, booking.business?.address?.country || 'default')}</Text>
+                    </div>
+                  </div>
                 </div>
               )}
             </Space>

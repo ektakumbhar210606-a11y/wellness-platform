@@ -119,12 +119,21 @@ export async function POST(req: NextRequest) {
             await customer.save();
         }
 
+        // Calculate partial payment amounts
+        const totalAmount = booking.service?.price || amount;
+        const advancePaid = amount; // The amount paid via Razorpay
+        const remainingAmount = Math.max(0, totalAmount - advancePaid); // Remaining amount to be paid at venue
+
         // Create Payment Record
         const payment = new PaymentModel({
             booking: bookingId,
-            amount: amount,
+            amount: advancePaid, // Amount paid as advance
+            totalAmount: totalAmount, // Total service amount
+            advancePaid: advancePaid, // Amount paid as advance
+            remainingAmount: remainingAmount, // Remaining amount to be paid at venue
+            paymentType: 'ADVANCE', // Mark as advance payment
             method: PaymentMethod.CreditCard, // Razorpay
-            status: PaymentStatus.Completed,
+            status: PaymentStatus.Completed, // Advance payment completed
             paymentDate: new Date()
         });
         await payment.save();

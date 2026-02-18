@@ -22,7 +22,11 @@ export enum PaymentStatus {
 // Define the interface for the Payment document
 export interface IPayment extends Document {
   booking: IBooking['_id'] | IBooking; // Reference to Booking model
-  amount: number; // Payment amount
+  amount: number; // Payment amount (advance portion)
+  totalAmount: number; // Total service amount
+  advancePaid: number; // Amount paid as advance
+  remainingAmount: number; // Remaining amount to be paid at venue
+  paymentType: 'FULL' | 'ADVANCE'; // Type of payment
   method: PaymentMethod; // Payment method
   status: PaymentStatus; // Status of the payment
   paymentDate?: Date; // Date when payment was processed (optional)
@@ -41,6 +45,30 @@ const PaymentSchema: Schema<IPayment> = new Schema({
     type: Number,
     required: [true, 'Amount is required'],
     min: [0, 'Amount cannot be negative']
+  },
+  totalAmount: {
+    type: Number,
+    required: [true, 'Total amount is required'],
+    min: [0, 'Total amount cannot be negative']
+  },
+  advancePaid: {
+    type: Number,
+    required: [true, 'Advance paid amount is required'],
+    min: [0, 'Advance paid amount cannot be negative']
+  },
+  remainingAmount: {
+    type: Number,
+    required: [true, 'Remaining amount is required'],
+    min: [0, 'Remaining amount cannot be negative']
+  },
+  paymentType: {
+    type: String,
+    required: [true, 'Payment type is required'],
+    enum: {
+      values: ['FULL', 'ADVANCE'],
+      message: 'Payment type must be either FULL or ADVANCE'
+    },
+    default: 'FULL'
   },
   method: {
     type: String,
