@@ -423,10 +423,10 @@ export async function PATCH(req: NextRequest) {
 
 
 
-    // Check if booking can be updated (only pending bookings can be confirmed/cancelled)
-    if (booking.status !== 'pending') {
+    // Check if booking can be updated (only pending or therapist_confirmed bookings can be confirmed/cancelled)
+    if (booking.status !== 'pending' && booking.status !== 'therapist_confirmed') {
       return Response.json(
-        { success: false, error: 'Only pending bookings can be confirmed or cancelled' },
+        { success: false, error: 'Only pending or therapist confirmed bookings can be confirmed or cancelled' },
         { status: 400 }
       );
     }

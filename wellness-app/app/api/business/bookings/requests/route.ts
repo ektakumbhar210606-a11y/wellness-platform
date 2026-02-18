@@ -68,8 +68,10 @@ export async function GET(req: NextRequest) {
 
     const bookings = await Booking.find({
       service: { $in: serviceIds },
-      status: BookingStatus.Pending,
-      therapist: null,
+      $or: [
+        { status: BookingStatus.Pending, therapist: null },
+        { status: BookingStatus.TherapistConfirmed }
+      ]
     })
       .populate({
         path: 'customer',

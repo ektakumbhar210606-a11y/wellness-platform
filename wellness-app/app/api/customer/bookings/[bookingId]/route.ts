@@ -78,7 +78,11 @@ export async function GET(
     }
 
     // Find and populate booking data
-    const booking = await BookingModel.findById(bookingId)
+    // Only fetch bookings that are visible to customers (not just business)
+    const booking = await BookingModel.findOne({
+      _id: bookingId,
+      responseVisibleToBusinessOnly: { $ne: true }
+    })
       .populate({
         path: 'service',
         select: 'name price duration description business'

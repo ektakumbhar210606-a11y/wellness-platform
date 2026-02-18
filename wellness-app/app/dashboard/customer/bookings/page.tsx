@@ -125,49 +125,40 @@ const CustomerBookingsPage = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string, record: any) => {
-        // Display status based on business response type and visibility
+        // Display status based on three-stage workflow
         let displayStatus = status;
-        let color = 'green';
+        let color = 'orange'; // Default to pending/orange
         
-        // Check if this is a therapist response that should be hidden
-        const isHiddenTherapistResponse = record.therapistResponded === true && 
-                                         record.responseVisibleToBusinessOnly === true &&
-                                         record.status === 'confirmed';
-        
-        // If it's a hidden therapist response, don't show it (should be filtered out anyway)
-        if (isHiddenTherapistResponse) {
-          displayStatus = 'Processing';
-          color = 'orange';
+        // Stage 1: Therapist confirmed, waiting for business
+        if (record.status === 'therapist_confirmed' && record.responseVisibleToBusinessOnly === true) {
+          displayStatus = 'Therapist Confirmed';
+          color = 'blue';
         }
-        // Determine the type of business response
-        else if (record.confirmedBy && record.confirmedAt && record.paymentStatus === 'pending') {
-          displayStatus = 'Business Confirmed';
-          color = 'blue';
-        } else if (record.cancelledBy && record.cancelledAt && record.paymentStatus === 'pending') {
-          displayStatus = 'Business Cancelled';
-          color = 'red';
-        } else if (record.rescheduledBy && record.rescheduledAt && record.paymentStatus === 'pending') {
-          displayStatus = 'Business Rescheduled';
+        // Stage 2: Business confirmed, waiting for customer payment
+        else if (record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'pending') {
+          displayStatus = 'Ready for Payment';
           color = 'gold';
-        } else if (record.responseVisibleToBusinessOnly && record.paymentStatus === 'pending') {
-          displayStatus = 'Business Response';
-          color = 'blue';
-        } else if (status === 'cancelled') {
+        }
+        // Stage 3: Payment completed
+        else if (record.status === 'confirmed' && record.paymentStatus === 'completed') {
+          displayStatus = 'Confirmed';
+          color = 'green';
+        }
+        // Other statuses
+        else if (status === 'cancelled') {
           color = 'red';
-        } else if (status === 'confirmed') {
-          color = 'blue';
         } else if (status === 'completed') {
           color = 'gray';
         } else if (status === 'rescheduled') {
           color = 'gold';
-        } else {
+        } else if (status === 'pending') {
           color = 'orange';
         }
     
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
             {displayStatus}
-            {(record.confirmedBy || record.cancelledBy || record.rescheduledBy || record.responseVisibleToBusinessOnly) && record.paymentStatus === 'pending' && (
+            {record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'pending' && (
               <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.7 }}>
                 (Awaiting Payment)
               </span>
@@ -298,23 +289,34 @@ const CustomerBookingsPage = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string, record: any) => {
-        // If therapist response should only be visible to business, show the original status
-        const displayStatus = record.responseVisibleToBusinessOnly ? 'pending' : status;
+        // Display status based on three-stage workflow
+        let displayStatus = status;
         let color = 'blue';
-        if (displayStatus === 'cancelled') color = 'red';
-        if (displayStatus === 'pending') color = 'orange';
-        if (displayStatus === 'confirmed') color = 'blue';
-        if (displayStatus === 'completed') color = 'gray';
-        if (displayStatus === 'rescheduled') color = 'gold';
+        
+        // Stage 1: Therapist confirmed, waiting for business
+        if (record.status === 'therapist_confirmed' && record.responseVisibleToBusinessOnly === true) {
+          displayStatus = 'Therapist Confirmed';
+          color = 'blue';
+        }
+        // Stage 2: Business confirmed, waiting for customer payment
+        else if (record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'pending') {
+          displayStatus = 'Ready for Payment';
+          color = 'gold';
+        }
+        // Stage 3: Payment completed
+        else if (record.status === 'confirmed' && record.paymentStatus === 'completed') {
+          displayStatus = 'Confirmed';
+          color = 'green';
+        }
+        // Other statuses
+        else if (status === 'cancelled') color = 'red';
+        else if (status === 'pending') color = 'orange';
+        else if (status === 'completed') color = 'gray';
+        else if (status === 'rescheduled') color = 'gold';
 
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
             {displayStatus}
-            {record.responseVisibleToBusinessOnly && (
-              <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.7 }}>
-                (Processing)
-              </span>
-            )}
           </Tag>
         );
       },
@@ -324,17 +326,10 @@ const CustomerBookingsPage = () => {
       key: 'actions',
       render: (record: any) => (
         <Space size="small" wrap>
-          {/* Show different actions based on whether therapist response should be visible to business only */}
-          {record.responseVisibleToBusinessOnly ? (
+          {/* Show different actions based on the booking stage */}
+          {record.status === 'therapist_confirmed' && record.responseVisibleToBusinessOnly === true ? (
+            // Stage 1: Therapist confirmed, waiting for business - show limited actions
             <>
-              {!shouldRestrictReschedule(record.date, record.time, 'customer') && (
-                <Button
-                  size="small"
-                  onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
-                >
-                  Reschedule
-                </Button>
-              )}
               <Button
                 size="small"
                 type="default"
@@ -351,7 +346,37 @@ const CustomerBookingsPage = () => {
                 View Details
               </Button>
             </>
+          ) : record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'pending' ? (
+            // Stage 2: Business confirmed, waiting for customer payment
+            <>
+              <Button
+                size="small"
+                type="primary"
+                onClick={() => {
+                  setBookingToConfirm(record);
+                  setConfirmModalVisible(true);
+                }}
+              >
+                Confirm Payment
+              </Button>
+              <Button
+                size="small"
+                type="default"
+                onClick={() => router.push(`/bookings/${record.id}/details`)}
+              >
+                View Details
+              </Button>
+              {!shouldRestrictReschedule(record.date, record.time, 'customer') && (
+                <Button
+                  size="small"
+                  onClick={() => router.push(`/bookings/${record.id}/reschedule`)}
+                >
+                  Reschedule
+                </Button>
+              )}
+            </>
           ) : (
+            // Stage 3: Payment completed or other status - show normal actions
             <>
               {record.status !== 'cancelled' && (
                 <>
@@ -382,13 +407,6 @@ const CustomerBookingsPage = () => {
               </Button>
             </>
           )}
-          <Button
-            size="small"
-            type="default"
-            onClick={() => showBookingDetails(record)}
-          >
-            View Details
-          </Button>
         </Space>
       ),
     },
@@ -481,36 +499,32 @@ const CustomerBookingsPage = () => {
     return null; // Or render a redirect message
   }
 
-  // Filter bookings based on active tab - only show bookings with business responses
+  // Filter bookings based on active tab - implement three-stage workflow
   const bookingRequests = bookings.filter(booking => {
-    // Only show bookings that have received a business response (confirm, cancel, or reschedule)
-    // AND are not therapist responses that should be hidden from customers
-    const hasBusinessResponse = booking.responseVisibleToBusinessOnly === true ||
-                               (booking.confirmedBy && booking.confirmedAt) ||
-                               (booking.cancelledBy && booking.cancelledAt) ||
-                               (booking.rescheduledBy && booking.rescheduledAt);
+    // Stage 1: Therapist confirms booking (status: therapist_confirmed, responseVisibleToBusinessOnly: true)
+    // Stage 2: Business confirms therapist's response (status: confirmed, responseVisibleToBusinessOnly: false)
+    // Stage 3: Customer confirms payment (paymentStatus: completed)
     
-    // Ensure therapist responses are properly hidden from customers
-    const isTherapistResponse = booking.therapistResponded === true && 
-                               booking.responseVisibleToBusinessOnly === true &&
-                               booking.status === 'confirmed';
+    // Show in requests tab when:
+    // 1. Therapist has confirmed the booking but business hasn't processed it yet
+    // 2. Business has confirmed the booking and customer needs to pay
+    const isTherapistConfirmedWaitingForBusiness = 
+      booking.status === 'therapist_confirmed' && 
+      booking.responseVisibleToBusinessOnly === true;
     
-    // Show in requests tab if there's a business response and payment is pending
-    // BUT hide therapist responses that haven't been processed by business yet
-    return hasBusinessResponse && 
-           booking.paymentStatus === 'pending' && 
-           !isTherapistResponse;
+    const isBusinessConfirmedWaitingForCustomerPayment = 
+      booking.status === 'confirmed' && 
+      booking.responseVisibleToBusinessOnly === false && 
+      booking.paymentStatus === 'pending';
+    
+    return isTherapistConfirmedWaitingForBusiness || isBusinessConfirmedWaitingForCustomerPayment;
   });
   
   const confirmedBookings = bookings.filter(booking => {
-    // Show in confirmed tab only if payment is completed and it's a confirmed booking
-    // AND it's visible to the customer (not a therapist response awaiting business processing)
-    const isVisibleToCustomer = booking.responseVisibleToBusinessOnly !== true ||
-                               booking.confirmedBy !== undefined;
-    
+    // Show in confirmed tab only when:
+    // - Payment is completed AND status is confirmed
     return booking.paymentStatus === 'completed' && 
-           booking.status === 'confirmed' && 
-           isVisibleToCustomer;
+           booking.status === 'confirmed';
   });
 
   return (

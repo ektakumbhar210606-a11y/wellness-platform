@@ -110,8 +110,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build query for customer bookings - show all bookings for the customer
-    const query: { customer: string; status?: string } = {
-      customer: customerId
+    // Exclude bookings where response is visible to business only (therapist confirmed but not business approved)
+    const query: { customer: string; status?: string; responseVisibleToBusinessOnly?: boolean } = {
+      customer: customerId,
+      responseVisibleToBusinessOnly: { $ne: true }
     };
 
     // Add status filter if provided
