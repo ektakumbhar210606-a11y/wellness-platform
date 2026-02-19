@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Typography, Tag, Button, Space, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 const { Meta } = Card;
 const { Text, Paragraph } = Typography;
@@ -97,8 +98,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, businessCountry = 'd
                 <Text strong style={{ fontSize: '16px' }} ellipsis={{ tooltip: service.name || service.serviceCategory?.name || 'Service' }}>
                   {service.name || service.serviceCategory?.name || 'Service Name Not Set'}
                 </Text>
-                <Tag icon={<DollarOutlined />} color="green">
-                  ₹{service.price.toFixed(2)}
+                <Tag color="green">
+                  {formatCurrency(service.price, businessCountry)}
                 </Tag>
               </div>
             </div>

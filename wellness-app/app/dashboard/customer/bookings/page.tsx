@@ -8,7 +8,7 @@ import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
 import { formatCurrency } from '../../../../utils/currencyFormatter';
 import { shouldRestrictReschedule } from '@/app/utils/bookingTimeUtils';
 import BookingConfirmationModal from '@/app/components/BookingConfirmationModal';
-import { CalendarOutlined, UserOutlined, PhoneOutlined, MailOutlined, ClockCircleOutlined, DollarCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { CalendarOutlined, UserOutlined, PhoneOutlined, MailOutlined, ClockCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -700,9 +700,7 @@ const CustomerBookingsPage = () => {
                 </div>
               </Descriptions.Item>
 
-              <Descriptions.Item label={
-                <span><DollarCircleOutlined style={{ marginRight: 8 }} />Price</span>
-              }>
+              <Descriptions.Item label="Price">
                 {selectedBooking.service?.price ? 
                   formatCurrency(selectedBooking.service.price, selectedBooking.business?.country || 'default') : 
                   'N/A'

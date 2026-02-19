@@ -25,7 +25,7 @@ import {
   CalendarOutlined,
   UserOutlined,
   ClockCircleOutlined,
-  DollarCircleOutlined,
+
   ShopOutlined,
   PhoneOutlined,
   MailOutlined,
@@ -525,10 +525,9 @@ const AssignedBookingsTracker: React.FC = () => {
                         </Text>
                         <div style={{ marginLeft: 24, marginTop: 4 }}>
                           <Text type="secondary">
-                            <DollarCircleOutlined style={{ marginRight: 4 }} />
                             {businessInfo ? 
                               formatCurrency(booking.service.price, businessInfo.country) : 
-                              `${getCurrencySymbol('default')}${booking.service.price}`
+                              formatCurrency(booking.service.price, 'default')
                             } • {booking.service.duration} mins
                           </Text>
                         </div>
@@ -747,10 +746,10 @@ const AssignedBookingsTracker: React.FC = () => {
             <Descriptions.Item label="Service Description">
               {selectedBooking.service.description}
             </Descriptions.Item>
-            <Descriptions.Item label={`Service Price (${getCurrencySymbol(businessInfo?.country || 'default')})`}>
+            <Descriptions.Item label="Service Price">
               {selectedBooking && businessInfo ? 
                 formatCurrency(selectedBooking.service.price, businessInfo.country) : 
-                `${getCurrencySymbol('default')}${selectedBooking?.service.price || 0}`
+                formatCurrency(selectedBooking?.service.price || 0, 'default')
               }
             </Descriptions.Item>
             <Descriptions.Item label="Service Duration">

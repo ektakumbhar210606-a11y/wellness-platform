@@ -17,7 +17,6 @@ import {
   CalendarOutlined,
   UserOutlined,
   ClockCircleOutlined,
-  DollarCircleOutlined,
   PhoneOutlined,
   MailOutlined,
   CreditCardOutlined
@@ -328,7 +327,6 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
               {booking.service?.price !== undefined && (
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
-                    <DollarCircleOutlined style={{ marginRight: 8 }} />
                     Payment Summary
                   </Text>
                   <div style={{ paddingLeft: 20 }}>
