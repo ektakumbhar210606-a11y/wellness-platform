@@ -177,11 +177,33 @@ export async function GET(request: NextRequest) {
       const therapist = booking.therapist as ITherapist;
       const business = service?.business as IBusiness;
 
-      // Check if there's a completed payment for this booking
-      const payment = await PaymentModel.findOne({ 
-        booking: booking._id, 
-        status: 'completed' 
+      // Check payment status by looking at all payments for this booking
+      const payments = await PaymentModel.find({ 
+        booking: booking._id 
       }).lean();
+
+      // Calculate overall payment status
+      let overallPaymentStatus: 'pending' | 'partial' | 'completed' = 'pending';
+      
+      if (payments.length > 0) {
+        const completedPayments = payments.filter(p => p.status === 'completed');
+        if (completedPayments.length > 0) {
+          // Check if there are any advance payments
+          const advancePayments = completedPayments.filter(p => p.paymentType === 'ADVANCE');
+          const fullPayments = completedPayments.filter(p => p.paymentType === 'FULL');
+          
+          if (fullPayments.length > 0) {
+            // If any payment is FULL type, the booking is fully paid
+            overallPaymentStatus = 'completed';
+          } else if (advancePayments.length > 0) {
+            // If there are only ADVANCE payments, it's partial payment
+            overallPaymentStatus = 'partial';
+          } else {
+            // If there are completed payments but none are FULL or ADVANCE, treat as completed
+            overallPaymentStatus = 'completed';
+          }
+        }
+      }
 
       return {
         id: booking._id.toString(),
@@ -215,7 +237,7 @@ export async function GET(request: NextRequest) {
         originalTime: booking.originalTime,
         hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime,
         responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly,
-        paymentStatus: payment ? 'completed' : 'pending',
+        paymentStatus: overallPaymentStatus,
         confirmedBy: booking.confirmedBy,
         confirmedAt: booking.confirmedAt,
         cancelledBy: booking.cancelledBy,

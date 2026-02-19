@@ -9,6 +9,7 @@ export enum BookingStatus {
   TherapistConfirmed = 'therapist_confirmed',
   TherapistRejected = 'therapist_rejected',
   Confirmed = 'confirmed',
+  Paid = 'paid',
   Completed = 'completed',
   Cancelled = 'cancelled',
   NoShow = 'no-show',
@@ -38,6 +39,7 @@ export interface IBooking extends Document {
   confirmedAt?: Date; // When the booking was confirmed
   cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
   cancelledAt?: Date; // When the booking was cancelled
+  paymentStatus?: 'pending' | 'partial' | 'completed'; // Overall payment status of the booking
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,8 +79,8 @@ const BookingSchema: Schema<IBooking> = new Schema({
   status: {
     type: String,
     enum: {
-      values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'completed', 'cancelled', 'no-show', 'rescheduled'],
-      message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, completed, cancelled, no-show, or rescheduled'
+      values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'paid', 'completed', 'cancelled', 'no-show', 'rescheduled'],
+      message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, paid, completed, cancelled, no-show, or rescheduled'
     },
     default: BookingStatus.Pending
   },
@@ -143,6 +145,11 @@ const BookingSchema: Schema<IBooking> = new Schema({
   cancelledAt: {
     type: Date, // When the booking was cancelled
     required: false
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'partial', 'completed'],
+    default: 'pending'
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

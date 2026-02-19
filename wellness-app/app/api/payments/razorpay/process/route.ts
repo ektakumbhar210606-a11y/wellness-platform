@@ -152,22 +152,24 @@ export async function POST(req: NextRequest) {
 
     await payment.save();
 
+    // Update Booking Status
+    const updateData: any = {
+      status: 'paid',
+      confirmedAt: new Date(),
+      confirmedBy: booking.customer.toString()
+    };
+    
     // Check if this is a business-assigned booking
     if (booking.assignedByAdmin) {
       // For business-assigned bookings, set response visibility to business only
-      booking.status = 'confirmed';
-      booking.confirmedAt = new Date();
-      booking.confirmedBy = booking.customer.toString();
-      booking.responseVisibleToBusinessOnly = true;
-      booking.therapistResponded = true;
+      updateData.responseVisibleToBusinessOnly = true;
+      updateData.therapistResponded = true;
     } else {
       // For direct customer bookings, make response visible to customer immediately
-      booking.status = 'confirmed';
-      booking.confirmedAt = new Date();
-      booking.confirmedBy = booking.customer.toString();
-      booking.responseVisibleToBusinessOnly = false;
+      updateData.responseVisibleToBusinessOnly = false;
     }
-    await booking.save();
+    
+    await BookingModel.findByIdAndUpdate(bookingId, updateData);
 
     return NextResponse.json({
       success: true,

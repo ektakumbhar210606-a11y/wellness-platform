@@ -139,9 +139,19 @@ const CustomerBookingsPage = () => {
           displayStatus = 'Ready for Payment';
           color = 'gold';
         }
+        // Stage 2.5: Partial payment made, waiting for remaining payment
+        else if (record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'partial') {
+          displayStatus = 'Partially Paid';
+          color = 'orange';
+        }
         // Stage 3: Payment completed
         else if (record.status === 'confirmed' && record.paymentStatus === 'completed') {
           displayStatus = 'Confirmed';
+          color = 'green';
+        }
+        // New status: Paid (payment completed)
+        else if (record.status === 'paid') {
+          displayStatus = 'Paid';
           color = 'green';
         }
         // Other statuses
@@ -281,7 +291,9 @@ const CustomerBookingsPage = () => {
       title: 'Payment Status',
       key: 'paymentStatus',
       render: (record: any) => (
-        <Tag color="green">Paid</Tag>
+        <Tag color={record.paymentStatus === 'partial' ? 'orange' : 'green'}>
+          {record.paymentStatus === 'partial' ? 'Partially Paid' : 'Paid'}
+        </Tag>
       ),
     },
     {
@@ -303,9 +315,19 @@ const CustomerBookingsPage = () => {
           displayStatus = 'Ready for Payment';
           color = 'gold';
         }
+        // Stage 2.5: Partial payment made, waiting for remaining payment
+        else if (record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'partial') {
+          displayStatus = 'Partially Paid';
+          color = 'orange';
+        }
         // Stage 3: Payment completed
         else if (record.status === 'confirmed' && record.paymentStatus === 'completed') {
           displayStatus = 'Confirmed';
+          color = 'green';
+        }
+        // New status: Paid (payment completed)
+        else if (record.status === 'paid') {
+          displayStatus = 'Paid';
           color = 'green';
         }
         // Other statuses
@@ -431,7 +453,7 @@ const CustomerBookingsPage = () => {
         const { paymentDetails } = formData;
         setBookings(bookings.map(booking =>
           booking.id === bookingToConfirm.id
-            ? { ...booking, status: 'confirmed' }
+            ? { ...booking, status: 'paid', paymentStatus: 'completed' }
             : booking
         ));
         message.success(
@@ -503,11 +525,15 @@ const CustomerBookingsPage = () => {
   const bookingRequests = bookings.filter(booking => {
     // Stage 1: Therapist confirms booking (status: therapist_confirmed, responseVisibleToBusinessOnly: true)
     // Stage 2: Business confirms therapist's response (status: confirmed, responseVisibleToBusinessOnly: false)
+    // Stage 2.5: Partial payment made (status: confirmed, paymentStatus: partial)
     // Stage 3: Customer confirms payment (paymentStatus: completed)
+    // Excluded: Bookings with 'paid' status (these go to confirmed tab)
     
     // Show in requests tab when:
     // 1. Therapist has confirmed the booking but business hasn't processed it yet
     // 2. Business has confirmed the booking and customer needs to pay
+    // 3. Business has confirmed the booking and customer has made partial payment
+    // BUT exclude bookings with 'paid' status
     const isTherapistConfirmedWaitingForBusiness = 
       booking.status === 'therapist_confirmed' && 
       booking.responseVisibleToBusinessOnly === true;
@@ -517,14 +543,26 @@ const CustomerBookingsPage = () => {
       booking.responseVisibleToBusinessOnly === false && 
       booking.paymentStatus === 'pending';
     
-    return isTherapistConfirmedWaitingForBusiness || isBusinessConfirmedWaitingForCustomerPayment;
+    const isBusinessConfirmedWithPartialPayment = 
+      booking.status === 'confirmed' && 
+      booking.responseVisibleToBusinessOnly === false && 
+      booking.paymentStatus === 'partial';
+    
+    const isPaidBooking = booking.status === 'paid';
+    
+    return !isPaidBooking && (isTherapistConfirmedWaitingForBusiness || 
+           isBusinessConfirmedWaitingForCustomerPayment || 
+           isBusinessConfirmedWithPartialPayment);
   });
   
   const confirmedBookings = bookings.filter(booking => {
-    // Show in confirmed tab only when:
+    // Show in confirmed tab when:
     // - Payment is completed AND status is confirmed
-    return booking.paymentStatus === 'completed' && 
-           booking.status === 'confirmed';
+    // - OR payment is partially completed AND status is confirmed
+    // - OR status is paid (payment completed)
+    return ((booking.paymentStatus === 'completed' || booking.paymentStatus === 'partial') && 
+           booking.status === 'confirmed') ||
+           booking.status === 'paid';
   });
 
   return (

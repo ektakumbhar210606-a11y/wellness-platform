@@ -94,14 +94,15 @@ export async function POST(req: NextRequest) {
         // Update Booking Status
         // For cash payments, the customer is confirming their own booking
         // This should follow normal customer booking flow, not therapist response flow
-        booking.status = 'confirmed';
-        booking.confirmedAt = new Date();
-        booking.confirmedBy = booking.customer.toString();
-        // Cash payments by customers should be visible to customers immediately
-        // Only therapist responses should be hidden from customers initially
-        booking.responseVisibleToBusinessOnly = false;
-        booking.therapistResponded = false;
-        await booking.save();
+        const updateData: any = {
+          status: 'paid',
+          confirmedAt: new Date(),
+          confirmedBy: booking.customer.toString(),
+          responseVisibleToBusinessOnly: false,
+          therapistResponded: false
+        };
+        
+        await BookingModel.findByIdAndUpdate(bookingId, updateData);
 
         return NextResponse.json({
             success: true,
