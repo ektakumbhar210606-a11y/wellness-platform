@@ -529,11 +529,20 @@ const CustomerBookingsPage = () => {
     // Stage 3: Customer confirms payment (paymentStatus: completed)
     // Excluded: Bookings with 'paid' status (these go to confirmed tab)
     
+    // IMMEDIATELY exclude bookings with 'paid' status
+    if (booking.status === 'paid') {
+      return false;
+    }
+    
+    // IMMEDIATELY exclude bookings with 'partial' payment status
+    // Partially paid bookings should appear in Confirmed Bookings, not Requests
+    if (booking.status === 'confirmed' && booking.paymentStatus === 'partial') {
+      return false;
+    }
+    
     // Show in requests tab when:
     // 1. Therapist has confirmed the booking but business hasn't processed it yet
     // 2. Business has confirmed the booking and customer needs to pay
-    // 3. Business has confirmed the booking and customer has made partial payment
-    // BUT exclude bookings with 'paid' status
     const isTherapistConfirmedWaitingForBusiness = 
       booking.status === 'therapist_confirmed' && 
       booking.responseVisibleToBusinessOnly === true;
@@ -543,16 +552,8 @@ const CustomerBookingsPage = () => {
       booking.responseVisibleToBusinessOnly === false && 
       booking.paymentStatus === 'pending';
     
-    const isBusinessConfirmedWithPartialPayment = 
-      booking.status === 'confirmed' && 
-      booking.responseVisibleToBusinessOnly === false && 
-      booking.paymentStatus === 'partial';
-    
-    const isPaidBooking = booking.status === 'paid';
-    
-    return !isPaidBooking && (isTherapistConfirmedWaitingForBusiness || 
-           isBusinessConfirmedWaitingForCustomerPayment || 
-           isBusinessConfirmedWithPartialPayment);
+    return isTherapistConfirmedWaitingForBusiness || 
+           isBusinessConfirmedWaitingForCustomerPayment;
   });
   
   const confirmedBookings = bookings.filter(booking => {
