@@ -238,7 +238,12 @@ export async function GET(req: NextRequest) {
           }
         ],
         // Add response visibility flag
-        responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly
+        responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly,
+        // Payment information
+        paymentStatus: booking.paymentStatus,
+        advancePaid: booking.advancePaid,
+        remainingAmount: booking.remainingAmount,
+        totalAmount: booking.totalAmount
       };
     }));
 

@@ -32,7 +32,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
   const [filteredTherapists, setFilteredTherapists] = useState<any[]>(approvedTherapists);
   const [selectedTherapists, setSelectedTherapists] = useState<string[]>(
     formData.therapists && Array.isArray(formData.therapists) 
-      ? formData.therapists.filter((id: string | null | undefined) => id != null && id !== '') 
+      ? formData.therapists.filter((id: string | null | undefined) => id && id !== '') 
       : []
   );
 
@@ -111,7 +111,7 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                 <Select
                   mode="multiple"
                   placeholder="Select therapists"
-                  value={selectedTherapists.filter(id => id != null && id !== '')}
+                  value={selectedTherapists.filter(id => id && id !== '')}
                   onChange={handleTherapistChange}
                   optionLabelProp="label"
                   style={{ width: '100%' }}
@@ -122,13 +122,18 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                     </Option>
                   ) : (
                     filteredTherapists
-                      .filter(therapist => (therapist.id || therapist._id || therapist.therapistId) && (therapist.id || therapist._id || therapist.therapistId) !== '')
-                      .map((therapist, index) => (
-                        <Option 
-                          key={`${therapist.id || therapist._id || therapist.therapistId}-${index}`} 
-                          value={therapist.id || therapist._id || therapist.therapistId}
-                          label={formatTherapistName(therapist)}
-                        >
+                      .filter(therapist => {
+                        const id = therapist.id || therapist._id || therapist.therapistId;
+                        return id && id !== '';
+                      })
+                      .map((therapist) => {
+                        const therapistId = therapist.id || therapist._id || therapist.therapistId;
+                        return (
+                          <Option 
+                            key={therapistId} 
+                            value={therapistId}
+                            label={formatTherapistName(therapist)}
+                          >
                           <div style={{ display: 'flex', alignItems: 'center' }}>
                             <UserOutlined style={{ marginRight: 8, color: '#1890ff' }} />
                             <div>
@@ -142,7 +147,8 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
                             </div>
                           </div>
                         </Option>
-                      ))
+                      );
+                    })
                   )}
                 </Select>
               </Form.Item>
@@ -151,7 +157,9 @@ const ServiceStepTeam: React.FC<ServiceStepTeamProps> = ({
           
           {selectedTherapists.length > 0 && (
             <Card title="Selected Therapists" style={{ marginTop: 16 }}>
-              {selectedTherapists.map((therapistId) => {
+              {selectedTherapists
+                .filter(id => id && id !== '')
+                .map((therapistId) => {
                 const therapist = filteredTherapists.find(t => 
                   (t.id === therapistId) || (t._id === therapistId) || (t.therapistId === therapistId)
                 );
