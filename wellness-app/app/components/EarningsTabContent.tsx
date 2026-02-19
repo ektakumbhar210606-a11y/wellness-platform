@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Tabs, Card, Spin, Typography, Empty, Row, Col, Statistic, Tag } from 'antd';
-import { DollarOutlined, CreditCardOutlined, MoneyCollectOutlined } from '@ant-design/icons';
+import { CreditCardOutlined, MoneyCollectOutlined } from '@ant-design/icons';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 
 const { Title, Text } = Typography;
@@ -132,8 +133,6 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
               title="Half Payment Revenue"
               value={earningsSummary.halfPaymentTotal}
               precision={2}
-              prefix={<DollarOutlined />}
-              suffix="INR"
               valueStyle={{ color: '#fa8c16' }}
             />
           </Card>
@@ -154,8 +153,6 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
               title="Full Payment Revenue"
               value={earningsSummary.fullPaymentTotal}
               precision={2}
-              prefix={<DollarOutlined />}
-              suffix="INR"
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>
@@ -167,8 +164,7 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
           title="Total Earnings"
           value={earningsSummary.totalEarnings}
           precision={2}
-          prefix={<DollarOutlined />}
-          suffix="INR"
+
           valueStyle={{ fontSize: 24, color: '#1890ff' }}
         />
       </Card>
@@ -205,9 +201,9 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
                               <Tag color="orange">
                                 Half Payment
                                 <br />
-                                Paid: ₹{booking.advancePaid?.toFixed(2) || '0.00'}
+                                Paid: {formatCurrency(booking.advancePaid || 0, 'default')}
                                 <br />
-                                Remaining: ₹{booking.remainingAmount?.toFixed(2) || '0.00'}
+                                Remaining: {formatCurrency(booking.remainingAmount || 0, 'default')}
                               </Tag>
                             }
                             style={{ height: '100%' }}
@@ -262,7 +258,7 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
                               <Tag color="green">
                                 Full Payment
                                 <br />
-                                Total: ₹{booking.totalAmount?.toFixed(2) || booking.service?.price?.toFixed(2) || '0.00'}
+                                Total: {formatCurrency(booking.totalAmount || booking.service?.price || 0, 'default')}
                               </Tag>
                             }
                             style={{ height: '100%' }}
