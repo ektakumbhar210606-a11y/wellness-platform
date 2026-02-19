@@ -320,12 +320,7 @@ export async function GET(req: NextRequest) {
       originalDate: booking.originalDate ? new Date(booking.originalDate) : null,
       originalTime: booking.originalTime || null,
       // Flag to indicate if this booking has been rescheduled
-      hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime,
-      // Payment information
-      paymentStatus: booking.paymentStatus,
-      advancePaid: booking.advancePaid,
-      remainingAmount: booking.remainingAmount,
-      totalAmount: booking.totalAmount
+      hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime
     }));
 
     return Response.json({

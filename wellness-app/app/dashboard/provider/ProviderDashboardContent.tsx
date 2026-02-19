@@ -13,7 +13,6 @@ import ServiceCard from '@/app/components/ServiceCard';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 import BookingManagement from '@/app/components/BookingManagement';
 import TherapistRequestsAndResponses from '@/app/components/TherapistRequestsAndResponses';
-import EarningsTabContent from '@/app/components/EarningsTabContent';
 
 const { Title, Text } = Typography;
 
@@ -62,51 +61,6 @@ const ProviderDashboardContent = () => {
       });
     } finally {
       setStatsLoading(false);
-    }
-  }, []);
-
-  // Fetch all bookings for earnings tab
-  const fetchAllBookings = React.useCallback(async () => {
-    try {
-      setBookingsLoading(true);
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error(`Server returned non-JSON response. Status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || `Failed to fetch bookings. Status: ${response.status}`);
-      }
-      
-      // Set both booking arrays to the same data for filtering
-      setBookingRequests(result.data?.bookings || []);
-      setConfirmedBookings(result.data?.bookings || []);
-    } catch (error: any) {
-      console.error('Error fetching bookings:', error);
-      message.error(error.message || 'Failed to load bookings');
-      setBookingRequests([]);
-      setConfirmedBookings([]);
-    } finally {
-      setBookingsLoading(false);
     }
   }, []);
 
@@ -348,7 +302,7 @@ const ProviderDashboardContent = () => {
     
     // Set active tab based on URL parameter (unified approach)
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'earnings', 'profile', 'schedule'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'profile', 'schedule'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     } else if (!tabFromUrl) {
       setActiveTab('dashboard');
@@ -392,7 +346,7 @@ const ProviderDashboardContent = () => {
   // Effect to update active tab when URL parameters change
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'earnings', 'profile', 'schedule'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'profile', 'schedule'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     } else if (!tabFromUrl) {
       setActiveTab('dashboard');
@@ -406,10 +360,6 @@ const ProviderDashboardContent = () => {
     }
     if (activeTab === 'dashboard' && business) {
       fetchDashboardStats();
-    }
-    if (activeTab === 'earnings' && business) {
-      // Fetch bookings for earnings tab
-      fetchAllBookings();
     }
     // Add any other tab-specific data fetching here if needed
   }, [activeTab, business, fetchTherapistRequests, fetchDashboardStats]);
@@ -431,7 +381,7 @@ const ProviderDashboardContent = () => {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         const tabFromUrl = urlParams.get('tab');
-        if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'earnings', 'profile', 'schedule'].includes(tabFromUrl)) {
+        if (tabFromUrl && ['dashboard', 'services', 'bookings', 'requests', 'profile', 'schedule'].includes(tabFromUrl)) {
           setActiveTab(tabFromUrl);
         } else if (!tabFromUrl) {
           setActiveTab('dashboard');
@@ -1056,22 +1006,6 @@ const ProviderDashboardContent = () => {
                   </Card>
                 </Col>
               </Row>
-            </div>
-          ),
-        }, {
-          key: 'earnings',
-          label: (
-            <span>
-              <DollarOutlined />
-              Earnings
-            </span>
-          ),
-          children: (
-            <div style={{ marginTop: 16 }}>
-              <EarningsTabContent 
-                bookings={bookingRequests}
-                loading={bookingsLoading}
-              />
             </div>
           ),
         }, {

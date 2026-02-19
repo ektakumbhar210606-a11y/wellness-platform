@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Space, Typography, Avatar } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserOutlined, CalendarOutlined, BookOutlined, TeamOutlined, ShopOutlined, ProfileOutlined, MenuOutlined, DollarOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, BookOutlined, TeamOutlined, ShopOutlined, ProfileOutlined, MenuOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
 const { Header, Content, Sider } = Layout;
@@ -29,7 +29,6 @@ const ProviderDashboardLayout: React.FC<ProviderDashboardLayoutProps> = ({ child
         if (tab === 'services') setSelectedKey('services');
         else if (tab === 'bookings') setSelectedKey('bookings');
         else if (tab === 'requests') setSelectedKey('therapists');
-        else if (tab === 'earnings') setSelectedKey('earnings');
         else if (tab === 'profile') setSelectedKey('profile');
         else if (tab === 'schedule') setSelectedKey('schedule');
         else setSelectedKey('dashboard');
@@ -81,14 +80,6 @@ const ProviderDashboardLayout: React.FC<ProviderDashboardLayoutProps> = ({ child
       icon: <TeamOutlined />,
       onClick: () => {
         router.push('/dashboard/provider?tab=requests');
-      },
-    },
-    {
-      key: 'earnings',
-      label: 'Earnings',
-      icon: <DollarOutlined />,
-      onClick: () => {
-        router.push('/dashboard/provider?tab=earnings');
       },
     },
     {
