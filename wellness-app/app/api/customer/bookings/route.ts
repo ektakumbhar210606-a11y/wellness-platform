@@ -109,17 +109,13 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // Optional status filter
     const skip = (page - 1) * limit;
 
-    // Build query for customer bookings - show all bookings for the customer
-    // Exclude bookings where response is visible to business only (therapist confirmed but not business approved)
-    const query: { customer: string; status?: string; responseVisibleToBusinessOnly?: boolean | { $ne: boolean } } = {
+    // Build query for customer bookings - show bookings based on visibility rules
+    // Include bookings where response is not visible to business only (responseVisibleToBusinessOnly != true)
+    // This ensures customer can see their own bookings except when therapists respond but business hasn't processed
+    const query: { customer: string; responseVisibleToBusinessOnly?: boolean | { $ne: boolean } } = {
       customer: customerId,
       responseVisibleToBusinessOnly: { $ne: true }
     };
-
-    // Add status filter if provided
-    if (status) {
-      query.status = status;
-    }
 
     // Fetch bookings with populated data
     const bookings = await BookingModel.find(query)

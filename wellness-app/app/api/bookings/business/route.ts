@@ -132,21 +132,25 @@ export async function GET(req: NextRequest) {
     const services = await ServiceModel.find({ business: business._id });
     const serviceIds = services.map((service: IService) => service._id);
 
-    // Build query for bookings of these services
-    // This ensures we get all bookings related to services offered by this business
-    const query: { service?: { $in: Types.ObjectId[] }; status?: string | { $in: string[] } } = { service: { $in: serviceIds } };
-    
-    // Add status filter if provided
-    if (status && ['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-      query.status = status;
-    }
-    
-    // For default view (no status specified), query for both pending and rescheduled bookings
-    // This ensures businesses can track all pending requests and rescheduled bookings
-    // Both assigned and unassigned bookings should appear for proper business tracking
-    if (status === 'pending' || (!status && !query.status)) {
-      query.status = { $in: ['pending', 'rescheduled', 'therapist_confirmed', 'therapist_rejected'] }; // Include both pending and rescheduled bookings, plus therapist responses
-      console.log('Querying for all pending, rescheduled, and therapist response bookings (both assigned and unassigned)');
+    // Build query based on status parameter
+    const query: { service?: { $in: Types.ObjectId[] }; status?: string | { $in: string[] }; paymentStatus?: { $in: string[] } } = { 
+      service: { $in: serviceIds }
+    };
+    // If status is specified in query params, filter by that status
+    if (status) {
+      if (status === 'requests') {
+        // For booking requests, include pending and therapist_confirmed bookings
+        query.status = { $in: ['pending', 'therapist_confirmed'] };
+      } else if (status === 'confirmed') {
+        // For confirmed bookings, include confirmed bookings with partial or completed payment
+        query.status = 'confirmed';
+        query.paymentStatus = { $in: ['partial', 'completed'] };
+      } else {
+        query.status = status;
+      }
+    } else {
+      // Default behavior: if no status specified, assume requests (pending/therapist_confirmed)
+      query.status = { $in: ['pending', 'therapist_confirmed'] };
     }
     
     // Explicitly ensure that the query includes both assigned and unassigned bookings

@@ -67,7 +67,7 @@ interface Booking {
   currentDate?: string;
   currentTime?: string;
   duration: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
+  status: 'pending' | 'therapist_confirmed' | 'therapist_rejected' | 'confirmed' | 'paid' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
   notes?: string;
   assignedByAdmin?: boolean;
   createdAt: string;
@@ -99,7 +99,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
         throw new Error('Authentication token not found');
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/business?status=requests`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -386,9 +386,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             <Tag icon={<SyncOutlined />} color="gold">
               Rescheduled
             </Tag>
-          ) : (
+          ) : record.status === 'pending' ? (
             <Tag icon={<ClockCircleOutlined />} color="orange">
               Pending Approval
+            </Tag>
+          ) : record.status === 'therapist_confirmed' ? (
+            <Tag icon={<CheckCircleOutlined />} color="blue">
+              Therapist Confirmed
+            </Tag>
+          ) : record.status === 'therapist_rejected' ? (
+            <Tag icon={<CloseCircleOutlined />} color="red">
+              Therapist Rejected
+            </Tag>
+          ) : (
+            <Tag icon={<ClockCircleOutlined />} color="orange">
+              {record.status.replace(/_/g, ' ').charAt(0).toUpperCase() + record.status.slice(1).replace(/_/g, ' ').slice(1)}
             </Tag>
           )}
           {record.assignedByAdmin && (
@@ -511,8 +523,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag icon={<CheckCircleOutlined />} color="green">
-          Confirmed
+        <Tag 
+          color={status === 'confirmed' ? 'green' : 
+                 status === 'paid' ? 'green' : 
+                 status === 'completed' ? 'geekblue' : 
+                 'default'}
+          icon={status === 'confirmed' || status === 'paid' ? <CheckCircleOutlined /> :
+                status === 'completed' ? <CheckCircleOutlined /> : undefined}
+        >
+          {status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}
         </Tag>
       ),
     },
@@ -676,13 +695,25 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             <Descriptions.Item label="Status">
               <Tag 
                 color={selectedBooking.status === 'pending' ? 'orange' : 
-                       selectedBooking.status === 'confirmed' ? 'green' : 
-                       selectedBooking.status === 'cancelled' ? 'red' : 'default'}
+                       selectedBooking.status === 'therapist_confirmed' ? 'blue' :
+                       selectedBooking.status === 'therapist_rejected' ? 'red' :
+                       selectedBooking.status === 'confirmed' ? 'green' :
+                       selectedBooking.status === 'paid' ? 'green' :
+                       selectedBooking.status === 'completed' ? 'geekblue' :
+                       selectedBooking.status === 'cancelled' ? 'red' :
+                       selectedBooking.status === 'no-show' ? 'volcano' :
+                       selectedBooking.status === 'rescheduled' ? 'gold' : 'default'}
                 icon={selectedBooking.status === 'pending' ? <ClockCircleOutlined /> :
+                      selectedBooking.status === 'therapist_confirmed' ? <CheckCircleOutlined /> :
+                      selectedBooking.status === 'therapist_rejected' ? <CloseCircleOutlined /> :
                       selectedBooking.status === 'confirmed' ? <CheckCircleOutlined /> :
-                      selectedBooking.status === 'cancelled' ? <CloseCircleOutlined /> : undefined}
+                      selectedBooking.status === 'paid' ? <CheckCircleOutlined /> :
+                      selectedBooking.status === 'completed' ? <CheckCircleOutlined /> :
+                      selectedBooking.status === 'cancelled' ? <CloseCircleOutlined /> :
+                      selectedBooking.status === 'no-show' ? <CloseCircleOutlined /> :
+                      selectedBooking.status === 'rescheduled' ? <SyncOutlined /> : undefined}
               >
-                {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
+                {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1).replace(/_/g, ' ')}
               </Tag>
             </Descriptions.Item>
             {selectedBooking.notes && (

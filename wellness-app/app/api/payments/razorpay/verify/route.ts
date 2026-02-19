@@ -67,6 +67,28 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Idempotency check - prevent double processing
+        if (booking.status === 'confirmed' && booking.paymentStatus === 'partial') {
+          // Check if payment already exists to avoid duplicate records
+          const existingPayment = await PaymentModel.findOne({
+            booking: bookingId,
+            amount: amount,
+            paymentType: 'ADVANCE',
+            status: PaymentStatus.Completed
+          });
+          
+          if (existingPayment) {
+            return NextResponse.json({
+              success: true,
+              message: 'Payment already processed',
+              data: {
+                paymentId: existingPayment._id,
+                bookingId: booking._id
+              }
+            });
+          }
+        }
+
         // Create/Update Customer
         let customer = await CustomerModel.findOne({ user: booking.customer });
 
@@ -119,50 +141,60 @@ export async function POST(req: NextRequest) {
             await customer.save();
         }
 
-        // Calculate partial payment amounts
+        // Calculate payment amounts
         const totalAmount = booking.service?.price || amount;
-        const advancePaid = amount; // The amount paid via Razorpay
-        const remainingAmount = Math.max(0, totalAmount - advancePaid); // Remaining amount to be paid at venue
+        const advancePaid = amount;
+        const remainingAmount = Math.max(0, totalAmount - advancePaid);
 
-        // Create Payment Record
+        // Create payment record
         const payment = new PaymentModel({
-            booking: bookingId,
-            amount: advancePaid, // Amount paid as advance
-            totalAmount: totalAmount, // Total service amount
-            advancePaid: advancePaid, // Amount paid as advance
-            remainingAmount: remainingAmount, // Remaining amount to be paid at venue
-            paymentType: 'ADVANCE', // Mark as advance payment
-            method: PaymentMethod.CreditCard, // Razorpay
-            status: PaymentStatus.Completed, // Advance payment completed
-            paymentDate: new Date()
+          booking: bookingId,
+          amount: advancePaid,
+          totalAmount: totalAmount,
+          advancePaid: advancePaid,
+          remainingAmount: remainingAmount,
+          paymentType: 'ADVANCE',
+          method: PaymentMethod.CreditCard,
+          status: PaymentStatus.Completed,
+          paymentDate: new Date()
         });
         await payment.save();
 
-        // Update Booking Status
-        const updateData: any = {
-          status: 'paid',
-          confirmedAt: new Date(),
-          confirmedBy: booking.customer.toString()
-        };
-        
-        // Check if this is a business-assigned booking
-        if (booking.assignedByAdmin) {
-          // For business-assigned bookings, set response visibility to business only
-          updateData.responseVisibleToBusinessOnly = true;
-          updateData.therapistResponded = true;
-        } else {
-          // For direct customer bookings, make response visible to customer immediately
-          updateData.responseVisibleToBusinessOnly = false;
+        // Atomic booking update with proper status separation
+        const updatedBooking = await BookingModel.findByIdAndUpdate(
+          bookingId,
+          {
+            $set: {
+              status: 'confirmed',                    // Booking lifecycle status
+              paymentStatus: 'partial',               // Payment lifecycle status
+              confirmedAt: new Date(),                // Update confirmation timestamp
+              confirmedBy: booking.customer.toString() // Keep customer ID
+            },
+            $setOnInsert: {
+              // Only set these if document is being created (shouldn't happen)
+              responseVisibleToBusinessOnly: booking.assignedByAdmin ? true : false,
+              therapistResponded: booking.assignedByAdmin ? true : false
+            }
+          },
+          { 
+            new: true,           // Return updated document
+            runValidators: true, // Run schema validators
+            upsert: false        // Don't create new document
+          }
+        );
+
+        if (!updatedBooking) {
+          throw new Error('Failed to update booking');
         }
-        
-        await BookingModel.findByIdAndUpdate(bookingId, updateData);
 
         return NextResponse.json({
             success: true,
-            message: 'Payment verified and booking confirmed',
+            message: 'Advance payment verified and booking confirmed',
             data: {
                 paymentId: payment._id,
-                bookingId: booking._id
+                bookingId: updatedBooking._id,
+                status: updatedBooking.status,
+                paymentStatus: updatedBooking.paymentStatus
             }
         });
 
