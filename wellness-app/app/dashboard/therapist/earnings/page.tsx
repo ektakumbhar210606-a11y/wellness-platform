@@ -64,7 +64,9 @@ const TherapistEarningsPage = () => {
       key: 'bookingId',
       render: (displayId: string) => (
         <div>
-          #{displayId || 'N/A'}
+          <Tag color="blue" style={{ fontSize: '12px', padding: '2px 8px' }}>
+            {displayId ? `BK-${displayId.toUpperCase()}` : 'N/A'}
+          </Tag>
         </div>
       ),
     },
@@ -180,7 +182,7 @@ const TherapistEarningsPage = () => {
     <div>
       <Title level={2}>My Earnings</Title>
       <Text type="secondary">
-        Track your paid earnings from completed sessions
+        Track your paid earnings from completed sessions with user-friendly booking references
       </Text>
 
       <Card style={{ marginTop: 24 }}>

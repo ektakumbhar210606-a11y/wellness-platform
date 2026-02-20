@@ -6,6 +6,7 @@ import ServiceModel from '@/models/Service';
 import UserModel from '@/models/User';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '@/lib/middleware/authMiddleware';
+import { formatBookingId } from '@/utils/bookingIdFormatter';
 
 // Require therapist authentication
 async function requireTherapistAuth(request: NextRequest) {
@@ -142,7 +143,7 @@ export async function GET(req: NextRequest) {
 
       return {
         id: booking._id.toString(),
-        displayId: booking.bookingId || booking._id.toString(),
+        displayId: booking.bookingId ? booking.bookingId : formatBookingId(booking._id.toString()),
         service: {
           id: service?._id?.toString() || 'unknown',
           name: service ? service.name : 'Unknown Service',
