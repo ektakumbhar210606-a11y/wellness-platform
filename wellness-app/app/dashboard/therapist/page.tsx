@@ -269,6 +269,15 @@ const TherapistDashboardPage = () => {
       onClick: () => console.log('Navigate to reviews'),
     },
     {
+      key: '6',
+      label: 'Earnings',
+      icon: <ShopOutlined />,
+      onClick: () => {
+        router.push('/dashboard/therapist/earnings');
+        setActiveTab('earnings');
+      },
+    },
+    {
       key: 'logout',
       label: 'Logout',
       onClick: () => {

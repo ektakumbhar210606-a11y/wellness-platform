@@ -263,6 +263,28 @@ const TherapistBookings: React.FC = () => {
     }
   };
 
+  const handleMarkComplete = async (bookingId: string) => {
+    try {
+      setActionLoading(bookingId);
+      const response = await makeAuthenticatedRequest(`/api/therapist/mark-completed`, {
+        method: 'POST',
+        body: JSON.stringify({ bookingId })
+      });
+
+      if (response.success) {
+        message.success('Booking marked as completed successfully');
+        fetchBookings(); // Refresh the list
+      } else {
+        message.error(response.error || 'Failed to mark booking as completed');
+      }
+    } catch (error: any) {
+      console.error('Error marking booking as completed:', error);
+      message.error('Failed to mark booking as completed');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getStatusTag = (status: string) => {
     switch (status) {
       case 'pending':
@@ -477,6 +499,14 @@ const TherapistBookings: React.FC = () => {
                           style={{ width: 120 }}
                         >
                           Reschedule
+                        </Button>
+                        <Button
+                          type="primary"
+                          onClick={() => handleMarkComplete(booking.id)}
+                          loading={actionLoading === booking.id}
+                          style={{ width: 120 }}
+                        >
+                          Completed
                         </Button>
                       </>
                     )}

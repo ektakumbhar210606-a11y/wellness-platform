@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
       paymentStatus: string 
     } = { 
       service: { $in: serviceIds },
-      status: 'confirmed',
+      status: paymentType === 'half' ? 'confirmed' : 'completed',
       paymentStatus: paymentType === 'half' ? 'partial' : 'completed'
     };
 
@@ -220,6 +220,7 @@ export async function GET(req: NextRequest) {
       duration: booking.duration || (booking.service as any).duration,
       status: booking.status,
       paymentStatus: booking.paymentStatus,
+      therapistPayoutStatus: booking.therapistPayoutStatus,
       notes: booking.notes,
       createdAt: booking.createdAt
     }));

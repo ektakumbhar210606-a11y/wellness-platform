@@ -60,6 +60,7 @@ interface Booking {
   duration: number;
   status: 'confirmed';
   paymentStatus: 'partial' | 'completed';
+  therapistPayoutStatus: 'pending' | 'paid';
   notes?: string;
   createdAt: string;
 }
@@ -168,6 +169,42 @@ const BusinessEarningPage = () => {
     setModalVisible(true);
   };
 
+  // Handle paying to therapist
+  const handlePayToTherapist = async (bookingId: string) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/pay-therapist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bookingId })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to process payment to therapist');
+      }
+      
+      message.success('Payment to therapist processed successfully');
+      
+      // Refresh the full payment bookings to reflect the updated status
+      if (activeTab === 'full') {
+        fetchFullPaymentBookings();
+      }
+    } catch (error: any) {
+      console.error('Error processing payment to therapist:', error);
+      message.error(error.message || 'Failed to process payment to therapist');
+    }
+  };
+
   // Handle tab change
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -197,6 +234,29 @@ const BusinessEarningPage = () => {
       fetchFullPaymentBookings();
     }
   }, [isAuthenticated, user, router, activeTab]);
+
+  // Auto-refresh data every 30 seconds when the tab is active
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (activeTab === 'full') {
+      // Refresh full payment data every 30 seconds
+      intervalId = setInterval(() => {
+        fetchFullPaymentBookings();
+      }, 30000);
+    } else if (activeTab === 'half') {
+      // Refresh half payment data every 30 seconds
+      intervalId = setInterval(() => {
+        fetchHalfPaymentBookings();
+      }, 30000);
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [activeTab]);
 
   // Columns for bookings table
   const bookingColumns = [
@@ -280,13 +340,25 @@ const BusinessEarningPage = () => {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: Booking) => (
-        <Button 
-          type="link" 
-          size="small"
-          onClick={() => showBookingDetails(record)}
-        >
-          View Details
-        </Button>
+        <>
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => showBookingDetails(record)}
+          >
+            View Details
+          </Button>
+          {activeTab === 'full' && (
+            <Button 
+              type="primary"
+              size="small"
+              disabled={record.therapistPayoutStatus === 'paid'}
+              onClick={() => handlePayToTherapist(record.id)}
+            >
+              {record.therapistPayoutStatus === 'paid' ? 'Paid to Therapist' : 'Pay to Therapist'}
+            </Button>
+          )}
+        </>
       ),
     },
   ];
@@ -306,10 +378,26 @@ const BusinessEarningPage = () => {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-      <Title level={3}>Business Earnings</Title>
-      <Text type="secondary">
-        Track your earnings from half and full payments
-      </Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div>
+          <Title level={3} style={{ margin: 0 }}>Business Earnings</Title>
+          <Text type="secondary">
+            Track your earnings from half and full payments
+          </Text>
+        </div>
+        <Button 
+          onClick={() => {
+            if (activeTab === 'half') {
+              fetchHalfPaymentBookings();
+            } else {
+              fetchFullPaymentBookings();
+            }
+          }}
+          loading={loading}
+        >
+          Refresh
+        </Button>
+      </div>
 
       <Row gutter={[16, 16]} style={{ marginTop: '20px', marginBottom: '20px' }}>
         <Col span={12}>
@@ -320,7 +408,7 @@ const BusinessEarningPage = () => {
               precision={2}
               prefix={<DollarOutlined />}
               suffix={halfPaymentEarnings?.currency || 'INR'}
-              valueStyle={{ color: '#fa8c16' }}
+              styles={{ content: { color: '#fa8c16' } }}
             />
             <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
               {halfPaymentBookings.length} bookings
@@ -335,7 +423,7 @@ const BusinessEarningPage = () => {
               precision={2}
               prefix={<DollarOutlined />}
               suffix={fullPaymentEarnings?.currency || 'INR'}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
             <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
               {fullPaymentBookings.length} bookings

@@ -39,7 +39,11 @@ export interface IBooking extends Document {
   confirmedAt?: Date; // When the booking was confirmed
   cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
   cancelledAt?: Date; // When the booking was cancelled
+  completedAt?: Date; // When the booking was completed
   paymentStatus?: 'pending' | 'partial' | 'completed'; // Overall payment status of the booking
+  therapistPayoutStatus?: 'pending' | 'paid'; // Status of payout to therapist
+  therapistPayoutAmount?: number; // Amount paid to therapist
+  therapistPaidAt?: Date; // When therapist was paid
   createdAt: Date;
   updatedAt: Date;
 }
@@ -150,6 +154,19 @@ const BookingSchema: Schema<IBooking> = new Schema({
     type: String,
     enum: ['pending', 'partial', 'completed'],
     default: 'pending'
+  },
+  therapistPayoutStatus: {
+    type: String,
+    enum: ['pending', 'paid'],
+    default: 'pending'
+  },
+  therapistPayoutAmount: {
+    type: Number,
+    required: false
+  },
+  therapistPaidAt: {
+    type: Date,
+    required: false
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
