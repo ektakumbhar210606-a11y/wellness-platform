@@ -4,10 +4,10 @@ import BookingModel, { BookingStatus } from '@/models/Booking';
 import TherapistModel from '@/models/Therapist';
 import UserModel from '@/models/User';
 import jwt from 'jsonwebtoken';
-import { JwtPayload } from '@/lib/middleware/authMiddleware';
 import { Types } from 'mongoose';
-import NotificationService from '@/app/utils/notifications';
+import { JwtPayload } from '@/lib/middleware/authMiddleware';
 
+// Require therapist authentication
 async function requireTherapistAuth(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -67,6 +67,7 @@ async function requireTherapistAuth(request: NextRequest) {
   }
 }
 
+// TESTING ROUTE - REMOVE IN PRODUCTION
 export async function POST(req: NextRequest) {
   try {
     // Authenticate and authorize therapist
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
       bookingId,
       { 
         status: BookingStatus.Completed,
-        paymentStatus: 'completed', // Set to completed to indicate full payment collected
+        paymentStatus: 'completed', // Set to completed to indicate full payment
         therapistPayoutStatus: 'pending', // Set therapist payout to pending
         completedAt: new Date(), // Add completedAt field
         // Track who marked as completed and when
@@ -164,11 +165,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Note: No notification sent for completion as it's typically the end of the booking lifecycle
-
     return Response.json({
       success: true,
-      message: 'Booking marked as completed successfully',
+      message: 'Booking marked as completed successfully (TEST ROUTE)',
       data: {
         id: updatedBooking._id.toString(),
         status: updatedBooking.status,
@@ -181,7 +180,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error marking booking as completed:', error);
+    console.error('Error marking booking as completed (TEST ROUTE):', error);
     return Response.json(
       { success: false, error: error.message || 'Internal server error' },
       { status: 500 }

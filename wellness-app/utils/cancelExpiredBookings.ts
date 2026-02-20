@@ -6,6 +6,10 @@ import BookingModel, { IBooking, BookingStatus } from '../models/Booking';
  * A booking is considered expired if:
  * 1. The date is in the past (before today), OR
  * 2. The date is today but the time has passed
+ * 
+ * IMPORTANT: Only unpaid bookings (paymentStatus: 'pending') are subject to automatic cancellation.
+ * Bookings with paymentStatus 'completed' or 'partial' are protected from automatic cancellation.
+ * Bookings with status 'completed' are also protected from automatic cancellation.
  */
 export async function cancelExpiredBookings(): Promise<{ cancelledCount: number; cancelledBookings: IBooking[] }> {
   try {
@@ -14,11 +18,24 @@ export async function cancelExpiredBookings(): Promise<{ cancelledCount: number;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    // Find bookings that are pending or confirmed
+    // Find bookings that are pending or confirmed AND have not been paid
+    // Only cancel unpaid bookings that are still in pending or confirmed status
     const activeBookings = await BookingModel.find({
-      $or: [
-        { status: BookingStatus.Pending },
-        { status: BookingStatus.Confirmed }
+      $and: [
+        {
+          $or: [
+            { status: BookingStatus.Pending },
+            { status: BookingStatus.Confirmed }
+          ]
+        },
+        {
+          $or: [
+            { paymentStatus: 'pending' },
+            { paymentStatus: null },
+            { paymentStatus: undefined }
+          ]
+        },
+        { status: { $ne: BookingStatus.Completed } }
       ]
     });
 
@@ -40,7 +57,7 @@ export async function cancelExpiredBookings(): Promise<{ cancelledCount: number;
       }
     }
 
-    console.log(`Cancelled ${cancelledCount} expired bookings`);
+    console.log(`Cancelled ${cancelledCount} expired unpaid bookings (paid/completed bookings are protected, only paymentStatus: 'pending' bookings are cancelled)`);
     return { cancelledCount, cancelledBookings };
   } catch (error) {
     console.error('Error cancelling expired bookings:', error);

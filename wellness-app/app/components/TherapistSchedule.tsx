@@ -14,7 +14,8 @@ import {
   Empty,
   Tabs,
   List,
-  Divider
+  Divider,
+  notification
 } from 'antd';
 import {
   CalendarOutlined,
@@ -76,6 +77,7 @@ const TherapistSchedule: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('confirmed');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [loadingBookingId, setLoadingBookingId] = useState<string | null>(null);
 
   const fetchBusinessResponses = async () => {
     try {
@@ -149,6 +151,43 @@ const TherapistSchedule: React.FC = () => {
         return rescheduled;
       default:
         return responses;
+    }
+  };
+
+  const handleMarkAsCompleted = async (bookingId: string) => {
+    try {
+      setLoadingBookingId(bookingId);
+      
+      // Call the API to mark the booking as completed
+      const response = await makeAuthenticatedRequest(`/api/therapist/mark-completed`, {
+        method: 'POST',
+        body: JSON.stringify({ bookingId })
+      });
+      
+      if (response.success) {
+        // Show success message
+        notification.success({
+          message: 'Success',
+          description: 'Booking marked as completed successfully!',
+        });
+        
+        // Refresh the booking list to reflect the updated status
+        await fetchBusinessResponses();
+      } else {
+        // Show error message
+        notification.error({
+          message: 'Error',
+          description: response.error || 'Failed to mark booking as completed',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error marking booking as completed:', error);
+      notification.error({
+        message: 'Error',
+        description: error.message || 'An unexpected error occurred',
+      });
+    } finally {
+      setLoadingBookingId(null);
     }
   };
 
@@ -322,6 +361,8 @@ const TherapistSchedule: React.FC = () => {
                                   backgroundColor: '#52c41a',
                                   borderColor: '#52c41a'
                                 }}
+                                onClick={() => handleMarkAsCompleted(response.id)}
+                                loading={loadingBookingId === response.id}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.backgroundColor = '#389e0d';
                                   e.currentTarget.style.borderColor = '#389e0d';
