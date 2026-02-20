@@ -112,12 +112,30 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
-    // Build query for assigned bookings - ONLY bookings explicitly assigned by admin
-    // This strictly filters to show only bookings that were assigned through the 'assign task' functionality
+    // Build query for assigned bookings - Include both admin-assigned bookings and confirmed therapist responses
+    // This shows bookings that were either:
+    // 1. Explicitly assigned by admin through 'assign task' functionality
+    // 2. Confirmed by business after therapist responded (therapist_confirmed -> confirmed workflow)
+    // 3. Paid/Partial payment bookings that have been confirmed by business
     const query: any = {
       therapist: therapist._id,
-      assignedByAdmin: true,  // Only bookings explicitly assigned by admin through assign task
-      status: { $in: ['pending', 'confirmed', 'rescheduled'] }  // Show pending, confirmed, and rescheduled bookings
+      $or: [
+        { assignedByAdmin: true },  // Bookings explicitly assigned by admin
+        { 
+          assignedByAdmin: false,  // Bookings where therapist responded and business confirmed
+          status: 'confirmed',
+          responseVisibleToBusinessOnly: false  // Ensure it's been confirmed by business
+        },
+        { 
+          // Include paid/partial payment bookings that have been confirmed by business
+          assignedByAdmin: false,
+          status: { $in: ['paid'] },
+          paymentStatus: { $in: ['partial', 'completed'] },
+          responseVisibleToBusinessOnly: false,  // Ensure it's been confirmed by business
+          confirmedBy: { $exists: true }  // Ensure business has confirmed it
+        }
+      ],
+      status: { $in: ['pending', 'confirmed', 'rescheduled', 'paid'] }  // Show all relevant statuses including paid
     };
     
     console.log('Therapist booking query:', JSON.stringify(query, null, 2));
@@ -207,6 +225,7 @@ export async function GET(req: NextRequest) {
         date: booking.date,
         time: booking.time,
         status: booking.status,
+        paymentStatus: booking.paymentStatus,
         notes: booking.notes,
         assignedByAdmin: booking.assignedByAdmin,
         createdAt: booking.createdAt,

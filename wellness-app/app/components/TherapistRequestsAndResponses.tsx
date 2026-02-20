@@ -5,6 +5,7 @@ import { Tabs, Card, Typography, Spin, Empty, Row, Col, message } from 'antd';
 import { TeamOutlined, HistoryOutlined } from '@ant-design/icons';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 import AssignedBookingsTracker from '@/app/components/AssignedBookingsTracker';
+import TherapistResponseManager from '@/app/components/TherapistResponseManager';
 
 const { Title, Text } = Typography;
 
@@ -169,7 +170,7 @@ const TherapistRequestsAndResponses: React.FC<TherapistRequestsAndResponsesProps
             ),
             children: (
               <div style={{ marginTop: 16 }}>
-                <AssignedBookingsTracker />
+                <TherapistResponseManager />
               </div>
             )
           }

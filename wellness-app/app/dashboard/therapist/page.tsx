@@ -8,6 +8,7 @@ import TherapistProfileDisplay from '../../components/TherapistProfileDisplay';
 import BusinessCard from '../../components/BusinessCard';
 import TherapistBusinessRequests from '../../components/TherapistBusinessRequests';
 import TherapistBookings from '../../components/TherapistBookings';
+import TherapistSchedule from '../../components/TherapistSchedule';
 import { useAuth } from '../../context/AuthContext';
 import { therapistApi, makeAuthenticatedRequest } from '../../utils/apiUtils';
 
@@ -253,7 +254,7 @@ const TherapistDashboardPage = () => {
       key: '3',
       label: 'Schedule',
       icon: <CalendarOutlined />,
-      onClick: () => console.log('Navigate to schedule'),
+      onClick: () => setActiveTab('schedule'),
     },
     {
       key: '4',
@@ -544,6 +545,14 @@ const TherapistDashboardPage = () => {
                 children: (
                   <div style={{ marginTop: 16 }}>
                     <TherapistBookings />
+                  </div>
+                ),
+              }, {
+                key: 'schedule',
+                label: 'Schedule',
+                children: (
+                  <div style={{ marginTop: 16 }}>
+                    <TherapistSchedule />
                   </div>
                 ),
               }, {

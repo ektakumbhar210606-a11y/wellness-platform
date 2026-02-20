@@ -282,6 +282,10 @@ const TherapistBookings: React.FC = () => {
 
   const filteredBookings = filterStatus === 'all'
     ? bookings
+    : filterStatus === 'admin-assigned'
+    ? bookings.filter(booking => booking.assignedByAdmin)
+    : filterStatus === 'business-confirmed'
+    ? bookings.filter(booking => !booking.assignedByAdmin && booking.status === 'confirmed')
     : bookings.filter(booking => booking.status === filterStatus);
 
   useEffect(() => {
@@ -297,7 +301,7 @@ const TherapistBookings: React.FC = () => {
             My Bookings
           </Title>
           <Text type="secondary">
-            Manage your assigned booking requests
+            Manage your assigned bookings (admin-assigned and business-confirmed)
           </Text>
         </Col>
         <Col>
@@ -312,6 +316,8 @@ const TherapistBookings: React.FC = () => {
               <Option value="pending">Pending</Option>
               <Option value="confirmed">Confirmed</Option>
               <Option value="rescheduled">Rescheduled</Option>
+              <Option value="admin-assigned">Admin Assigned</Option>
+              <Option value="business-confirmed">Business Confirmed</Option>
             </Select>
             <Button onClick={fetchBookings} loading={loading}>
               Refresh
@@ -333,6 +339,10 @@ const TherapistBookings: React.FC = () => {
             description={
               filterStatus === 'all'
                 ? "No bookings assigned to you yet"
+                : filterStatus === 'admin-assigned'
+                ? "No admin-assigned bookings found"
+                : filterStatus === 'business-confirmed'
+                ? "No business-confirmed bookings found"
                 : `No ${filterStatus} bookings found`
             }
           >
@@ -404,6 +414,12 @@ const TherapistBookings: React.FC = () => {
 
                       <div>
                         {getStatusTag(booking.status)}
+                        {booking.assignedByAdmin && (
+                          <Tag color="blue" style={{ marginLeft: 8 }}>Admin Assigned</Tag>
+                        )}
+                        {!booking.assignedByAdmin && booking.status === 'confirmed' && (
+                          <Tag color="green" style={{ marginLeft: 8 }}>Business Confirmed</Tag>
+                        )}
                       </div>
                     </Space>
                   </div>
@@ -418,7 +434,8 @@ const TherapistBookings: React.FC = () => {
 
                 <div style={{ marginLeft: 24 }}>
                   <Space vertical>
-                    {booking.status === 'pending' && (
+                    {/* Show different actions based on booking type and status */}
+                    {booking.status === 'pending' && booking.assignedByAdmin && (
                       <>
                         <Button
                           type="primary"
@@ -439,17 +456,29 @@ const TherapistBookings: React.FC = () => {
                         </Button>
                       </>
                     )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
-                      <Button
-                        onClick={() => {
-                          setSelectedBooking(booking);
-                          setRescheduleModalVisible(true);
-                        }}
-                        loading={actionLoading === booking.id}
-                        style={{ width: 120 }}
-                      >
-                        Reschedule
-                      </Button>
+                    
+                    {/* For confirmed bookings (both admin-assigned and business-confirmed) */}
+                    {(booking.status === 'confirmed' || booking.status === 'rescheduled') && (
+                      <>
+                        <Button
+                          icon={<CloseOutlined />}
+                          onClick={() => handleCancel(booking.id)}
+                          loading={actionLoading === booking.id}
+                          style={{ width: 120 }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setSelectedBooking(booking);
+                            setRescheduleModalVisible(true);
+                          }}
+                          loading={actionLoading === booking.id}
+                          style={{ width: 120 }}
+                        >
+                          Reschedule
+                        </Button>
+                      </>
                     )}
                   </Space>
                 </div>
