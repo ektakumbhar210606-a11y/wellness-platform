@@ -10,21 +10,23 @@ const { Title, Text } = Typography;
 
 interface EarningRecord {
   id: string;
+  displayId?: string;
   service: {
     id: string;
     name: string;
     price: number;
   };
-  customer: {
-    id: string;
+  customer?: {
+    id?: string;
     firstName?: string;
     lastName?: string;
     name?: string;
   };
   date: string;
+  bookingDate?: string;
   therapistPayoutAmount: number;
-  therapistPaidAt: string;
-  displayId?: string;
+  therapistPaidAt?: string;
+  paymentStatus?: string;
 }
 
 const TherapistEarningsPage = () => {
@@ -57,6 +59,16 @@ const TherapistEarningsPage = () => {
 
   const columns = [
     {
+      title: 'Booking ID',
+      dataIndex: 'displayId',
+      key: 'bookingId',
+      render: (displayId: string) => (
+        <div>
+          #{displayId || 'N/A'}
+        </div>
+      ),
+    },
+    {
       title: 'Service',
       dataIndex: ['service', 'name'],
       key: 'service',
@@ -69,19 +81,32 @@ const TherapistEarningsPage = () => {
     {
       title: 'Customer',
       key: 'customer',
-      render: (_: any, record: EarningRecord) => (
+      render: (_: any, record: EarningRecord) => {
+        const fullName = record.customer ? [record.customer.firstName, record.customer.lastName].filter(Boolean).join(' ') : 'N/A';
+        return (
+          <div>
+            <div><UserOutlined /> {fullName || 'N/A'}</div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Booking Date',
+      dataIndex: 'bookingDate',
+      key: 'bookingDate',
+      render: (bookingDate: string) => (
         <div>
-          <div><UserOutlined /> {record.customer.firstName} {record.customer.lastName}</div>
+          <div><CalendarOutlined /> {bookingDate ? new Date(bookingDate).toLocaleDateString() : 'N/A'}</div>
         </div>
       ),
     },
     {
-      title: 'Date',
+      title: 'Service Date',
       dataIndex: 'date',
-      key: 'date',
+      key: 'serviceDate',
       render: (date: string) => (
         <div>
-          <div><CalendarOutlined /> {new Date(date).toLocaleDateString()}</div>
+          <div><CalendarOutlined /> {date ? new Date(date).toLocaleDateString() : 'N/A'}</div>
         </div>
       ),
     },
@@ -96,7 +121,7 @@ const TherapistEarningsPage = () => {
       ),
     },
     {
-      title: 'Payout Amount (40%)',
+      title: 'Payout Amount',
       dataIndex: 'therapistPayoutAmount',
       key: 'payoutAmount',
       render: (amount: number) => (
@@ -106,14 +131,32 @@ const TherapistEarningsPage = () => {
       ),
     },
     {
-      title: 'Paid Date',
+      title: 'Payment Date to Therapist',
       dataIndex: 'therapistPaidAt',
       key: 'paidDate',
       render: (paidAt: string) => (
         <div>
-          {new Date(paidAt).toLocaleDateString()}
+          {paidAt ? new Date(paidAt).toLocaleDateString() : 'N/A'}
         </div>
       ),
+    },
+    {
+      title: 'Payment Status',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
+      render: (status: string) => {
+        let color = 'default';
+        if (status?.toLowerCase() === 'paid') {
+          color = 'green';
+        } else if (status?.toLowerCase() === 'pending') {
+          color = 'orange';
+        }
+        return (
+          <Tag color={color}>
+            {status || 'Pending'}
+          </Tag>
+        );
+      },
     },
   ];
 
@@ -145,7 +188,7 @@ const TherapistEarningsPage = () => {
           <Table
             dataSource={earnings}
             columns={columns}
-            rowKey="id"
+            rowKey={(record, index) => record.id || record.displayId || `earning-${index}`}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,

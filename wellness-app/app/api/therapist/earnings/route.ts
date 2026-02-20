@@ -2,20 +2,12 @@ import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import BookingModel from '@/models/Booking';
 import TherapistModel from '@/models/Therapist';
-import UserModel from '@/models/User';
-import * as jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
 import ServiceModel from '@/models/Service';
+import UserModel from '@/models/User';
+import jwt from 'jsonwebtoken';
+import { JwtPayload } from '@/lib/middleware/authMiddleware';
 
-interface JwtPayload {
-  id: string;
-  email: string;
-  role: string;
-}
-
-/**
- * Middleware to authenticate and authorize therapist users
- */
+// Require therapist authentication
 async function requireTherapistAuth(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -34,7 +26,7 @@ async function requireTherapistAuth(request: NextRequest) {
     let decoded: JwtPayload;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    } catch (verificationError: unknown) {
+    } catch (err) {
       return {
         authenticated: false,
         error: 'Invalid or expired token',
@@ -65,11 +57,11 @@ async function requireTherapistAuth(request: NextRequest) {
       authenticated: true,
       user: decoded
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
-      error: (error instanceof Error) ? error.message : 'Internal server error',
+      error: error.message || 'Internal server error',
       status: 500
     };
   }
@@ -77,7 +69,7 @@ async function requireTherapistAuth(request: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Authenticate and authorize therapist user
+    // Authenticate and authorize therapist
     const authResult = await requireTherapistAuth(req);
     if (!authResult.authenticated) {
       return Response.json(
@@ -96,7 +88,7 @@ export async function GET(req: NextRequest) {
 
     await connectToDatabase();
 
-    // Find therapist profile by user ID
+    // Get therapist profile by user ID
     const therapist = await TherapistModel.findOne({ user: decoded.id });
     if (!therapist) {
       return Response.json(
@@ -105,66 +97,75 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Find bookings where therapistPayoutStatus is "paid"
+    // Find all bookings assigned to this therapist that are completed
     const bookings = await BookingModel.find({
       therapist: therapist._id,
-      therapistPayoutStatus: 'paid'
+      status: 'completed'
     })
-    .populate({
-      path: 'service',
-      select: 'name price duration description'
-    })
-    .populate({
-      path: 'customer',
-      select: 'name email phone'
-    })
-    .sort({ therapistPaidAt: -1 }); // Sort by paid date, newest first
+    .populate('service')
+    .populate('customer')
+    .sort({ createdAt: -1 });
 
-    // Format the bookings for the response
-    const formattedBookings = bookings.map(booking => {
-      // Extract first and last name from customer name
-      let firstName = '';
-      let lastName = '';
-      if (booking.customer && (booking.customer as any).name) {
-        const nameParts = (booking.customer as any).name.trim().split(/\s+/);
-        firstName = nameParts[0] || '';
-        lastName = nameParts.slice(1).join(' ') || '';
+    // Transform bookings to earnings records with the expected structure
+    const earnings = bookings.map(booking => {
+      // Calculate therapist's share (40% of service price)
+      const service = booking.service as any;
+      const therapistShare = service ? service.price * 0.4 : 0;
+      
+      // Extract customer details
+      const customer = booking.customer as any;
+      let customerData: any = { name: 'Unknown Customer' };
+      if (customer) {
+        if (customer.firstName || customer.lastName) {
+          customerData = {
+            id: customer._id?.toString(),
+            firstName: customer.firstName || '',
+            lastName: customer.lastName || '',
+            name: customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+          };
+        } else if (customer.name) {
+          customerData = {
+            id: customer._id?.toString(),
+            name: customer.name,
+            firstName: customer.name.split(' ')[0] || '',
+            lastName: customer.name.split(' ').slice(1).join(' ') || ''
+          };
+        } else {
+          customerData = {
+            id: customer._id?.toString(),
+            name: 'Unknown Customer',
+            firstName: '',
+            lastName: ''
+          };
+        }
       }
 
       return {
         id: booking._id.toString(),
+        displayId: booking.bookingId || booking._id.toString(),
         service: {
-          id: (booking.service as any)._id.toString(),
-          name: (booking.service as any).name,
-          price: (booking.service as any).price,
-          duration: (booking.service as any).duration,
-          description: (booking.service as any).description
+          id: service?._id?.toString() || 'unknown',
+          name: service ? service.name : 'Unknown Service',
+          price: service ? service.price : 0
         },
-        customer: {
-          id: (booking.customer as any)._id.toString(),
-          name: (booking.customer as any).name,
-          email: (booking.customer as any).email,
-          phone: (booking.customer as any).phone,
-          firstName,
-          lastName
-        },
+        customer: customerData,
         date: booking.date,
-        therapistPayoutAmount: booking.therapistPayoutAmount,
+        therapistPayoutAmount: booking.therapistPayoutAmount || therapistShare,
         therapistPaidAt: booking.therapistPaidAt,
-        displayId: booking._id.toString() // Could be enhanced with a formatted booking ID
+        paymentStatus: booking.therapistPayoutStatus || 'pending',
+        bookingDate: booking.createdAt // Store the original booking date
       };
     });
 
     return Response.json({
       success: true,
-      message: 'Earnings data retrieved successfully',
-      data: formattedBookings
+      message: 'Earnings retrieved successfully',
+      data: earnings
     });
-
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error fetching therapist earnings:', error);
     return Response.json(
-      { success: false, error: (error instanceof Error) ? error.message : 'Internal server error' },
+      { success: false, error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

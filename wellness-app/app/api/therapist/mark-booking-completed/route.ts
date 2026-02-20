@@ -68,7 +68,6 @@ async function requireTherapistAuth(request: NextRequest) {
   }
 }
 
-// TESTING ROUTE - REMOVE IN PRODUCTION
 export async function POST(req: NextRequest) {
   try {
     // Authenticate and authorize therapist
@@ -181,12 +180,13 @@ export async function POST(req: NextRequest) {
 
     return Response.json({
       success: true,
-      message: 'Booking marked as completed successfully (TEST ROUTE)',
+      message: 'Booking marked as completed successfully',
       data: {
         id: updatedBooking._id.toString(),
         status: updatedBooking.status,
         paymentStatus: updatedBooking.paymentStatus,
         therapistPayoutStatus: updatedBooking.therapistPayoutStatus,
+        therapistPayoutAmount: updatedBooking.therapistPayoutAmount,
         completedAt: updatedBooking.completedAt,
         confirmedBy: updatedBooking.confirmedBy,
         confirmedAt: updatedBooking.confirmedAt
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error marking booking as completed (TEST ROUTE):', error);
+    console.error('Error marking booking as completed:', error);
     return Response.json(
       { success: false, error: error.message || 'Internal server error' },
       { status: 500 }

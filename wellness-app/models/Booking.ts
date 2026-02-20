@@ -40,10 +40,22 @@ export interface IBooking extends Document {
   cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
   cancelledAt?: Date; // When the booking was cancelled
   completedAt?: Date; // When the booking was completed
-  paymentStatus?: 'pending' | 'partial' | 'completed'; // Overall payment status of the booking
+  paymentStatus?: 'pending' | 'partial' | 'paid'; // Overall payment status of the booking
   therapistPayoutStatus?: 'pending' | 'paid'; // Status of payout to therapist
   therapistPayoutAmount?: number; // Amount paid to therapist
   therapistPaidAt?: Date; // When therapist was paid
+  paymentVerification?: {
+    orderId: string;
+    paymentId: string;
+    signature: string;
+    verifiedAt?: Date;
+  }; // Razorpay payment verification details
+  therapistPayoutOrderInfo?: {
+    orderId: string;
+    amount: number;
+    currency: string;
+    created_at: Date;
+  }; // Information about the Razorpay order for therapist payout
   createdAt: Date;
   updatedAt: Date;
 }
@@ -152,7 +164,7 @@ const BookingSchema: Schema<IBooking> = new Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'partial', 'completed'],
+    enum: ['pending', 'partial', 'paid'],
     default: 'pending'
   },
   therapistPayoutStatus: {
@@ -167,6 +179,42 @@ const BookingSchema: Schema<IBooking> = new Schema({
   therapistPaidAt: {
     type: Date,
     required: false
+  },
+  paymentVerification: {
+    orderId: {
+      type: String,
+      required: false
+    },
+    paymentId: {
+      type: String,
+      required: false
+    },
+    signature: {
+      type: String,
+      required: false
+    },
+    verifiedAt: {
+      type: Date,
+      required: false
+    }
+  },
+  therapistPayoutOrderInfo: {
+    orderId: {
+      type: String,
+      required: false
+    },
+    amount: {
+      type: Number,
+      required: false
+    },
+    currency: {
+      type: String,
+      required: false
+    },
+    created_at: {
+      type: Date,
+      required: false
+    }
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
