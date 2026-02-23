@@ -113,22 +113,12 @@ const TherapistEarningsPage = () => {
       ),
     },
     {
-      title: 'Service Price',
-      dataIndex: ['service', 'price'],
-      key: 'servicePrice',
-      render: (price: number) => (
-        <div style={{ fontWeight: 'bold', color: '#52c41a' }}>
-          <DollarOutlined /> {formatCurrency(price, 'INR')}
-        </div>
-      ),
-    },
-    {
-      title: 'Payout Amount',
+      title: 'Earnings',
       dataIndex: 'therapistPayoutAmount',
-      key: 'payoutAmount',
+      key: 'earnings',
       render: (amount: number) => (
         <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
-          <DollarOutlined /> {formatCurrency(amount, 'INR')}
+          {formatCurrency(amount, 'INR')}
         </div>
       ),
     },
@@ -190,7 +180,7 @@ const TherapistEarningsPage = () => {
           <Table
             dataSource={earnings}
             columns={columns}
-            rowKey={(record, index) => record.id || record.displayId || `earning-${index}`}
+            rowKey={(record) => record.id || record.displayId || `earning-${record.id || Math.random()}`}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
@@ -199,7 +189,7 @@ const TherapistEarningsPage = () => {
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <DollarOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
+            <span style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }}>₹</span>
             <Title level={4}>No Earnings Yet</Title>
             <Text type="secondary">
               Your paid earnings will appear here once you've completed sessions and received payment.
