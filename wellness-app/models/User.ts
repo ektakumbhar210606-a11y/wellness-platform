@@ -18,6 +18,7 @@ export interface IUser extends Document {
   phone?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  rewardPoints?: number; // Reward points earned from completed bookings and reviews
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +77,11 @@ const UserSchema: Schema<IUser> = new Schema({
   },
   resetPasswordExpires: {
     type: Date
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+    min: [0, 'Reward points cannot be negative']
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

@@ -164,6 +164,7 @@ export async function POST(req: NextRequest) {
         therapistPayoutStatus: 'pending', // Set therapist payout to pending
         therapistPayoutAmount: therapistPayoutAmount, // Set the calculated payout amount
         completedAt: new Date(), // Add completedAt field
+        responseVisibleToBusinessOnly: false, // Make booking visible to customer after completion
         // Track who marked as completed and when
         confirmedBy: decoded.id,
         confirmedAt: new Date()

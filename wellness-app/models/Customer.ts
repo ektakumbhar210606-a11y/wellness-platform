@@ -127,6 +127,9 @@ export interface ICustomer extends Document {
     appointmentHistoryVisibility: 'public' | 'private' | 'friends';
   };
   
+  // Reward points
+  rewardPoints: number;
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -375,8 +378,14 @@ const CustomerSchema: Schema<ICustomer> = new Schema({
       enum: ['public', 'private', 'friends'],
       default: 'private'
     }
-  }
+  },
   
+  // Reward points
+  rewardPoints: {
+    type: Number,
+    default: 0,
+    min: 0
+  }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });

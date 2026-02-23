@@ -34,6 +34,8 @@ export interface ITherapist extends Document {
   experience: number; // Years of experience
   skills: string[]; // Array of therapy skills
   rating?: number; // Average customer rating (0-5)
+  averageRating?: number; // Aggregated average rating for quick access
+  totalReviews?: number; // Total number of reviews received
   availabilityStatus: TherapistAvailability; // Current availability status
   associatedBusinesses?: IBusinessAssociation[]; // Array of business associations
   
@@ -119,6 +121,17 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
       // Round to 2 decimal places if provided
       return value ? Math.round(value * 100) / 100 : value;
     }
+  },
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: [0, 'Average rating cannot be negative'],
+    max: [5, 'Average rating cannot exceed 5']
+  },
+  totalReviews: {
+    type: Number,
+    default: 0,
+    min: [0, 'Total reviews cannot be negative']
   },
   availabilityStatus: {
     type: String,

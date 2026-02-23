@@ -40,6 +40,7 @@ export interface IBooking extends Document {
   cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
   cancelledAt?: Date; // When the booking was cancelled
   completedAt?: Date; // When the booking was completed
+  reviewSubmitted?: boolean; // Whether a review has been submitted for this booking
   paymentStatus?: 'pending' | 'partial' | 'paid'; // Overall payment status of the booking
   therapistPayoutStatus?: 'pending' | 'paid'; // Status of payout to therapist
   therapistPayoutAmount?: number; // Amount paid to therapist
@@ -161,6 +162,14 @@ const BookingSchema: Schema<IBooking> = new Schema({
   cancelledAt: {
     type: Date, // When the booking was cancelled
     required: false
+  },
+  completedAt: {
+    type: Date, // When the booking was completed
+    required: false
+  },
+  reviewSubmitted: {
+    type: Boolean, // Whether a review has been submitted for this booking
+    default: false
   },
   paymentStatus: {
     type: String,

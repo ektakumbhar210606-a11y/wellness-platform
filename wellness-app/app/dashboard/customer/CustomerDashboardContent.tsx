@@ -32,6 +32,8 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import CustomerUpcomingAppointmentCard from '@/app/components/CustomerUpcomingAppointmentCard';
+import CompletedBookingsSection from '@/app/components/CompletedBookingsSection';
+import RewardPointsCard from '@/app/components/RewardPointsCard';
 import Link from 'next/link';
 
 const { Header, Content, Sider } = Layout;
@@ -332,6 +334,13 @@ const CustomerDashboardContent = () => {
             </Col>
           </Row>
 
+          {/* Reward Points Card */}
+          <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Col xs={24}>
+              <RewardPointsCard />
+            </Col>
+          </Row>
+
           <Row gutter={[16, 16]}>
             {/* Upcoming Appointments */}
             <Col xs={24}>
@@ -404,6 +413,11 @@ const CustomerDashboardContent = () => {
                   </Empty>
                 )}
               </Card>
+            </Col>
+
+            {/* Completed Bookings */}
+            <Col xs={24}>
+              <CompletedBookingsSection />
             </Col>
 
           </Row>

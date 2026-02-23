@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '../db';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import UserModel from '../../models/User';
 
 export interface JwtPayload {
@@ -69,6 +69,68 @@ export async function requireTherapistAuth(request: NextRequest) {
     console.error('Authentication error:', error);
     return {
       authenticated: false,
+      error: error.message || 'Internal server error',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Middleware to authenticate and authorize business users
+ */
+export async function requireBusinessAuth(request: NextRequest) {
+  try {
+    await connectToDatabase();
+
+    // Get token from header
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return {
+        success: false,
+        error: 'Authentication token required',
+        status: 401
+      };
+    }
+
+    // Verify token
+    let decoded: JwtPayload;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    } catch (err) {
+      return {
+        success: false,
+        error: 'Invalid or expired token',
+        status: 401
+      };
+    }
+
+    // Check user role - allow both 'Business' and 'business' for backward compatibility
+    if (decoded.role.toLowerCase() !== 'business') {
+      return {
+        success: false,
+        error: 'Access denied. Business role required',
+        status: 403
+      };
+    }
+
+    // Get user to verify existence
+    const user = await UserModel.findById(decoded.id);
+    if (!user) {
+      return {
+        success: false,
+        error: 'User not found',
+        status: 404
+      };
+    }
+
+    return {
+      success: true,
+      decoded
+    };
+  } catch (error: any) {
+    console.error('Authentication error:', error);
+    return {
+      success: false,
       error: error.message || 'Internal server error',
       status: 500
     };

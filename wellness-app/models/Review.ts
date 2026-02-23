@@ -1,22 +1,41 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { IBooking } from './Booking'; // Import the Booking interface
+import { IBooking } from './Booking';
+import { IUser } from './User';
+import { IService } from './Service';
 
 // Define the interface for the Review document
 export interface IReview extends Document {
-  booking: IBooking['_id'] | IBooking; // Reference to Booking model
-  rating: number; // Customer rating (1-5)
-  comment?: string; // Customer's written feedback (optional)
-  reviewDate?: Date; // Date when review was submitted (optional)
+  bookingId: IBooking['_id'] | IBooking; // Reference to Booking model
+  customer: IUser['_id'] | IUser; // Reference to User model (customer)
+  therapist: IUser['_id'] | IUser; // Reference to User model (therapist)
+  service: IService['_id'] | IService; // Reference to Service model
+  rating: number; // Rating from 1-5
+  comment?: string; // Optional review comment
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Define the Review schema
 const ReviewSchema: Schema<IReview> = new Schema({
-  booking: {
+  bookingId: {
     type: Schema.Types.ObjectId,
     ref: 'Booking',
     required: [true, 'Booking reference is required'],
+  },
+  customer: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Customer reference is required'],
+  },
+  therapist: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Therapist reference is required'],
+  },
+  service: {
+    type: Schema.Types.ObjectId,
+    ref: 'Service',
+    required: [true, 'Service reference is required'],
   },
   rating: {
     type: Number,
@@ -28,20 +47,14 @@ const ReviewSchema: Schema<IReview> = new Schema({
     type: String,
     trim: true,
     maxlength: [1000, 'Comment cannot exceed 1000 characters']
-  },
-  reviewDate: {
-    type: Date,
-    default: Date.now // Default to current date if not provided
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });
 
 // Create indexes for better query performance
-ReviewSchema.index({ booking: 1 }); // Index on booking for quick lookups by booking
-ReviewSchema.index({ rating: 1 }); // Index on rating for rating-based queries
-ReviewSchema.index({ reviewDate: 1 }); // Index on review date for date-based queries
-ReviewSchema.index({ createdAt: -1 }); // Index on creation date for sorting by newest
+ReviewSchema.index({ therapist: 1 }); // Index on therapist for faster rating calculation
+ReviewSchema.index({ bookingId: 1 }, { unique: true }); // Unique index on bookingId to prevent duplicate reviews
 
 // Create and export the Review model
 const ReviewModel = mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);

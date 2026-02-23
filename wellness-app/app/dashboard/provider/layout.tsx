@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Space, Typography, Avatar } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserOutlined, CalendarOutlined, BookOutlined, TeamOutlined, ShopOutlined, ProfileOutlined, MenuOutlined, DollarOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, BookOutlined, TeamOutlined, ShopOutlined, ProfileOutlined, MenuOutlined, DollarOutlined, StarOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
 const { Header, Content, Sider } = Layout;
@@ -31,6 +31,7 @@ const ProviderDashboardLayout: React.FC<ProviderDashboardLayoutProps> = ({ child
         else if (tab === 'requests') setSelectedKey('therapists');
         else if (tab === 'profile') setSelectedKey('profile');
         else if (tab === 'schedule') setSelectedKey('schedule');
+        else if (pathname === '/dashboard/business/reviews') setSelectedKey('reviews');
         else setSelectedKey('dashboard');
       }
     };
@@ -104,6 +105,14 @@ const ProviderDashboardLayout: React.FC<ProviderDashboardLayoutProps> = ({ child
       icon: <CalendarOutlined />,
       onClick: () => {
         router.push('/dashboard/provider?tab=schedule');
+      },
+    },
+    {
+      key: 'reviews',
+      label: 'Reviews',
+      icon: <StarOutlined />,
+      onClick: () => {
+        router.push('/dashboard/business/reviews');
       },
     },
     {

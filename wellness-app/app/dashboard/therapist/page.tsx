@@ -9,6 +9,7 @@ import BusinessCard from '../../components/BusinessCard';
 import TherapistBusinessRequests from '../../components/TherapistBusinessRequests';
 import TherapistBookings from '../../components/TherapistBookings';
 import TherapistSchedule from '../../components/TherapistSchedule';
+import TherapistReviews from '../../components/TherapistReviews';
 import { useAuth } from '../../context/AuthContext';
 import { therapistApi, makeAuthenticatedRequest } from '../../utils/apiUtils';
 
@@ -266,7 +267,7 @@ const TherapistDashboardPage = () => {
       key: '5',
       label: 'Reviews',
       icon: <MessageOutlined />,
-      onClick: () => console.log('Navigate to reviews'),
+      onClick: () => setActiveTab('reviews'),
     },
     {
       key: '6',
@@ -562,6 +563,14 @@ const TherapistDashboardPage = () => {
                 children: (
                   <div style={{ marginTop: 16 }}>
                     <TherapistSchedule />
+                  </div>
+                ),
+              }, {
+                key: 'reviews',
+                label: 'Reviews',
+                children: (
+                  <div style={{ marginTop: 16 }}>
+                    <TherapistReviews />
                   </div>
                 ),
               }, {

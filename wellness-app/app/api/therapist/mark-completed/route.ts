@@ -147,9 +147,10 @@ export async function POST(req: NextRequest) {
       bookingId,
       { 
         status: BookingStatus.Completed,
-        paymentStatus: 'completed', // Set to completed to indicate full payment collected
+        paymentStatus: 'paid', // Set to paid to indicate full payment collected
         therapistPayoutStatus: 'pending', // Set therapist payout to pending
         completedAt: new Date(), // Add completedAt field
+        responseVisibleToBusinessOnly: false, // Make booking visible to customer after completion
         // Track who marked as completed and when
         confirmedBy: decoded.id,
         confirmedAt: new Date()
