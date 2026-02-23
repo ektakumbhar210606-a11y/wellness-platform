@@ -118,7 +118,7 @@ const TherapistEarningsPage = () => {
       key: 'earnings',
       render: (amount: number) => (
         <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
-          <DollarOutlined /> {formatCurrency(amount, 'INR')}
+          {formatCurrency(amount, 'INR')}
         </div>
       ),
     },
