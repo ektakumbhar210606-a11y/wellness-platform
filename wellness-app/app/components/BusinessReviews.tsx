@@ -199,7 +199,7 @@ const BusinessReviews: React.FC = () => {
     return (
       <Card>
         <Alert
-          message="Error Loading Reviews"
+          title="Error Loading Reviews"
           description={error}
           type="error"
           showIcon
@@ -295,7 +295,7 @@ const BusinessReviews: React.FC = () => {
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} reviews`,
-            position: ['bottomCenter'],
+            placement: ['bottomCenter'],
           }}
           locale={{
             emptyText: (
@@ -321,7 +321,7 @@ const BusinessReviews: React.FC = () => {
       {error && reviews.length > 0 && (
         <div style={{ marginTop: '16px' }}>
           <Alert
-            message="Note"
+            title="Note"
             description={error}
             type="warning"
             showIcon

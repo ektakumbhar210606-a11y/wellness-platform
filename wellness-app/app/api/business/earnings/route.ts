@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
     } = { 
       service: { $in: serviceIds },
       status: paymentType === 'half' ? 'confirmed' : 'completed',
-      paymentStatus: paymentType === 'half' ? 'partial' : 'completed'
+      paymentStatus: paymentType === 'half' ? 'partial' : 'paid'
     };
 
     // Fetch bookings with populated data
@@ -195,29 +195,29 @@ export async function GET(req: NextRequest) {
     const formattedBookings = bookings.map(booking => ({
       id: booking._id.toString(),
       customer: {
-        id: (booking.customer as any)._id.toString(),
-        name: (booking.customer as any).name,
-        email: (booking.customer as any).email,
-        phone: (booking.customer as any).phone,
-        firstName: (booking.customer as any).name.split(' ')[0] || (booking.customer as any).name,
-        lastName: (booking.customer as any).name.split(' ').slice(1).join(' ') || ''
+        id: (booking.customer as any)?._id?.toString() || '',
+        name: (booking.customer as any)?.name || 'N/A',
+        email: (booking.customer as any)?.email || 'N/A',
+        phone: (booking.customer as any)?.phone || 'N/A',
+        firstName: (booking.customer as any)?.name ? (booking.customer as any).name.split(' ')[0] || (booking.customer as any).name : 'N/A',
+        lastName: (booking.customer as any)?.name ? (booking.customer as any).name.split(' ').slice(1).join(' ') || '' : ''
       },
       service: {
-        id: (booking.service as any)._id.toString(),
-        name: (booking.service as any).name,
-        price: (booking.service as any).price,
-        duration: (booking.service as any).duration,
-        description: (booking.service as any).description,
-        currency: (booking.service as any).business?.currency || 'INR'
+        id: (booking.service as any)?._id?.toString() || '',
+        name: (booking.service as any)?.name || 'N/A',
+        price: (booking.service as any)?.price || 0,
+        duration: (booking.service as any)?.duration || 0,
+        description: (booking.service as any)?.description || '',
+        currency: (booking.service as any)?.business?.currency || 'INR'
       },
       therapist: {
-        id: (booking.therapist as any)._id.toString(),
-        fullName: (booking.therapist as any).fullName,
-        professionalTitle: (booking.therapist as any).professionalTitle
+        id: (booking.therapist as any)?._id?.toString() || '',
+        fullName: (booking.therapist as any)?.fullName || 'N/A',
+        professionalTitle: (booking.therapist as any)?.professionalTitle || 'N/A'
       },
       date: booking.date,
       time: booking.time,
-      duration: booking.duration || (booking.service as any).duration,
+      duration: booking.duration || (booking.service as any)?.duration || 0,
       status: booking.status,
       paymentStatus: booking.paymentStatus,
       therapistPayoutStatus: booking.therapistPayoutStatus,
