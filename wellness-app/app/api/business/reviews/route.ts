@@ -190,19 +190,16 @@ export async function GET(req: NextRequest) {
       filter.therapist = therapist.user;
     }
 
-    // Fetch reviews with populated data
+    // First, let's get all reviews with therapist and other data populated
+    // The Review.therapist field references the User ID, so population will give us the User object
     const reviews = await ReviewModel.find(filter)
       .populate({
         path: 'therapist',
-        select: 'fullName user',
-        populate: {
-          path: 'user',
-          select: 'firstName lastName'
-        }
+        select: 'firstName lastName fullName email'
       })
       .populate({
         path: 'customer',
-        select: 'firstName lastName'
+        select: 'firstName lastName name'
       })
       .populate({
         path: 'service',
@@ -210,19 +207,42 @@ export async function GET(req: NextRequest) {
       })
       .sort({ createdAt: -1 }) // Newest first
       .lean();
-
+        
     // Transform reviews data to match required response format
-    const formattedReviews = reviews.map(review => ({
-      therapistName: (review.therapist as any)?.fullName || 
-                    `${(review.therapist as any)?.user?.firstName || ''} ${(review.therapist as any)?.user?.lastName || ''}`.trim() || 
-                    'Unknown Therapist',
-      customerName: `${(review.customer as any)?.firstName || ''} ${(review.customer as any)?.lastName || ''}`.trim() || 'Anonymous Customer',
-      serviceName: (review.service as any)?.name || 'Unknown Service',
-      rating: review.rating,
-      comment: review.comment,
-      createdAt: review.createdAt
-    }));
-
+    const formattedReviews = reviews.map(review => {
+      // Since Review.therapist references User ID, the populated therapist object is the User object
+      // So we can get the name directly from the therapist object
+      const therapist = review.therapist as any;
+      let therapistFullName = 'Unknown Therapist';
+      
+      if (therapist) {
+        // Try different name formats in order of preference
+        if (therapist.firstName && therapist.lastName) {
+          therapistFullName = `${therapist.firstName} ${therapist.lastName}`.trim();
+        } else if (therapist.fullName) {
+          therapistFullName = therapist.fullName.trim();
+        } else if (therapist.firstName) {
+          therapistFullName = therapist.firstName;
+        } else if (therapist.lastName) {
+          therapistFullName = therapist.lastName;
+        } else if (therapist.email) {
+          // As a last resort, use the email
+          therapistFullName = therapist.email.split('@')[0]; // Take part before @
+        }
+      }
+          
+      return {
+        therapistName: therapistFullName || 'Unknown Therapist',
+        customerName: (review.customer && ((review.customer as any)?.firstName || (review.customer as any)?.lastName)) 
+          ? `${(review.customer as any)?.firstName || ''} ${(review.customer as any)?.lastName || ''}`.trim()
+          : ((review.customer as any)?.name || 'Anonymous Customer'),
+        serviceName: (review.service as any)?.name || 'Unknown Service',
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt
+      };
+    });
+        
     return Response.json({
       success: true,
       data: {

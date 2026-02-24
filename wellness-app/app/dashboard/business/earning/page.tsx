@@ -59,7 +59,7 @@ interface Booking {
   time: string;
   duration: number;
   status: 'confirmed';
-  paymentStatus: 'partial' | 'completed';
+  paymentStatus: 'partial' | 'paid';
   therapistPayoutStatus: 'pending' | 'paid';
   notes?: string;
   createdAt: string;
@@ -266,12 +266,12 @@ const BusinessEarningPage = () => {
       key: 'customer',
       render: (_: any, record: Booking) => (
         <div>
-          <div><UserOutlined /> {record.customer.firstName ? `${record.customer.firstName} ${record.customer.lastName || ''}` : (record.customer.name || 'N/A')}</div>
+          <div><UserOutlined /> {record.customer.firstName && record.customer.firstName !== 'N/A' ? `${record.customer.firstName} ${record.customer.lastName || ''}` : (record.customer.name || 'N/A')}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            <MailOutlined /> {record.customer.email}
+            <MailOutlined /> {record.customer.email !== 'N/A' ? record.customer.email : 'N/A'}
           </div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            <PhoneOutlined /> {record.customer.phone || 'N/A'}
+            <PhoneOutlined /> {record.customer.phone !== 'N/A' ? record.customer.phone : 'N/A'}
           </div>
         </div>
       ),
@@ -282,9 +282,9 @@ const BusinessEarningPage = () => {
       key: 'service',
       render: (_: any, record: Booking) => (
         <div>
-          <div>{record.service.name}</div>
+          <div>{record.service.name !== 'N/A' ? record.service.name : 'N/A'}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.service.duration} mins • {formatCurrency(record.service.price, record.service.currency)}
+            {record.service.duration !== 0 ? record.service.duration : 'N/A'} mins • {formatCurrency(record.service.price !== 0 ? record.service.price : 0, record.service.currency)}
           </div>
         </div>
       ),
@@ -295,9 +295,9 @@ const BusinessEarningPage = () => {
       key: 'therapist',
       render: (_: any, record: Booking) => (
         <div>
-          <div>{record.therapist.fullName}</div>
+          <div>{record.therapist.fullName !== 'N/A' ? record.therapist.fullName : 'N/A'}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.therapist.professionalTitle}
+            {record.therapist.professionalTitle !== 'N/A' ? record.therapist.professionalTitle : 'N/A'}
           </div>
         </div>
       ),
@@ -534,7 +534,7 @@ const BusinessEarningPage = () => {
         {selectedBooking && (
           <Descriptions column={1} bordered>
             <Descriptions.Item label="Customer Name">
-              {selectedBooking.customer.firstName 
+              {selectedBooking.customer.firstName && selectedBooking.customer.firstName !== 'N/A'
                 ? `${selectedBooking.customer.firstName} ${selectedBooking.customer.lastName || ''}`
                 : (selectedBooking.customer.name || 'N/A')}
             </Descriptions.Item>
@@ -545,16 +545,16 @@ const BusinessEarningPage = () => {
               {selectedBooking.customer.phone || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Service">
-              {selectedBooking.service.name}
+              {selectedBooking.service.name !== 'N/A' ? selectedBooking.service.name : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Service Price">
-              {formatCurrency(selectedBooking.service.price, selectedBooking.service.currency)}
+              {formatCurrency(selectedBooking.service.price !== 0 ? selectedBooking.service.price : 0, selectedBooking.service.currency)}
             </Descriptions.Item>
             <Descriptions.Item label="Service Duration">
-              {selectedBooking.service.duration} minutes
+              {selectedBooking.service.duration !== 0 ? selectedBooking.service.duration : 'N/A'} minutes
             </Descriptions.Item>
             <Descriptions.Item label="Therapist">
-              {selectedBooking.therapist.fullName} ({selectedBooking.therapist.professionalTitle})
+              {selectedBooking.therapist.fullName !== 'N/A' ? selectedBooking.therapist.fullName : 'N/A'} ({selectedBooking.therapist.professionalTitle !== 'N/A' ? selectedBooking.therapist.professionalTitle : 'N/A'})
             </Descriptions.Item>
             <Descriptions.Item label="Booking Date">
               {new Date(selectedBooking.date).toLocaleDateString()}
