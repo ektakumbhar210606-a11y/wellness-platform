@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal, Tag } from 'antd';
-import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined, TrophyOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { businessService, BusinessProfile, BusinessDashboardStats } from '@/app/services/businessService';
@@ -13,6 +13,7 @@ import ServiceCard from '@/app/components/ServiceCard';
 import TherapistRequestCard from '@/app/components/TherapistRequestCard';
 import BookingManagement from '@/app/components/BookingManagement';
 import TherapistRequestsAndResponses from '@/app/components/TherapistRequestsAndResponses';
+import TherapistBonuses from '@/app/components/business/TherapistBonuses';
 
 const { Title, Text } = Typography;
 
@@ -891,6 +892,19 @@ const ProviderDashboardContent = () => {
                 onAssignTask={handleAssignTask}
                 dashboardStats={dashboardStats}
               />
+            </div>
+          ),
+        }, {
+          key: 'bonuses',
+          label: (
+            <span>
+              <TrophyOutlined />
+              Therapist Bonuses
+            </span>
+          ),
+          children: (
+            <div style={{ marginTop: 16 }}>
+              <TherapistBonuses />
             </div>
           ),
         }, {

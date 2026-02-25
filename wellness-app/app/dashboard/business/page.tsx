@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Typography, Button, Space, Tabs } from 'antd';
-import { DollarOutlined, BookOutlined, StarOutlined } from '@ant-design/icons';
+import { DollarOutlined, BookOutlined, StarOutlined, TrophyOutlined } from '@ant-design/icons';
 import BusinessReviews from '../../components/BusinessReviews';
+import TherapistBonuses from '../../components/business/TherapistBonuses';
 
 const { Title, Text } = Typography;
 
@@ -57,6 +58,20 @@ const BusinessDashboardPage = () => {
               <Text>Manage your booking requests and confirmed appointments</Text>
             </Card>
           </Space>
+        </div>
+      ),
+    },
+    {
+      key: 'bonuses',
+      label: (
+        <span>
+          <TrophyOutlined />
+          Therapist Bonuses
+        </span>
+      ),
+      children: (
+        <div style={{ marginTop: '24px' }}>
+          <TherapistBonuses />
         </div>
       ),
     },
