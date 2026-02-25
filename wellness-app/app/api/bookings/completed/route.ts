@@ -69,52 +69,33 @@ export async function GET(request: NextRequest) {
     const User = userModule.default;
 
     // Filter Conditions:
-    // - status = "completed" 
-    // - paymentStatus = "paid" (fully paid)
+    // - status = "completed"
     // - customer = logged-in user ID
-    // Only show bookings that are both fully paid AND completed
+    // NOTE: Removed paymentStatus requirement to allow all completed bookings to be reviewed
     const filter = {
       customer: userId,
-      status: BookingStatus.Completed,
-      paymentStatus: 'paid'
+      status: BookingStatus.Completed
     };
 
-    // Execute query to get bookings
-    const bookings = await Booking.find(filter).sort({ completedAt: -1 });
+    // Execute query with sorting and population
+    const bookings = await Booking.find(filter)
+      .populate({
+        path: 'service',
+        select: 'name description duration price category'
+      })
+      .populate({
+        path: 'therapist',
+        select: 'user',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName'
+        }
+      })
+      .sort({ completedAt: -1 }); // Sort by completedAt descending
 
-    // Transform the data for response with manual population
-    const transformedBookings = [];
-    
-    for (const booking of bookings) {
-      // Manually fetch service data
-      let serviceData = null;
-      if (booking.service) {
-        const service = await Service.findById(booking.service);
-        if (service) {
-          serviceData = {
-            id: service._id,
-            name: service.name,
-            description: service.description,
-            duration: service.duration,
-            price: service.price,
-            category: service.category
-          };
-        }
-      }
-      
-      // Manually fetch therapist data
-      let therapistName = 'Unknown Therapist';
-      if (booking.therapist) {
-        const therapist = await Therapist.findById(booking.therapist);
-        if (therapist && therapist.user) {
-          const user = await User.findById(therapist.user);
-          if (user) {
-            therapistName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown Therapist';
-          }
-        }
-      }
-      
-      transformedBookings.push({
+    // Transform the data for response
+    const transformedBookings = bookings.map(booking => {
+      return {
         id: booking._id,
         date: booking.date,
         time: booking.time,
@@ -124,13 +105,20 @@ export async function GET(request: NextRequest) {
         notes: booking.notes,
         duration: booking.duration,
         reviewSubmitted: booking.reviewSubmitted || false,
-        service: serviceData,
+        service: {
+          id: booking.service._id,
+          name: booking.service.name,
+          description: booking.service.description,
+          duration: booking.service.duration,
+          price: booking.service.price,
+          category: booking.service.category
+        },
         therapist: {
-          id: booking.therapist,
-          name: therapistName
+          id: booking.therapist._id,
+          name: `${booking.therapist.user.firstName} ${booking.therapist.user.lastName}`
         }
-      });
-    }
+      };
+    });
 
     return NextResponse.json({
       bookings: transformedBookings,
