@@ -10,7 +10,11 @@ interface RewardPointsData {
   rewardPoints: number;
 }
 
-const RewardPointsCard: React.FC = () => {
+interface RewardPointsCardProps {
+  onRefresh?: () => void;
+}
+
+const RewardPointsCard: React.FC<RewardPointsCardProps> = ({ onRefresh }) => {
   const [rewardPoints, setRewardPoints] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +60,24 @@ const RewardPointsCard: React.FC = () => {
     fetchRewardPoints();
   }, []);
 
+  // Listen for review submission events to refresh reward points
+  useEffect(() => {
+    const handleReviewSubmitted = () => {
+      fetchRewardPoints();
+    };
+
+    window.addEventListener('reviewSubmitted', handleReviewSubmitted);
+    
+    return () => {
+      window.removeEventListener('reviewSubmitted', handleReviewSubmitted);
+    };
+  }, []);
+
   const handleRefresh = () => {
     fetchRewardPoints();
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   return (

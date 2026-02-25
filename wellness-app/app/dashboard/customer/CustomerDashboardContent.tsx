@@ -80,6 +80,11 @@ const CustomerDashboardContent = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRewardPointsRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Fetch dashboard statistics
   useEffect(() => {
@@ -337,7 +342,7 @@ const CustomerDashboardContent = () => {
           {/* Reward Points Card */}
           <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
             <Col xs={24}>
-              <RewardPointsCard />
+              <RewardPointsCard key={refreshKey} onRefresh={handleRewardPointsRefresh} />
             </Col>
           </Row>
 
@@ -417,7 +422,7 @@ const CustomerDashboardContent = () => {
 
             {/* Completed Bookings */}
             <Col xs={24}>
-              <CompletedBookingsSection />
+              <CompletedBookingsSection onReviewSubmitted={handleRewardPointsRefresh} />
             </Col>
 
           </Row>

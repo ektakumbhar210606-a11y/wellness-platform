@@ -46,7 +46,11 @@ interface CompletedBooking {
   };
 }
 
-const CompletedBookingsSection = () => {
+interface CompletedBookingsSectionProps {
+  onReviewSubmitted?: () => void;
+}
+
+const CompletedBookingsSection = ({ onReviewSubmitted }: CompletedBookingsSectionProps) => {
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -257,6 +261,10 @@ const CompletedBookingsSection = () => {
         onSuccess={() => {
           // Refresh the bookings list
           fetchCompletedBookings();
+          // Notify parent component about review submission
+          if (onReviewSubmitted) {
+            onReviewSubmitted();
+          }
           setReviewModalVisible(false);
           setSelectedBooking(null);
         }}

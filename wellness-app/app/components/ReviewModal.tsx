@@ -104,6 +104,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       // Show success message
       message.success('Review submitted successfully! +5 reward points earned');
       
+      // Dispatch custom event to notify reward points card
+      window.dispatchEvent(new CustomEvent('reviewSubmitted'));
+      
       // Call success callback if provided
       if (onSuccess) {
         onSuccess({ rating, comment });
