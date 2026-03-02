@@ -21,7 +21,8 @@ export async function requireTherapistAuth(request: NextRequest) {
     await connectToDatabase();
 
     // Get token from header
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
     if (!token) {
       return {
         authenticated: false,
@@ -83,7 +84,8 @@ export async function requireBusinessAuth(request: NextRequest) {
     await connectToDatabase();
 
     // Get token from header
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
     if (!token) {
       return {
         success: false,
@@ -145,7 +147,8 @@ export async function requireCustomerAuth(request: NextRequest) {
     await connectToDatabase();
 
     // Get token from header
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
     if (!token) {
       return {
         authenticated: false,

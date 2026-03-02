@@ -90,10 +90,14 @@ const TherapistReviews: React.FC = () => {
       setMonthlyLoading(true);
       setMonthlyError(null);
       
-      const response = await makeAuthenticatedRequest(`/api/reviews/monthly?month=${month}&year=${year}`);
+      const response = await makeAuthenticatedRequest(`/api/therapist/reviews/monthly-performance?month=${month}&year=${year}`);
       
       if (response.success) {
-        setMonthlyData(response);
+        setMonthlyData({
+          success: true,
+          averageRating: response.monthlyAverageRating,
+          totalReviews: response.monthlyTotalReviews
+        });
       } else {
         setMonthlyError(response.error || 'Failed to fetch monthly performance');
       }
