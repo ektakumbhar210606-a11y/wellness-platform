@@ -150,8 +150,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Ensure paymentStatus is "completed" (equivalent to "paid" in the requirement)
-    if (booking.paymentStatus !== 'completed') {
+    // 2. Ensure paymentStatus is "paid" (as defined in the schema)
+    if (booking.paymentStatus !== 'paid') {
       return Response.json(
         { success: false, error: 'Only bookings with completed payment can be processed for therapist payout' },
         { status: 400 }

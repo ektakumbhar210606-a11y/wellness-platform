@@ -40,11 +40,12 @@ async function requireBusinessAuth(request: NextRequest) {
       };
     }
 
-    // Check user role - allow both 'Business' and 'business' for backward compatibility
-    if (decoded.role.toLowerCase() !== 'business') {
+    // Check user role - allow both 'Business' and 'Provider' roles
+    const userRole = decoded.role.toLowerCase();
+    if (userRole !== 'business' && userRole !== 'provider') {
       return {
         authenticated: false,
-        error: 'Access denied. Business role required',
+        error: 'Access denied. Business or Provider role required',
         status: 403
       };
     }

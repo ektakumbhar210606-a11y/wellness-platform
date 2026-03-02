@@ -74,15 +74,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const user = authResult.user!;
-    const userId = user.id;
+    const authUser = authResult.user!;
+    const userId = authUser.id;
 
-    // Find customer profile associated with the authenticated user
-    const customer = await CustomerModel.findOne({ user: userId }).select('rewardPoints');
+    // Find the user to get reward points (stored in User model, not Customer model)
+    const rewardUser = await UserModel.findById(userId).select('rewardPoints');
 
-    if (!customer) {
+    if (!rewardUser) {
       return Response.json(
-        { success: false, error: 'Customer profile not found' },
+        { success: false, error: 'User not found' },
         { status: 404 }
       );
     }
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
     return Response.json({
       success: true,
       data: {
-        rewardPoints: customer.rewardPoints || 0  // Default to 0 if not set
+        rewardPoints: rewardUser.rewardPoints || 0  // Default to 0 if not set
       }
     });
 

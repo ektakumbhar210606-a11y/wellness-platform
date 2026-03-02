@@ -11,12 +11,15 @@ import {
   Row,
   Col,
   Divider,
-  Pagination
+  Pagination,
+  Select,
+  Badge
 } from 'antd';
 import { StarOutlined, UserOutlined, CalendarOutlined } from '@ant-design/icons';
 import { makeAuthenticatedRequest } from '../utils/apiUtils';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 interface Review {
   rating: number;
@@ -31,6 +34,12 @@ interface TherapistStats {
   totalReviews: number;
 }
 
+interface MonthlyPerformanceData {
+  success: boolean;
+  averageRating: number;
+  totalReviews: number;
+}
+
 const TherapistReviews: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState<TherapistStats>({ averageRating: 0, totalReviews: 0 });
@@ -39,8 +48,20 @@ const TherapistReviews: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
+  // Monthly Performance States
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [monthlyError, setMonthlyError] = useState<string | null>(null);
+  const [monthlyData, setMonthlyData] = useState<MonthlyPerformanceData | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // Current month
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()); // Current year
+
+  // Get last 3 years for dropdown
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear, currentYear - 1, currentYear - 2];
+
   useEffect(() => {
     fetchReviews();
+    fetchMonthlyPerformance(selectedMonth, selectedYear);
   }, []);
 
   const fetchReviews = async () => {
@@ -62,6 +83,36 @@ const TherapistReviews: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchMonthlyPerformance = async (month: number, year: number) => {
+    try {
+      setMonthlyLoading(true);
+      setMonthlyError(null);
+      
+      const response = await makeAuthenticatedRequest(`/api/reviews/monthly?month=${month}&year=${year}`);
+      
+      if (response.success) {
+        setMonthlyData(response);
+      } else {
+        setMonthlyError(response.error || 'Failed to fetch monthly performance');
+      }
+    } catch (err: any) {
+      console.error('Error fetching monthly performance:', err);
+      setMonthlyError(err.message || 'Failed to fetch monthly performance');
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
+  const handleMonthChange = (value: number) => {
+    setSelectedMonth(value);
+    fetchMonthlyPerformance(value, selectedYear);
+  };
+
+  const handleYearChange = (value: number) => {
+    setSelectedYear(value);
+    fetchMonthlyPerformance(selectedMonth, value);
   };
 
   const renderReviewItem = (review: Review) => (
@@ -180,6 +231,127 @@ const TherapistReviews: React.FC = () => {
             </div>
           </Col>
         </Row>
+      </div>
+
+      {/* Monthly Performance Section */}
+      <div style={{ 
+        backgroundColor: '#fff', 
+        borderRadius: '12px', 
+        padding: '24px', 
+        marginBottom: '24px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+      }}>
+        <Title level={3} style={{ marginBottom: '20px', color: '#1d3557' }}>
+          Monthly Performance
+        </Title>
+        
+        <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: '4px' }}>Month</Text>
+            <Select 
+              value={selectedMonth} 
+              onChange={handleMonthChange} 
+              style={{ minWidth: '120px' }}
+              disabled={monthlyLoading}
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(month => (
+                <Option key={month} value={month}>
+                  {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
+                </Option>
+              ))}
+            </Select>
+          </div>
+          
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: '4px' }}>Year</Text>
+            <Select 
+              value={selectedYear} 
+              onChange={handleYearChange} 
+              style={{ minWidth: '100px' }}
+              disabled={monthlyLoading}
+            >
+              {years.map(year => (
+                <Option key={year} value={year}>{year}</Option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        {monthlyLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: '16px' }}>
+              <Text>Loading monthly performance...</Text>
+            </div>
+          </div>
+        ) : monthlyError ? (
+          <div style={{ padding: '20px' }}>
+            <Alert
+              message="Error Loading Monthly Performance"
+              description={monthlyError}
+              type="error"
+              showIcon
+              action={
+                <a onClick={() => fetchMonthlyPerformance(selectedMonth, selectedYear)} style={{ cursor: 'pointer' }}>
+                  Retry
+                </a>
+              }
+            />
+          </div>
+        ) : monthlyData ? (
+          <Row gutter={[24, 24]} align="middle">
+            <Col xs={24} sm={12}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <StarOutlined style={{ fontSize: '48px', color: '#faad14' }} />
+                </div>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1d3557', marginBottom: '4px' }}>
+                  {(monthlyData.averageRating || 0).toFixed(1)}
+                </div>
+                <Text type="secondary" style={{ fontSize: '16px' }}>
+                  Monthly Average Rating
+                </Text>
+              </div>
+            </Col>
+            
+            <Col xs={24} sm={12}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1890ff', marginBottom: '4px' }}>
+                  {monthlyData.totalReviews || 0}
+                </div>
+                <Text type="secondary" style={{ fontSize: '16px' }}>
+                  Total Reviews This Month
+                </Text>
+                
+                {/* Eligibility Badge */}
+                <div style={{ marginTop: '12px' }}>
+                  {(monthlyData.averageRating || 0) >= 4.0 ? (
+                    <Badge 
+                      status="success" 
+                      text="Eligible for Monthly Bonus 🎉" 
+                      style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: '6px', 
+                        backgroundColor: '#f6ffed', 
+                        border: '1px solid #b7eb8f',
+                        color: '#52c41a',
+                        fontWeight: 'bold'
+                      }} 
+                    />
+                  ) : (
+                    <Text type="secondary">
+                      Not eligible this month
+                    </Text>
+                  )}
+                </div>
+              </div>
+            </Col>
+          </Row>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Text>No monthly performance data available</Text>
+          </div>
+        )}
       </div>
 
       <Divider style={{ margin: '24px 0' }} />
