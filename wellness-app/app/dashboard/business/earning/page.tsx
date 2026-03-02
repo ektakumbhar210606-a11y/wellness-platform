@@ -271,7 +271,7 @@ const BusinessEarningPage = () => {
             <MailOutlined /> {record.customer.email !== 'N/A' ? record.customer.email : 'N/A'}
           </div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            <PhoneOutlined /> {record.customer.phone !== 'N/A' ? record.customer.phone : 'N/A'}
+            <PhoneOutlined /> {record.customer.phone && record.customer.phone !== 'N/A' ? record.customer.phone : 'N/A'}
           </div>
         </div>
       ),
@@ -542,7 +542,7 @@ const BusinessEarningPage = () => {
               {selectedBooking.customer.email}
             </Descriptions.Item>
             <Descriptions.Item label="Customer Phone">
-              {selectedBooking.customer.phone || 'N/A'}
+              {selectedBooking.customer.phone && selectedBooking.customer.phone !== 'N/A' ? selectedBooking.customer.phone : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Service">
               {selectedBooking.service.name !== 'N/A' ? selectedBooking.service.name : 'N/A'}

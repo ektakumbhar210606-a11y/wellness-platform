@@ -192,16 +192,33 @@ export async function GET(req: NextRequest) {
     }, 0);
 
     // Format the bookings for the response
-    const formattedBookings = bookings.map(booking => ({
-      id: booking._id.toString(),
-      customer: {
-        id: (booking.customer as any)?._id?.toString() || '',
-        name: (booking.customer as any)?.name || 'N/A',
-        email: (booking.customer as any)?.email || 'N/A',
-        phone: (booking.customer as any)?.phone || 'N/A',
-        firstName: (booking.customer as any)?.name ? (booking.customer as any).name.split(' ')[0] || (booking.customer as any).name : 'N/A',
-        lastName: (booking.customer as any)?.name ? (booking.customer as any).name.split(' ').slice(1).join(' ') || '' : ''
-      },
+    const formattedBookings = bookings.map(booking => {
+      // Handle customer data properly
+      const customerData = booking.customer as any;
+      const customerName = customerData?.name || 'N/A';
+      
+      // Split name into first and last name
+      let firstName = 'N/A';
+      let lastName = '';
+      if (customerName && customerName !== 'N/A') {
+        const nameParts = customerName.trim().split(' ');
+        firstName = nameParts[0] || 'N/A';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
+      // Handle phone number properly
+      const phoneNumber = customerData?.phone || 'N/A';
+      
+      return {
+        id: booking._id.toString(),
+        customer: {
+          id: customerData?._id?.toString() || '',
+          name: customerName,
+          email: customerData?.email || 'N/A',
+          phone: phoneNumber,
+          firstName: firstName,
+          lastName: lastName
+        },
       service: {
         id: (booking.service as any)?._id?.toString() || '',
         name: (booking.service as any)?.name || 'N/A',
@@ -223,7 +240,8 @@ export async function GET(req: NextRequest) {
       therapistPayoutStatus: booking.therapistPayoutStatus,
       notes: booking.notes,
       createdAt: booking.createdAt
-    }));
+    };
+  });
 
     return Response.json({
       success: true,

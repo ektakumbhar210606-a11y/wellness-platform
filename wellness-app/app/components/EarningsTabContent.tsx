@@ -195,6 +195,11 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
                                 <Text strong>{booking.service?.name || 'Service'}</Text>
                                 <br />
                                 <Text type="secondary">{booking.customer?.firstName || ''} {booking.customer?.lastName || ''}</Text>
+                                <br />
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  {booking.customer?.email ? `📧 ${booking.customer.email}` : ''}
+                                  {booking.customer?.phone ? ` 📞 ${booking.customer.phone}` : ''}
+                                </Text>
                               </div>
                             }
                             extra={
@@ -252,6 +257,11 @@ const EarningsTabContent: React.FC<EarningsTabContentProps> = ({ bookings, loadi
                                 <Text strong>{booking.service?.name || 'Service'}</Text>
                                 <br />
                                 <Text type="secondary">{booking.customer?.firstName || ''} {booking.customer?.lastName || ''}</Text>
+                                <br />
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  {booking.customer?.email ? `📧 ${booking.customer.email}` : ''}
+                                  {booking.customer?.phone ? ` 📞 ${booking.customer.phone}` : ''}
+                                </Text>
                               </div>
                             }
                             extra={
