@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Avatar, Tabs, message, Spin, Alert, Tag } from 'antd';
-import { UserOutlined, CalendarOutlined, BookOutlined, MessageOutlined, ProfileOutlined, ShopOutlined } from '@ant-design/icons';
+import { Card, Layout, Menu, Button, Space, Typography, Row, Col, Statistic, Avatar, Tabs, message, Spin, Alert, Tag, Empty } from 'antd';
+import { UserOutlined, CalendarOutlined, BookOutlined, MessageOutlined, ProfileOutlined, ShopOutlined, BarChartOutlined } from '@ant-design/icons';
 import TherapistProfileDisplay from '../../components/TherapistProfileDisplay';
 import BusinessCard from '../../components/BusinessCard';
 import TherapistBusinessRequests from '../../components/TherapistBusinessRequests';
@@ -276,6 +276,15 @@ const TherapistDashboardPage = () => {
       onClick: () => {
         router.push('/dashboard/therapist/earnings');
         setActiveTab('earnings');
+      },
+    },
+    {
+      key: '7',
+      label: 'Analytics',
+      icon: <BarChartOutlined />,
+      onClick: () => {
+        router.push('/dashboard/therapist/analytics');
+        setActiveTab('analytics');
       },
     },
     {
@@ -579,6 +588,24 @@ const TherapistDashboardPage = () => {
                 children: (
                   <div style={{ marginTop: 16 }}>
                     <TherapistProfileDisplay profile={dashboardData.profile} />
+                  </div>
+                ),
+              }, {
+                key: 'analytics',
+                label: 'Analytics',
+                children: (
+                  <div style={{ marginTop: 16 }}>
+                    {/* Analytics page is loaded via routing, but we include a placeholder here */}
+                    <Card>
+                      <Empty 
+                        description="Navigate to the Analytics page"
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      >
+                        <Text type="secondary">
+                          Click on the Analytics menu item to view your practice analytics
+                        </Text>
+                      </Empty>
+                    </Card>
                   </div>
                 ),
               }]

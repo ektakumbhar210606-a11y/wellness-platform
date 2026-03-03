@@ -113,6 +113,11 @@ export const therapistApi = {
     return makeAuthenticatedRequest('/api/therapist/dashboard');
   },
 
+  // Get therapist analytics data
+  getAnalytics: async () => {
+    return makeAuthenticatedRequest('/api/therapist/analytics');
+  },
+
   // Create therapist profile
   createProfile: async (profileData: any) => {
     return makeAuthenticatedRequest('/api/therapist/create', {
