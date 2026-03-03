@@ -28,7 +28,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BookOutlined,
-  EditOutlined
+  EditOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import CustomerUpcomingAppointmentCard from '@/app/components/CustomerUpcomingAppointmentCard';
@@ -164,6 +165,11 @@ const CustomerDashboardContent = () => {
       key: 'bookings',
       icon: <BookOutlined />,
       label: <Link href="/dashboard/customer/bookings">My Bookings</Link>,
+    },
+    {
+      key: 'analytics',
+      icon: <BarChartOutlined />,
+      label: <Link href="/dashboard/customer/analytics">Analytics</Link>,
     },
     {
       key: 'profile',
