@@ -125,21 +125,24 @@ export async function GET(req: NextRequest) {
     const serviceIds = services.map((service) => service._id);
 
     // Build query based on payment type
-    const query: { 
-      service?: { $in: Types.ObjectId[] }; 
-      status: string; 
-      paymentStatus: string 
-    } = { 
+    let query: any = { 
       service: { $in: serviceIds },
-      status: paymentType === 'half' ? 'confirmed' : 'completed',
       paymentStatus: paymentType === 'half' ? 'partial' : 'paid'
     };
+
+    // For full payment bookings, we want to include both confirmed and completed bookings
+    // since full payment can occur at confirmation time
+    if (paymentType === 'full') {
+      query.status = { $in: ['confirmed', 'completed'] };
+    } else {
+      query.status = 'confirmed';
+    }
 
     // Fetch bookings with populated data
     const bookings = await BookingModel.find(query)
       .populate({
         path: 'customer',
-        select: 'name email phone'
+        select: 'name firstName lastName email phone'  // Include all possible name fields
       })
       .populate({
         path: 'service',
@@ -193,29 +196,45 @@ export async function GET(req: NextRequest) {
 
     // Format the bookings for the response
     const formattedBookings = bookings.map(booking => {
-      // Handle customer data properly
-      const customerData = booking.customer as any;
-      const customerName = customerData?.name || 'N/A';
-      
-      // Split name into first and last name
+      // Handle customer data properly with comprehensive null checks
+      const customerData = booking.customer;
+      let customerName = 'N/A';
+      let customerEmail = 'N/A';
+      let customerPhone = 'N/A';
       let firstName = 'N/A';
-      let lastName = '';
-      if (customerName && customerName !== 'N/A') {
-        const nameParts = customerName.trim().split(' ');
-        firstName = nameParts[0] || 'N/A';
-        lastName = nameParts.slice(1).join(' ') || '';
-      }
+      let lastName = 'N/A';
+      let customerId = '';
       
-      // Handle phone number properly
-      const phoneNumber = customerData?.phone || 'N/A';
+      // Check if populate worked correctly
+      if (customerData && typeof customerData === 'object') {
+        customerName = customerData.name || 'N/A';
+        customerEmail = customerData.email || 'N/A';
+        customerPhone = customerData.phone || 'N/A';
+        customerId = customerData._id ? customerData._id.toString() : '';
+        
+        // Prioritize firstName and lastName if they exist, otherwise use name field
+        if (customerData.firstName || customerData.lastName) {
+          firstName = customerData.firstName || 'N/A';
+          lastName = customerData.lastName || '';
+        } else if (customerName && customerName !== 'N/A' && typeof customerName === 'string') {
+          // Split name into first and last name only if name is valid and not 'N/A'
+          const nameParts = customerName.trim().split(/\s+/); // Split on any whitespace
+          firstName = nameParts[0] || 'N/A';
+          lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        }
+      } else {
+        // Log that populate failed for debugging purposes
+        console.log(`Warning: Customer populate failed for booking ${booking._id}, customer field:`, customerData);
+        console.log(`Booking details: service=${booking.service}, customer field=${booking.customer}, customer ObjectId? ${typeof booking.customer}`);
+      }
       
       return {
         id: booking._id.toString(),
         customer: {
-          id: customerData?._id?.toString() || '',
+          id: customerId,
           name: customerName,
-          email: customerData?.email || 'N/A',
-          phone: phoneNumber,
+          email: customerEmail,
+          phone: customerPhone,
           firstName: firstName,
           lastName: lastName
         },

@@ -266,12 +266,16 @@ const BusinessEarningPage = () => {
       key: 'customer',
       render: (_: any, record: Booking) => (
         <div>
-          <div><UserOutlined /> {record.customer.firstName && record.customer.firstName !== 'N/A' ? `${record.customer.firstName} ${record.customer.lastName || ''}` : (record.customer.name || 'N/A')}</div>
+          <div><UserOutlined /> {(record.customer.firstName && record.customer.firstName !== 'N/A') 
+            ? `${record.customer.firstName} ${(record.customer.lastName && record.customer.lastName !== 'N/A') ? record.customer.lastName : ''}`.trim()
+            : ((record.customer.name && record.customer.name !== 'N/A') 
+              ? record.customer.name 
+              : 'N/A')}</div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            <MailOutlined /> {record.customer.email !== 'N/A' ? record.customer.email : 'N/A'}
+            <MailOutlined /> {(record.customer.email && record.customer.email !== 'N/A') ? record.customer.email : 'N/A'}
           </div>
           <div style={{ fontSize: '12px', color: '#888' }}>
-            <PhoneOutlined /> {record.customer.phone && record.customer.phone !== 'N/A' ? record.customer.phone : 'N/A'}
+            <PhoneOutlined /> {(record.customer.phone && record.customer.phone !== 'N/A') ? record.customer.phone : 'N/A'}
           </div>
         </div>
       ),
@@ -534,15 +538,15 @@ const BusinessEarningPage = () => {
         {selectedBooking && (
           <Descriptions column={1} bordered>
             <Descriptions.Item label="Customer Name">
-              {selectedBooking.customer.firstName && selectedBooking.customer.firstName !== 'N/A'
-                ? `${selectedBooking.customer.firstName} ${selectedBooking.customer.lastName || ''}`
-                : (selectedBooking.customer.name || 'N/A')}
+              {(selectedBooking.customer.firstName && selectedBooking.customer.firstName !== 'N/A')
+                ? `${selectedBooking.customer.firstName} ${(selectedBooking.customer.lastName && selectedBooking.customer.lastName !== 'N/A') ? selectedBooking.customer.lastName : ''}`.trim()
+                : ((selectedBooking.customer.name && selectedBooking.customer.name !== 'N/A') ? selectedBooking.customer.name : 'N/A')}
             </Descriptions.Item>
             <Descriptions.Item label="Customer Email">
-              {selectedBooking.customer.email}
+              {(selectedBooking.customer.email && selectedBooking.customer.email !== 'N/A') ? selectedBooking.customer.email : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Customer Phone">
-              {selectedBooking.customer.phone && selectedBooking.customer.phone !== 'N/A' ? selectedBooking.customer.phone : 'N/A'}
+              {(selectedBooking.customer.phone && selectedBooking.customer.phone !== 'N/A') ? selectedBooking.customer.phone : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Service">
               {selectedBooking.service.name !== 'N/A' ? selectedBooking.service.name : 'N/A'}
