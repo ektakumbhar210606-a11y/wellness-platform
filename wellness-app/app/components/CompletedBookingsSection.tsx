@@ -198,7 +198,7 @@ const CompletedBookingsSection = ({ onReviewSubmitted }: CompletedBookingsSectio
                         marginRight: '8px', 
                         color: '#fa8c16' 
                       }} />
-                      <span>${booking.service.price.toFixed(2)}</span>
+                      <span>₹{booking.service.price.toLocaleString('en-IN')}</span>
                     </div>
                   </Space>
                 </div>

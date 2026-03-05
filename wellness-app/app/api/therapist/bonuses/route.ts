@@ -46,11 +46,11 @@ export async function GET(request: NextRequest) {
     const userId = (decoded as JwtPayload).id;
     const userRole = (decoded as JwtPayload).role;
 
-    // Check if the user has the 'Business' or 'Provider' role (case insensitive)
+    // Check if the user has the 'Therapist' role (case insensitive)
     const normalizedUserRole = userRole.toLowerCase();
-    if (normalizedUserRole !== 'business' && normalizedUserRole !== 'provider') {
+    if (normalizedUserRole !== 'therapist') {
       return NextResponse.json(
-        { error: 'Access denied. Only businesses can view bonuses.' },
+        { error: 'Access denied. Only therapists can view their bonuses.' },
         { status: 403 }
       );
     }
@@ -65,28 +65,66 @@ export async function GET(request: NextRequest) {
     
     const userModule = await import('@/models/User');
     const User = userModule.default;
+    
+    const therapistModelModule = await import('@/models/Therapist');
+    const TherapistModel = therapistModelModule.default;
 
-    // Fetch bonuses with therapist details
-    const bonuses = await TherapistBonus.find({ business: userId })
-      .populate('therapist', 'name firstName lastName')
+    console.log(`Fetching bonuses for therapist userId: ${userId}`);
+    
+    // Get the therapist profile ID from the user ID
+    const therapistProfile = await TherapistModel.findOne({ user: userId });
+    
+    if (!therapistProfile) {
+      console.log(`No therapist profile found for user ${userId}`);
+      return NextResponse.json(
+        { 
+          success: true,
+          bonuses: [],
+          totalBonuses: 0,
+          totalPaid: 0,
+          totalPending: 0,
+          message: 'No therapist profile found'
+        },
+        { status: 200 }
+      );
+    }
+    
+    const therapistProfileId = therapistProfile._id.toString();
+    console.log(`Found therapist profile ID: ${therapistProfileId}`);
+
+    // Fetch bonuses with business details for this therapist using PROFILE ID
+    const bonuses = await TherapistBonus.find({ therapist: therapistProfileId })
+      .populate('business', 'name firstName lastName email')
       .sort({ createdAt: -1 });
 
-    // Format the response with therapist names, handling potential null values
+    console.log(`Found ${bonuses.length} bonuses for therapist ${userId}`);
+
+    // Format the response with business names and bonus details
     const formattedBonuses = bonuses.map(bonus => {
-      const therapist = bonus.therapist;
-      let therapistName = 'Unknown Therapist';
+      const business = bonus.business;
+      let businessName = 'Unknown Business';
       
-      if (therapist) {
+      console.log('Processing bonus:', {
+        bonusId: bonus._id,
+        businessData: business,
+        rawBusinessName: business?.name,
+        rawFirstName: business?.firstName,
+        rawLastName: business?.lastName
+      });
+      
+      if (business) {
         // Try to get name from various sources
-        therapistName = therapist.name || 
-                       `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 
-                       'Unknown Therapist';
+        businessName = business.name || 
+                       `${business.firstName || ''} ${business.lastName || ''}`.trim() || 
+                       'Unknown Business';
+        
+        console.log('Resolved business name to:', businessName);
       }
       
       return {
         id: bonus._id.toString(),
-        therapistId: therapist?._id?.toString() || bonus.therapist?.toString() || '',
-        therapistName: therapistName,
+        businessId: business?._id?.toString() || '',
+        businessName: businessName,
         month: bonus.month,
         year: bonus.year,
         averageRating: bonus.averageRating,
@@ -100,7 +138,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        bonuses: formattedBonuses
+        bonuses: formattedBonuses,
+        totalBonuses: formattedBonuses.length,
+        totalPaid: formattedBonuses.filter(b => b.status === 'paid').length,
+        totalPending: formattedBonuses.filter(b => b.status === 'pending').length
       },
       { status: 200 }
     );

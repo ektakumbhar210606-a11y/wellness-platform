@@ -5,6 +5,7 @@ import TherapistModel from '@/models/Therapist';
 import ServiceModel from '@/models/Service';
 import UserModel from '@/models/User';
 import ReviewModel from '@/models/Review';
+import TherapistBonusModel from '@/models/TherapistBonus';
 import * as jwt from 'jsonwebtoken';
 import { BookingStatus } from '@/models/Booking';
 
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
           totalSessionsCompleted: {
             $sum: { $cond: [{ $eq: ['$status', BookingStatus.Completed] }, 1, 0] }
           },
-          totalEarnings: {
+          totalBookingEarnings: {
             $sum: {
               $cond: [
                 { $eq: ['$status', BookingStatus.Completed] },
@@ -138,6 +139,28 @@ export async function GET(request: NextRequest) {
         }
       }
     ]);
+
+    // STEP 1B: Calculate total bonus earnings (only paid bonuses)
+    const bonusSummary = await TherapistBonusModel.aggregate([
+      { $match: { 
+          therapist: therapist._id,
+          status: 'paid'
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          totalBonusEarnings: {
+            $sum: { $ifNull: ['$bonusAmount', 0] }
+          }
+        }
+      }
+    ]);
+
+    // Combine booking earnings and bonus earnings
+    const bookingEarnings = bookingSummary[0]?.totalBookingEarnings || 0;
+    const bonusEarnings = bonusSummary[0]?.totalBonusEarnings || 0;
+    const totalEarnings = bookingEarnings + bonusEarnings;
 
     // STEP 2: Calculate average rating from reviews
     const reviewSummary = await ReviewModel.aggregate([
@@ -151,7 +174,7 @@ export async function GET(request: NextRequest) {
       }
     ]);
 
-    // STEP 3: Monthly Earnings Trend
+    // STEP 3: Monthly Earnings Trend (Bookings + Bonuses)
     const monthlyEarningsData = await BookingModel.aggregate([
       { $match: { 
           therapist: therapist._id,
@@ -164,7 +187,7 @@ export async function GET(request: NextRequest) {
             year: { $year: '$date' },
             month: { $month: '$date' }
           },
-          earnings: {
+          bookingEarnings: {
             $sum: { $ifNull: ['$therapistPayoutAmount', 0] }
           }
         }
@@ -181,10 +204,64 @@ export async function GET(request: NextRequest) {
               { $toString: '$_id.month' }
             ]
           },
-          earnings: 1
+          bookingEarnings: 1
         }
       }
     ]);
+
+    // Get monthly bonus data (paid bonuses only)
+    const monthlyBonusData = await TherapistBonusModel.aggregate([
+      { $match: { 
+          therapist: therapist._id,
+          status: 'paid'
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: '$year',
+            month: '$month'
+          },
+          bonusEarnings: {
+            $sum: { $ifNull: ['$bonusAmount', 0] }
+          }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      {
+        $project: {
+          _id: 0,
+          month: {
+            $concat: [
+              { $toString: '$_id.year' },
+              '-',
+              { $cond: [{ $lt: ['$_id.month', 10] }, '0', ''] },
+              { $toString: '$_id.month' }
+            ]
+          },
+          bonusEarnings: 1
+        }
+      }
+    ]);
+
+    // Merge booking earnings and bonus earnings by month
+    const earningsMap = new Map<string, number>();
+    
+    // Add booking earnings
+    monthlyEarningsData.forEach(item => {
+      earningsMap.set(item.month, item.bookingEarnings || 0);
+    });
+    
+    // Add bonus earnings
+    monthlyBonusData.forEach(item => {
+      const current = earningsMap.get(item.month) || 0;
+      earningsMap.set(item.month, current + (item.bonusEarnings || 0));
+    });
+    
+    // Convert map back to array with combined earnings
+    const monthlyEarnings = Array.from(earningsMap.entries())
+      .map(([month, earnings]) => ({ month, earnings }))
+      .sort((a, b) => a.month.localeCompare(b.month));
 
     // STEP 4: Completed Sessions Per Month
     const monthlySessionsData = await BookingModel.aggregate([
@@ -312,21 +389,40 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Extract values with safe defaults
-    const summary = bookingSummary[0] || { totalSessionsCompleted: 0, totalEarnings: 0 };
+    const summary = bookingSummary[0] || { totalSessionsCompleted: 0, totalBookingEarnings: 0 };
     const reviewStats = reviewSummary[0] || { averageRating: 0, totalReviews: 0 };
 
-    // Calculate monthly bonus (placeholder - no Bonus model exists)
-    const monthlyBonusEarned = 0;
+    // Calculate monthly bonus earned (current month paid bonuses)
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    const currentMonthBonuses = await TherapistBonusModel.aggregate([
+      { $match: { 
+          therapist: therapist._id,
+          month: currentMonth,
+          year: currentYear,
+          status: 'paid'
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          monthlyBonus: {
+            $sum: { $ifNull: ['$bonusAmount', 0] }
+          }
+        }
+      }
+    ]);
+    const monthlyBonusEarned = currentMonthBonuses[0]?.monthlyBonus || 0;
 
     // Return clean JSON response
     return NextResponse.json({
       success: true,
       data: {
         totalSessionsCompleted: summary.totalSessionsCompleted || 0,
-        totalEarnings: summary.totalEarnings || 0,
+        totalEarnings: totalEarnings || 0,
         averageRating: Math.round((reviewStats.averageRating || 0) * 10) / 10,
-        monthlyBonusEarned,
-        monthlyEarnings: monthlyEarningsData || [],
+        monthlyBonusEarned: monthlyBonusEarned || 0,
+        monthlyEarnings: monthlyEarnings || [],
         monthlySessions: monthlySessionsData || [],
         monthlyRatings: monthlyRatingsData || [],
         serviceDistribution: serviceDistributionData || [],
