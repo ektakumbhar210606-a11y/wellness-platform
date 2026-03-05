@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Typography, Card, Row, Col, Statistic, Button, Spin, message, Space, Tabs, Modal, Tag } from 'antd';
-import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined, TrophyOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, StarOutlined, DollarOutlined, ShopOutlined, EnvironmentOutlined, PlusOutlined, TeamOutlined, BookOutlined, ProfileOutlined, TrophyOutlined, BarChartOutlined } from '@ant-design/icons';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { businessService, BusinessProfile, BusinessDashboardStats } from '@/app/services/businessService';
@@ -612,7 +612,7 @@ const ProviderDashboardContent = () => {
               )}
 
               <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
-                <Col span={6}>
+                <Col span={4}>
                   <Card>
                     {statsLoading ? (
                       <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -627,7 +627,7 @@ const ProviderDashboardContent = () => {
                     )}
                   </Card>
                 </Col>
-                <Col span={6}>
+                <Col span={4}>
                   <Card>
                     {statsLoading ? (
                       <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -642,7 +642,7 @@ const ProviderDashboardContent = () => {
                     )}
                   </Card>
                 </Col>
-                <Col span={6}>
+                <Col span={4}>
                   <Card>
                     {statsLoading ? (
                       <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -659,7 +659,7 @@ const ProviderDashboardContent = () => {
                     )}
                   </Card>
                 </Col>
-                <Col span={6}>
+                <Col span={4}>
                   <Card>
                     {statsLoading ? (
                       <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -673,6 +673,47 @@ const ProviderDashboardContent = () => {
                         prefix={<DollarOutlined />}
                         suffix="INR"
                       />
+                    )}
+                  </Card>
+                </Col>
+                <Col span={4}>
+                  <Card>
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <Statistic
+                        title="Total Services"
+                        value={dashboardStats?.totalServices || 0}
+                        prefix={<ShopOutlined />}
+                      />
+                    )}
+                  </Card>
+                </Col>
+                <Col span={4}>
+                  <Card
+                    onClick={() => router.push('/dashboard/provider/analytics')}
+                    style={{ cursor: 'pointer', transition: 'all 0.3s' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    {statsLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center' }}>
+                        <BarChartOutlined style={{ fontSize: '32px', color: '#667eea', marginBottom: '8px' }} />
+                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Analytics</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#667eea' }}>View Insights</div>
+                      </div>
                     )}
                   </Card>
                 </Col>
