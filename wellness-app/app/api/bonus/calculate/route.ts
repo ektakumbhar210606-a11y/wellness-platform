@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
+import mongoose, { Types } from 'mongoose';
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,6 +102,22 @@ export async function POST(request: NextRequest) {
     const therapistBonusModule = await import('@/models/TherapistBonus');
     const TherapistBonus = therapistBonusModule.default;
 
+    const TherapistModelModule = await import('@/models/Therapist');
+    const TherapistModel = TherapistModelModule.default;
+
+    // Get the therapist profile to retrieve the user ID
+    const therapistProfile = await TherapistModel.findOne({ _id: therapistId });
+    
+    if (!therapistProfile) {
+      return NextResponse.json(
+        { error: 'Therapist not found' },
+        { status: 404 }
+      );
+    }
+
+    // Use the therapist's user ID for review lookup
+    const therapistUserId = therapistProfile.user.toString();
+
     // Check if bonus already exists for that therapist + month + year
     const existingBonus = await TherapistBonus.findOne({
       therapist: therapistId,
@@ -123,7 +140,7 @@ export async function POST(request: NextRequest) {
     const result = await Review.aggregate([
       {
         $match: {
-          therapist: therapistId,
+          therapist: new Types.ObjectId(therapistUserId),
           createdAt: {
             $gte: startDate,
             $lte: endDate
@@ -145,7 +162,8 @@ export async function POST(request: NextRequest) {
     const totalReviews = monthlyStats.totalReviews || 0;
 
     // Check eligibility criteria
-    if (averageRating < 4.0 || totalReviews < 5) {
+    // Updated criteria: Average rating ≥ 4.0 AND minimum 2 reviews in the month
+    if (averageRating < 4.0 || totalReviews < 2) {
       return NextResponse.json(
         { 
           success: false,
