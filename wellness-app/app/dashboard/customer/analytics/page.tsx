@@ -242,7 +242,7 @@ const CustomerAnalyticsPage = () => {
               <StatCard 
                 title="Total Spent" 
                 value={(analytics.totalSpent || 0).toFixed(2)}
-                prefix="$"
+                prefix="₹"
                 icon={<DollarOutlined style={{ fontSize: '28px', color: 'white' }} />}
                 color="#fa8bfd"
               />
@@ -492,11 +492,11 @@ const CustomerAnalyticsPage = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" label={{ value: 'Month', position: 'insideBottom', offset: -5 }} />
                         <YAxis 
-                          tickFormatter={(value) => `$${value.toFixed(0)}`}
-                          label={{ value: 'Amount Spent ($)', angle: -90, position: 'insideLeft' }}
+                          tickFormatter={(value) => `₹${value.toFixed(0)}`}
+                          label={{ value: 'Amount Spent (₹)', angle: -90, position: 'insideLeft' }}
                         />
                         <Tooltip 
-                          formatter={(value: number | undefined) => [`$${(value || 0).toFixed(2)}`, 'Amount Spent']}
+                          formatter={(value: number | undefined) => [`₹${(value || 0).toFixed(2)}`, 'Amount Spent']}
                         />
                         <Legend />
                         <Bar name="Monthly Spending" dataKey="total" fill="#fa8bfd" radius={[4, 4, 0, 0]} />
