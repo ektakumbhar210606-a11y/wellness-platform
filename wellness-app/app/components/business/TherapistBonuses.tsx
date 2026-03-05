@@ -78,7 +78,7 @@ const TherapistBonuses: React.FC = () => {
           ...(therapistsResponse.data.approvedTherapists || []),
           ...(therapistsResponse.data.pendingTherapists || [])
         ].map(therapist => ({
-          id: therapist.userId || therapist.therapistId,
+          id: therapist.therapistId || therapist.id, // Use therapist profile ID, not user ID
           name: `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || therapist.fullName || 'Unknown Therapist'
         }));
         

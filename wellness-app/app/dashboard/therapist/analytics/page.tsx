@@ -416,7 +416,7 @@ const TherapistAnalyticsPage = () => {
                     {/* Service legend with percentages */}
                     <div style={{ marginTop: '24px' }}>
                       <Title level={5}>Service Breakdown</Title>
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                         {analytics.serviceDistribution.map((service, index) => {
                           const percentage = analytics.serviceDistribution.reduce((sum, s) => sum + s.totalSessions, 0);
                           const percent = ((service.totalSessions / percentage) * 100).toFixed(1);
