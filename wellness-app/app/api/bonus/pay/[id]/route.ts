@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Extract the authorization header
     const authHeader = request.headers.get('Authorization');
@@ -55,8 +55,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       );
     }
 
-    // Get bonus ID from params
-    const bonusId = params.id;
+    // Get bonus ID from params - unwrap the Promise in Next.js 15+
+    const { id: bonusId } = await params;
 
     // Validate bonus ID
     if (!bonusId) {

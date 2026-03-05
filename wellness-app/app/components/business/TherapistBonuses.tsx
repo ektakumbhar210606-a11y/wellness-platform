@@ -217,7 +217,7 @@ const TherapistBonuses: React.FC = () => {
       key: 'bonusAmount',
       render: (amount: number) => (
         <span style={{ fontWeight: 'bold' }}>
-          ${amount ? amount.toLocaleString() : '0'}
+          ₹{amount ? amount.toLocaleString('en-IN') : '0'}
         </span>
       ),
       sorter: (a: Bonus, b: Bonus) => (a.bonusAmount || 0) - (b.bonusAmount || 0),
