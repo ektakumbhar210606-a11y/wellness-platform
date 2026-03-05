@@ -214,7 +214,7 @@ const TherapistAnalyticsPage = () => {
               <StatCard 
                 title="Total Earnings" 
                 value={(analytics.totalEarnings || 0).toFixed(2)}
-                prefix="$"
+                prefix="₹"
                 icon={<DollarOutlined style={{ fontSize: '28px', color: 'white' }} />}
                 color="#667eea"
               />
@@ -232,7 +232,7 @@ const TherapistAnalyticsPage = () => {
               <StatCard 
                 title="Monthly Bonus Earned" 
                 value={(analytics.monthlyBonusEarned || 0).toFixed(2)}
-                prefix="$"
+                prefix="₹"
                 icon={<TrophyOutlined style={{ fontSize: '28px', color: 'white' }} />}
                 color="#f093fb"
               />
@@ -257,11 +257,11 @@ const TherapistAnalyticsPage = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" label={{ value: 'Month', position: 'insideBottom', offset: -5 }} />
                         <YAxis 
-                          tickFormatter={(value) => `$${value.toFixed(0)}`}
-                          label={{ value: 'Earnings ($)', angle: -90, position: 'insideLeft' }}
+                          tickFormatter={(value) => `₹${value.toFixed(0)}`}
+                          label={{ value: 'Earnings (₹)', angle: -90, position: 'insideLeft' }}
                         />
                         <Tooltip 
-                          formatter={(value: number | undefined) => [`$${(value || 0).toFixed(2)}`, 'Earnings']}
+                          formatter={(value: number | undefined) => [`₹${(value || 0).toFixed(2)}`, 'Earnings']}
                         />
                         <Legend />
                         <Line 

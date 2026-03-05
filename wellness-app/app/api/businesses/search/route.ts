@@ -137,11 +137,11 @@ export async function GET(req: NextRequest) {
       
       for (const review of reviews) {
         // Find which business this review belongs to
-        const booking = bookings.find(b => b._id.toString() === review.booking.toString());
+        const booking = bookings.find(b => b._id?.toString() === review.booking?.toString());
         if (booking) {
-          const service = services.find(s => s._id.toString() === booking.service.toString());
+          const service = services.find(s => s._id?.toString() === booking.service?.toString());
           if (service) {
-            const businessId = service.business.toString();
+            const businessId = service.business?.toString() || '';
             if (!businessReviews.has(businessId)) {
               businessReviews.set(businessId, []);
             }
@@ -152,7 +152,8 @@ export async function GET(req: NextRequest) {
 
       // Add avgRating to each business
       businesses = businesses.map(business => {
-        const ratings = businessReviews.get(business._id.toString()) || [];
+        const businessId = business._id?.toString() || '';
+        const ratings = businessReviews.get(businessId) || [];
         const avgRating = ratings.length > 0 ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length : 0;
         return { ...business, avgRating };
       });
@@ -207,11 +208,11 @@ export async function GET(req: NextRequest) {
       
       for (const review of reviews) {
         // Find which business this review belongs to
-        const booking = bookings.find(b => b._id.toString() === review.booking.toString());
+        const booking = bookings.find(b => b._id?.toString() === review.booking?.toString());
         if (booking) {
-          const service = services.find(s => s._id.toString() === booking.service.toString());
+          const service = services.find(s => s._id?.toString() === booking.service?.toString());
           if (service) {
-            const businessId = service.business.toString();
+            const businessId = service.business?.toString() || '';
             if (!businessReviews.has(businessId)) {
               businessReviews.set(businessId, []);
             }
@@ -222,7 +223,8 @@ export async function GET(req: NextRequest) {
 
       // Calculate average ratings and filter businesses
       const filteredBusinessesWithRatings = allBusinesses.map(business => {
-        const ratings = businessReviews.get(business._id.toString()) || [];
+        const businessId = business._id?.toString() || '';
+        const ratings = businessReviews.get(businessId) || [];
         const avgRating = ratings.length > 0 ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length : 0;
         return { ...business, avgRating };
       }).filter(business => business.avgRating >= minRating);
