@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
             razorpay_signature,
             bookingId,
             amount,
-            customerData
+            customerData,
+            applyRewardDiscount
         } = body;
 
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !bookingId) {
@@ -142,9 +143,39 @@ export async function POST(req: NextRequest) {
         }
 
         // Calculate payment amounts
-        const totalAmount = booking.service?.price || amount;
+        const servicePrice = booking.service?.price || 0;
+        let finalAmount = servicePrice;
+        let rewardDiscountApplied = false;
+        let rewardDiscountAmount = 0;
+
+        // Apply reward discount if requested and eligible
+        if (applyRewardDiscount === true) {
+          // Check customer's reward points
+          const customerUser = await UserModel.findById(booking.customer);
+          if (customerUser && customerUser.rewardPoints >= 100) {
+            // Apply 10% discount
+            rewardDiscountAmount = servicePrice * 0.10;
+            finalAmount = servicePrice - rewardDiscountAmount;
+            rewardDiscountApplied = true;
+
+            // Reset reward points to 0
+            customerUser.rewardPoints = 0;
+            
+            // Add reward history entry
+            customerUser.rewardHistory.push({
+              type: 'DISCOUNT_USED',
+              points: -100,
+              description: '10% reward discount used for booking',
+              date: new Date()
+            });
+            
+            await customerUser.save();
+          }
+        }
+
+        const totalAmount = finalAmount;
         const advancePaid = amount;
-        const remainingAmount = Math.max(0, totalAmount - advancePaid);
+        const remainingAmount = Math.max(0, finalAmount - advancePaid);
 
         // Create payment record
         const payment = new PaymentModel({
@@ -168,7 +199,11 @@ export async function POST(req: NextRequest) {
               status: 'confirmed',                    // Booking lifecycle status
               paymentStatus: 'partial',               // Payment lifecycle status
               confirmedAt: new Date(),                // Update confirmation timestamp
-              confirmedBy: booking.customer.toString() // Keep customer ID
+              confirmedBy: booking.customer.toString(), // Keep customer ID
+              originalPrice: servicePrice,
+              rewardDiscountApplied: rewardDiscountApplied,
+              rewardDiscountAmount: rewardDiscountAmount,
+              finalPrice: finalAmount
             },
             $setOnInsert: {
               // Only set these if document is being created (shouldn't happen)

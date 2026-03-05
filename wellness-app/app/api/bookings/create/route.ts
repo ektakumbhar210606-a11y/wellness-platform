@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { therapist_id, service_id, date, time } = body;
+    const { therapist_id, service_id, date, time, applyRewardDiscount } = body;
 
     // Validate required fields
     if (!therapist_id || !service_id || !date || !time) {
@@ -92,6 +92,50 @@ export async function POST(request: NextRequest) {
     const availabilityModule = await import('@/models/TherapistAvailability');
     const TherapistAvailability = availabilityModule.default;
     const { TherapistAvailabilityStatus } = await import('@/models/TherapistAvailability');
+
+    // Import Service and User models for reward discount
+    const ServiceModel = (await import('@/models/Service')).default;
+    const UserModel = (await import('@/models/User')).default;
+
+    // Get service price
+    const service = await ServiceModel.findById(service_id);
+    if (!service) {
+      return NextResponse.json(
+        { error: 'Service not found' },
+        { status: 404 }
+      );
+    }
+
+    // Calculate pricing with optional reward discount
+    let originalPrice = service.price || 0;
+    let rewardDiscountApplied = false;
+    let rewardDiscountAmount = 0;
+    let finalPrice = originalPrice;
+
+    // Apply reward discount if requested and eligible
+    if (applyRewardDiscount === true) {
+      // Check customer's reward points
+      const customer = await UserModel.findById(userId);
+      if (customer && customer.rewardPoints >= 100) {
+        // Apply 10% discount
+        rewardDiscountAmount = originalPrice * 0.10;
+        finalPrice = originalPrice - rewardDiscountAmount;
+        rewardDiscountApplied = true;
+
+        // Reset reward points to 0
+        customer.rewardPoints = 0;
+        
+        // Add reward history entry
+        customer.rewardHistory.push({
+          type: 'DISCOUNT_USED',
+          points: -100,
+          description: '10% reward discount used',
+          date: new Date()
+        });
+        
+        await customer.save();
+      }
+    }
 
     // Check if the requested therapist availability slot exists and is available
     const slotDate = new Date(date);
@@ -122,7 +166,11 @@ export async function POST(request: NextRequest) {
       time: time,
       status: BookingStatus.Pending, // Default to pending
       assignedByAdmin: false, // Customer-initiated booking, not assigned by admin
-      notificationDestination: 'customer' // Default to customer notifications for direct bookings
+      notificationDestination: 'customer', // Default to customer notifications for direct bookings
+      originalPrice: originalPrice,
+      rewardDiscountApplied: rewardDiscountApplied,
+      rewardDiscountAmount: rewardDiscountAmount,
+      finalPrice: finalPrice
     });
 
     const savedBooking = await newBooking.save();
@@ -141,6 +189,10 @@ export async function POST(request: NextRequest) {
         date: savedBooking.date,
         time: savedBooking.time,
         status: savedBooking.status,
+        originalPrice: savedBooking.originalPrice,
+        rewardDiscountApplied: savedBooking.rewardDiscountApplied,
+        rewardDiscountAmount: savedBooking.rewardDiscountAmount,
+        finalPrice: savedBooking.finalPrice,
         createdAt: savedBooking.createdAt,
         updatedAt: savedBooking.updatedAt
       },
