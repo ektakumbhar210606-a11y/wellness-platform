@@ -51,6 +51,10 @@ export interface IBooking extends Document {
     signature: string;
     verifiedAt?: Date;
   }; // Razorpay payment verification details
+  originalPrice?: number; // Original service price before any discounts
+  rewardDiscountApplied?: boolean; // Whether reward discount was applied
+  rewardDiscountAmount?: number; // Amount of reward discount (10% of original price)
+  finalPrice?: number; // Final price after discount
   therapistPayoutOrderInfo?: {
     orderId: string;
     amount: number;

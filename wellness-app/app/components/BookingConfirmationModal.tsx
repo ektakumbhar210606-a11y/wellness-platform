@@ -11,7 +11,9 @@ import {
   Space,
   Divider,
   Radio,
-  message
+  message,
+  Checkbox,
+  Alert
 } from 'antd';
 import {
   CalendarOutlined,
@@ -19,7 +21,10 @@ import {
   ClockCircleOutlined,
   PhoneOutlined,
   MailOutlined,
-  CreditCardOutlined
+  CreditCardOutlined,
+  GiftOutlined,
+  TrophyOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
 import { formatTimeTo12Hour } from '@/app/utils/timeUtils';
@@ -49,6 +54,12 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     phone: ''
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [rewardEligibility, setRewardEligibility] = useState<{
+    rewardPoints: number;
+    discountUnlocked: boolean;
+    pointsRemaining: number;
+  } | null>(null);
+  const [applyRewardDiscount, setApplyRewardDiscount] = useState(false);
 
   // Load Razorpay script
   useEffect(() => {
@@ -56,10 +67,43 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
     document.body.appendChild(script);
+    
     return () => {
       document.body.removeChild(script);
     };
   }, []);
+
+  // Fetch reward eligibility when modal opens
+  useEffect(() => {
+    if (visible && booking) {
+      fetchRewardEligibility();
+      setApplyRewardDiscount(false); // Reset discount checkbox
+    }
+  }, [visible, booking]);
+
+  const fetchRewardEligibility = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/customer/reward-eligibility', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setRewardEligibility({
+          rewardPoints: data.data.rewardPoints,
+          discountUnlocked: data.data.discountUnlocked,
+          pointsRemaining: data.data.pointsRemaining
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching reward eligibility:', error);
+    }
+  };
 
   const handleFormChange = (changedValues: any) => {
     setFormData(prev => ({
@@ -68,7 +112,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
     }));
   };
 
-  const processRazorpayPayment = async (amount: number, values: any) => {
+  const processRazorpayPayment = async (amount: number, values: any, applyDiscount: boolean = false) => {
     try {
       // 1. Create Order
       const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/razorpay/order`, {
@@ -104,7 +148,8 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                   fullName: values.fullName,
                   email: values.email,
                   phone: values.phone
-                }
+                },
+                applyRewardDiscount: applyDiscount  // Pass discount flag
               })
             });
 
@@ -149,7 +194,8 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                   fullName: values.fullName,
                   email: values.email,
                   phone: values.phone
-                }
+                },
+                applyRewardDiscount: applyDiscount  // Pass discount flag
               })
             });
 
@@ -197,9 +243,16 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
       const values = await form.validateFields();
       setIsProcessing(true);
 
-      const totalAmount = booking.service?.price || 0;
-      const advanceAmount = totalAmount * 0.5; // 50% advance
-      await processRazorpayPayment(advanceAmount, values);
+      // Calculate final amount based on reward discount
+      const servicePrice = booking.service?.price || 0;
+      const finalAmount = applyRewardDiscount && rewardEligibility?.discountUnlocked
+        ? servicePrice * 0.90  // Apply 10% discount
+        : servicePrice;        // Full price
+      
+      const advanceAmount = finalAmount * 0.5; // 50% of final amount
+      
+      // Pass the discount flag to payment processing
+      await processRazorpayPayment(advanceAmount, values, applyRewardDiscount && rewardEligibility?.discountUnlocked);
 
     } catch (error: any) {
       console.error('Validation Error:', error);
@@ -329,20 +382,117 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
                     Payment Summary
                   </Text>
+                  
+                  {/* Service Price */}
+                  <div style={{ paddingLeft: 20, marginBottom: 8 }}>
+                    <Text>Service Price: </Text>
+                    <Text strong>{formatCurrency(booking.service.price, booking.business?.address?.country || 'default')}</Text>
+                  </div>
+                  
+                  {/* Reward Discount Checkbox (only show if discount is unlocked) */}
+                  {rewardEligibility?.discountUnlocked && (
+                    <div style={{ 
+                      paddingLeft: 20, 
+                      marginBottom: 12,
+                      padding: '12px',
+                      background: '#f6ffed',
+                      border: '1px solid #b7eb8f',
+                      borderRadius: '6px'
+                    }}>
+                      <Checkbox
+                        checked={applyRewardDiscount}
+                        onChange={(e) => setApplyRewardDiscount(e.target.checked)}
+                        style={{ display: 'block', marginBottom: 8 }}
+                      >
+                        <Space>
+                          <GiftOutlined style={{ color: '#52c41a' }} />
+                          <span style={{ color: '#52c41a', fontWeight: 500 }}>
+                            Apply 10% Reward Discount ({rewardEligibility.rewardPoints} pts available)
+                          </span>
+                        </Space>
+                      </Checkbox>
+                      
+                      {applyRewardDiscount && (
+                        <Alert
+                          type="success"
+                          showIcon
+                          icon={<CheckCircleOutlined />}
+                          title={`You have ${rewardEligibility.rewardPoints} reward points. 10% discount will be applied and points will reset to 0 after booking.`}
+                          style={{ fontSize: '12px' }}
+                        />
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Discount Applied */}
+                  {applyRewardDiscount && rewardEligibility?.discountUnlocked && (
+                    <div style={{ paddingLeft: 20, marginBottom: 8 }}>
+                      <Text delete>Reward Discount (10%): </Text>
+                      <Text type="danger" strong>
+                        -{formatCurrency(booking.service.price * 0.10, booking.business?.address?.country || 'default')}
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {/* Total/Final Price */}
+                  <div style={{ paddingLeft: 20, marginBottom: 8 }}>
+                    <Text strong>
+                      {applyRewardDiscount && rewardEligibility?.discountUnlocked ? 'Final Price: ' : 'Total: '}
+                    </Text>
+                    <Text strong type="success">
+                      {formatCurrency(
+                        applyRewardDiscount && rewardEligibility?.discountUnlocked
+                          ? booking.service.price * 0.90
+                          : booking.service.price,
+                        booking.business?.address?.country || 'default'
+                      )}
+                    </Text>
+                  </div>
+                  
+                  {/* Advance Payment Info */}
                   <div style={{ paddingLeft: 20 }}>
                     <div style={{ marginBottom: 4 }}>
-                      <Text>Total: </Text>
-                      <Text strong>{formatCurrency(booking.service.price, booking.business?.address?.country || 'default')}</Text>
-                    </div>
-                    <div style={{ marginBottom: 4 }}>
                       <Text>Advance (50%): </Text>
-                      <Text strong type="success">{formatCurrency(booking.service.price * 0.5, booking.business?.address?.country || 'default')}</Text>
+                      <Text strong type="success">
+                        {formatCurrency(
+                          (applyRewardDiscount && rewardEligibility?.discountUnlocked
+                            ? booking.service.price * 0.90
+                            : booking.service.price) * 0.5,
+                          booking.business?.address?.country || 'default'
+                        )}
+                      </Text>
                     </div>
                     <div>
                       <Text>Remaining at Venue: </Text>
-                      <Text strong>{formatCurrency(booking.service.price * 0.5, booking.business?.address?.country || 'default')}</Text>
+                      <Text strong>
+                        {formatCurrency(
+                          (applyRewardDiscount && rewardEligibility?.discountUnlocked
+                            ? booking.service.price * 0.90
+                            : booking.service.price) * 0.5,
+                          booking.business?.address?.country || 'default'
+                        )}
+                      </Text>
                     </div>
                   </div>
+                  
+                  {/* Points Remaining Info (if not eligible) */}
+                  {!rewardEligibility?.discountUnlocked && rewardEligibility && (
+                    <div style={{ 
+                      marginTop: 12,
+                      padding: '8px',
+                      background: '#e6f7ff',
+                      border: '1px solid #91d5ff',
+                      borderRadius: '6px',
+                      fontSize: '12px'
+                    }}>
+                      <Space>
+                        <TrophyOutlined style={{ color: '#1890ff' }} />
+                        <Text type="secondary">
+                          {rewardEligibility.pointsRemaining} more points needed to unlock 10% discount
+                        </Text>
+                      </Space>
+                    </div>
+                  )}
                 </div>
               )}
             </Space>
