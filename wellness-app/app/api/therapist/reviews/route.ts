@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
     const therapistId = therapistProfile._id;
 
     // Fetch all reviews for this therapist with populated data
-    // Populate customer name from User model and service name from Service model
-    const reviews = await ReviewModel.find({ therapist: therapistId })
+    // Note: Review.therapist field references User ID, so we query by the therapist's user ID
+    const reviews = await ReviewModel.find({ therapist: decoded.id })
       .populate({
         path: 'customer',
         select: 'name email',
