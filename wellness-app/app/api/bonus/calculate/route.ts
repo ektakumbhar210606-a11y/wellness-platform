@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     // Check if bonus already exists for that therapist + month + year
     const existingBonus = await TherapistBonus.findOne({
-      therapist: therapistId,
+      therapist: therapistUserId, // Use therapist's user ID, not profile ID
       month: month,
       year: year
     });
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 
     // Create TherapistBonus record
     const newBonus = new TherapistBonus({
-      therapist: therapistId,
+      therapist: therapistUserId, // Use therapist's user ID, not profile ID
       business: userId, // The business/user who calculated the bonus
       month: month,
       year: year,
@@ -199,6 +199,7 @@ export async function POST(request: NextRequest) {
         bonus: {
           id: savedBonus._id,
           therapist: savedBonus.therapist,
+          therapistId: savedBonus.therapist, // Return user ID for consistency
           business: savedBonus.business,
           month: savedBonus.month,
           year: savedBonus.year,

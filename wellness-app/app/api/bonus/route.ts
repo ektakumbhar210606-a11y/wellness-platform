@@ -66,26 +66,42 @@ export async function GET(request: NextRequest) {
     const userModule = await import('@/models/User');
     const User = userModule.default;
 
-    // Fetch bonuses with therapist details
+    // Fetch bonuses with therapist details (populate the User model)
     const bonuses = await TherapistBonus.find({ business: userId })
-      .populate('therapist', 'name firstName lastName')
+      .populate('therapist', 'name firstName lastName email')
       .sort({ createdAt: -1 });
+
+    console.log('Fetched bonuses:', bonuses.length);
+    bonuses.forEach((bonus, idx) => {
+      console.log(`Bonus ${idx + 1}: therapist ID = ${bonus.therapist?.toString() || 'null'}`);
+    });
 
     // Format the response with therapist names, handling potential null values
     const formattedBonuses = bonuses.map(bonus => {
       const therapist = bonus.therapist;
       let therapistName = 'Unknown Therapist';
+      let therapistUserId = '';
+      
+      console.log('Processing bonus:', bonus._id.toString());
+      console.log('Therapist object:', therapist ? 'exists' : 'null');
       
       if (therapist) {
+        console.log('Therapist name field:', therapist.name);
+        console.log('Therapist firstName:', therapist.firstName);
+        console.log('Therapist lastName:', therapist.lastName);
+        
         // Try to get name from various sources
         therapistName = therapist.name || 
                        `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 
                        'Unknown Therapist';
+        therapistUserId = therapist._id?.toString() || '';
+      } else {
+        console.log('No therapist populated - ID might be invalid');
       }
       
       return {
         id: bonus._id.toString(),
-        therapistId: therapist?._id?.toString() || bonus.therapist?.toString() || '',
+        therapistId: therapistUserId,
         therapistName: therapistName,
         month: bonus.month,
         year: bonus.year,
