@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     const payments = await PaymentModel.find(paymentQuery)
       .populate({
         path: 'booking',
-        select: 'service date time status finalPrice originalPrice rewardDiscountApplied'
+        select: 'service date time status finalPrice originalPrice rewardDiscountApplied therapist'
       })
       .sort({ paymentDate: -1 })
       .skip(skip)

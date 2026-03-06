@@ -85,16 +85,42 @@ export async function GET(request: NextRequest) {
       })
       .populate({
         path: 'therapist',
-        select: 'user',
-        populate: {
-          path: 'user',
-          select: 'firstName lastName'
-        }
+        select: 'user fullName professionalTitle'
       })
       .sort({ completedAt: -1 }); // Sort by completedAt descending
 
     // Transform the data for response
-    const transformedBookings = bookings.map(booking => {
+    const transformedBookings = bookings.map(async booking => {
+      // Try to get therapist name from TherapistProfile first
+      let therapistName = 'Therapist';
+      
+      if (booking.therapist) {
+        // First try to use fullName from Therapist model
+        if (booking.therapist.fullName) {
+          therapistName = booking.therapist.fullName;
+        } else {
+          // Fallback: Try to fetch TherapistProfile by userId
+          try {
+            const TherapistProfileModel = (await import('@/models/TherapistProfile')).TherapistProfile;
+            const therapistProfile = await TherapistProfileModel.findOne({ 
+              userId: booking.therapist.user 
+            }).lean();
+            
+            if (therapistProfile && therapistProfile.fullName) {
+              therapistName = therapistProfile.fullName;
+            } else if (booking.therapist.professionalTitle) {
+              therapistName = booking.therapist.professionalTitle;
+            }
+          } catch (error) {
+            console.error('Error fetching therapist profile:', error);
+            // Use fallback if TherapistProfile fetch fails
+            if (booking.therapist.professionalTitle) {
+              therapistName = booking.therapist.professionalTitle;
+            }
+          }
+        }
+      }
+      
       return {
         id: booking._id,
         date: booking.date,
@@ -115,14 +141,17 @@ export async function GET(request: NextRequest) {
         },
         therapist: {
           id: booking.therapist._id,
-          name: `${booking.therapist.user.firstName} ${booking.therapist.user.lastName}`
+          name: therapistName
         }
       };
     });
 
+    // Wait for all async transformations to complete
+    const resolvedBookings = await Promise.all(transformedBookings);
+
     return NextResponse.json({
-      bookings: transformedBookings,
-      count: transformedBookings.length,
+      bookings: resolvedBookings,
+      count: resolvedBookings.length,
       message: 'Successfully retrieved completed bookings'
     });
 

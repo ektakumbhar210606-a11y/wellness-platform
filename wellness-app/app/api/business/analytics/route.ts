@@ -365,7 +365,7 @@ export async function GET(req: NextRequest) {
       })
         .populate({
           path: 'therapist',
-          select: 'firstName lastName fullName'
+          select: 'firstName lastName fullName email'
         })
         .populate({
           path: 'customer',
@@ -379,15 +379,46 @@ export async function GET(req: NextRequest) {
         .limit(10)
         .lean();
 
-      recentReviews = reviews.map(review => {
-        const therapist = review.therapist as any;
+      recentReviews = await Promise.all(reviews.map(async (review) => {
+        const therapistUser = review.therapist as any;
         let therapistFullName = 'Unknown Therapist';
         
-        if (therapist) {
-          if (therapist.firstName && therapist.lastName) {
-            therapistFullName = `${therapist.firstName} ${therapist.lastName}`.trim();
-          } else if (therapist.fullName) {
-            therapistFullName = therapist.fullName.trim();
+        if (therapistUser && therapistUser._id) {
+          try {
+            // Try to find TherapistProfile by userId
+            const TherapistProfileModel = (await import('@/models/TherapistProfile')).TherapistProfile;
+            const therapistProfile = await TherapistProfileModel.findOne({ userId: therapistUser._id }).lean();
+            
+            if (therapistProfile && therapistProfile.fullName) {
+              therapistFullName = therapistProfile.fullName.trim();
+            } else {
+              // Fallback to User fields if TherapistProfile not found
+              if (therapistUser.firstName && therapistUser.lastName) {
+                therapistFullName = `${therapistUser.firstName} ${therapistUser.lastName}`.trim();
+              } else if (therapistUser.fullName) {
+                therapistFullName = therapistUser.fullName.trim();
+              } else if (therapistUser.firstName) {
+                therapistFullName = therapistUser.firstName;
+              } else if (therapistUser.lastName) {
+                therapistFullName = therapistUser.lastName;
+              } else if (therapistUser.email) {
+                therapistFullName = therapistUser.email.split('@')[0];
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching therapist profile:', error);
+            // Use fallback logic if TherapistProfile fetch fails
+            if (therapistUser.firstName && therapistUser.lastName) {
+              therapistFullName = `${therapistUser.firstName} ${therapistUser.lastName}`.trim();
+            } else if (therapistUser.fullName) {
+              therapistFullName = therapistUser.fullName.trim();
+            } else if (therapistUser.firstName) {
+              therapistFullName = therapistUser.firstName;
+            } else if (therapistUser.lastName) {
+              therapistFullName = therapistUser.lastName;
+            } else if (therapistUser.email) {
+              therapistFullName = therapistUser.email.split('@')[0];
+            }
           }
         }
 
@@ -401,7 +432,7 @@ export async function GET(req: NextRequest) {
           comment: review.comment,
           createdAt: review.createdAt
         };
-      });
+      }));
 
       // Calculate average rating
       const allReviews = await ReviewModel.find({

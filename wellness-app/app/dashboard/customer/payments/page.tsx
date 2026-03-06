@@ -592,7 +592,7 @@ const CustomerPaymentsPage = () => {
             {/* Booking Details Section */}
             <Title level={5}>Booking Details</Title>
             {selectedPayment.booking ? (
-              <Descriptions bordered column={2} size="small">
+              <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
                 <Descriptions.Item label="Service Name" span={2}>
                   {selectedPayment.booking.service?.name || 'N/A'}
                 </Descriptions.Item>
