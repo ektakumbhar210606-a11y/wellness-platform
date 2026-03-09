@@ -434,6 +434,117 @@ const CustomerBookingsPage = () => {
     },
   ];
 
+  // Columns for cancelled bookings tab
+  const cancelledColumns = [
+    {
+      title: 'Booking ID',
+      key: 'id',
+      render: (record: any) => record.displayId || record.id,
+    },
+    {
+      title: 'Service',
+      dataIndex: ['service', 'name'],
+      key: 'serviceName',
+    },
+    {
+      title: 'Therapist',
+      dataIndex: ['therapist', 'fullName'],
+      key: 'therapist',
+      render: (text: string, record: any) => record.therapist?.fullName || 'Not assigned',
+    },
+    {
+      title: 'Date & Time',
+      key: 'datetime',
+      render: (record: any) => `${record.date} at ${formatTimeTo12Hour(record.time)}`,
+    },
+    {
+      title: 'Cancel Reason',
+      key: 'cancelReason',
+      render: (record: any) => {
+        // Always use therapistCancelReason field (therapist's choice)
+        const reason = record.therapistCancelReason || record.cancelReason || 'Customer initiated';
+        return (
+          <Text 
+            style={{ maxWidth: 250, color: record.therapistCancelReason ? '#d32f2f' : 'inherit' }} 
+            ellipsis
+            title={reason}
+          >
+            {record.therapistCancelReason && <span style={{ fontWeight: 500 }}>📍 </span>}
+            {reason}
+          </Text>
+        );
+      },
+    },
+    {
+      title: 'Refund Status',
+      key: 'refundStatus',
+      render: (record: any) => {
+        const refundAmount = (record.finalPrice || record.service?.price || 0) * 0.5;
+        const isTherapistCancel = record.status === 'cancelled_by_therapist';
+        return (
+          <div>
+            <Tag color={isTherapistCancel ? 'orange' : 'green'}>
+              {isTherapistCancel ? 'Refund Processing' : 'Refunded'}
+            </Tag>
+            <br />
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {formatCurrency(refundAmount, record.business?.address?.country || 'default')}
+            </Text>
+            {isTherapistCancel && (
+              <div>
+                <Text type="secondary" style={{ fontSize: '11px' }}>
+                  ⏳ 3-7 business days
+                </Text>
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Cancelled By',
+      key: 'cancelledBy',
+      render: (record: any) => {
+        // Determine who cancelled based on status and context
+        if (record.status === 'cancelled_by_therapist') {
+          // Therapist-initiated cancellation approved by business
+          return <Tag color="orange">Therapist</Tag>;
+        } else if (record.status === 'therapist_cancel_requested') {
+          // Pending business approval
+          return <Tag color="gold">Pending Approval</Tag>;
+        } else if (record.cancelledBy) {
+          // For other cancellations, check if it's customer or business
+          // If therapistCancelReason exists, it was therapist-initiated even if status is just 'cancelled'
+          if (record.therapistCancelReason) {
+            return <Tag color="orange">Therapist</Tag>;
+          }
+          // Default to Customer for customer-initiated cancellations
+          return <Tag color="blue">Customer</Tag>;
+        }
+        return <Tag color="default">System</Tag>;
+      },
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let displayStatus = status;
+        let color = 'red';
+        
+        if (status === 'cancelled_by_therapist') {
+          displayStatus = 'Cancelled by Therapist';
+          color = 'red';
+        } else if (status === 'therapist_cancel_requested') {
+          displayStatus = 'Pending Approval';
+          color = 'orange';
+        }
+        
+        return <Tag color={color} style={{ textTransform: 'capitalize' }}>{displayStatus}</Tag>;
+      },
+    },
+  ];
+
   const handleCancelBooking = async () => {
     try {
       // For customer-initiated cancellations, we should use the proper customer booking cancellation endpoint
@@ -563,6 +674,13 @@ const CustomerBookingsPage = () => {
            (booking.paymentStatus === 'partial' || booking.paymentStatus === 'completed');
   });
 
+  // Cancelled bookings: includes therapist cancellations with refund
+  const cancelledBookings = bookings.filter(booking => {
+    return booking.status === 'cancelled' || 
+           booking.status === 'cancelled_by_therapist' ||
+           booking.status === 'therapist_cancel_requested';
+  });
+
   return (
     <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
       <Title level={2}>My Bookings</Title>
@@ -595,6 +713,21 @@ const CustomerBookingsPage = () => {
                 <Table
                   columns={confirmedColumns}
                   dataSource={confirmedBookings}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 10 }}
+                />
+              </Card>
+            ),
+          },
+          {
+            key: 'cancelled',
+            label: 'Cancelled Bookings',
+            children: (
+              <Card style={{ marginTop: 24 }}>
+                <Table
+                  columns={cancelledColumns}
+                  dataSource={cancelledBookings}
                   rowKey="id"
                   loading={loading}
                   pagination={{ pageSize: 10 }}

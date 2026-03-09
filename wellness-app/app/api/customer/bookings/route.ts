@@ -119,6 +119,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch bookings with populated data
     const bookings = await BookingModel.find(query)
+      .select('+therapistCancelReason +cancelReason +cancelledBy') // Ensure cancel fields are included
       .populate({
         path: 'service',
         select: 'name price duration description business'
@@ -238,6 +239,8 @@ export async function GET(request: NextRequest) {
         confirmedAt: booking.confirmedAt,
         cancelledBy: booking.cancelledBy,
         cancelledAt: booking.cancelledAt,
+        cancelReason: booking.cancelReason,
+        therapistCancelReason: booking.therapistCancelReason,
         rescheduledBy: booking.rescheduledBy,
         rescheduledAt: booking.rescheduledAt
       };

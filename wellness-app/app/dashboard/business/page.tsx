@@ -3,9 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Typography, Button, Space, Tabs } from 'antd';
-import { DollarOutlined, BookOutlined, StarOutlined, TrophyOutlined } from '@ant-design/icons';
+import {
+  DollarOutlined,
+  BookOutlined,
+  StarOutlined,
+  TrophyOutlined,
+  StopOutlined
+} from '@ant-design/icons';
 import BusinessReviews from '../../components/BusinessReviews';
 import TherapistBonuses from '../../components/business/TherapistBonuses';
+import TherapistCancelRequests from '../../components/business/TherapistCancelRequests';
 
 const { Title, Text } = Typography;
 
@@ -86,6 +93,20 @@ const BusinessDashboardPage = () => {
       children: (
         <div style={{ marginTop: '24px' }}>
           <BusinessReviews />
+        </div>
+      ),
+    },
+    {
+      key: 'cancel-requests',
+      label: (
+        <span>
+          <StopOutlined style={{ color: '#d32f2f' }} />
+          Cancel Requests
+        </span>
+      ),
+      children: (
+        <div style={{ marginTop: '24px' }}>
+          <TherapistCancelRequests />
         </div>
       ),
     },

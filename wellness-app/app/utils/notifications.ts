@@ -78,6 +78,62 @@ class NotificationService {
   }
 
   /**
+   * Send custom notification (for therapist cancel requests and other workflows)
+   */
+  public async sendNotification(params: {
+    type: 'therapist_cancel_request' | 'therapist_cancel_request_approved' | 'therapist_cancel_request_rejected' | 'booking_cancelled_by_therapist';
+    to: string;
+    data: any;
+  }): Promise<boolean> {
+    try {
+      const { type, to, data } = params;
+
+      if (!to) {
+        console.error('No recipient email provided');
+        return false;
+      }
+
+      let subject = '';
+      let htmlContent = '';
+
+      switch (type) {
+        case 'therapist_cancel_request':
+          subject = `Therapist Cancellation Request: ${data.serviceDetails} for ${data.customerName}`;
+          htmlContent = this.generateTherapistCancelRequestEmail(data);
+          break;
+        case 'therapist_cancel_request_approved':
+          subject = 'Your Cancellation Request Was Approved';
+          htmlContent = this.generateTherapistCancelApprovedEmail(data);
+          break;
+        case 'therapist_cancel_request_rejected':
+          subject = 'Your Cancellation Request Was Rejected';
+          htmlContent = this.generateTherapistCancelRejectedEmail(data);
+          break;
+        case 'booking_cancelled_by_therapist':
+          subject = 'Your Booking Has Been Cancelled by Therapist';
+          htmlContent = this.generateBookingCancelledByTherapistEmail(data);
+          break;
+      }
+
+      if (!htmlContent) {
+        console.error('No email content generated for type:', type);
+        return false;
+      }
+
+      await this.emailService.sendEmail({
+        to,
+        subject,
+        html: htmlContent
+      });
+      console.log(`✓ Email sent to ${to}: ${subject}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      return false;
+    }
+  }
+
+  /**
    * Send notification to business about booking status change
    */
   private async sendNotificationToBusiness(
@@ -524,6 +580,257 @@ class NotificationService {
                     
                     <p style="color: #888; font-size: 14px; line-height: 1.5; margin: 20px 0 10px 0;">
                       Your booking has been updated with the new date and time. If you have any concerns, please contact us.
+                    </p>
+                    
+                    <div style="border-top: 1px solid #eee; margin: 30px 0 20px 0;"></div>
+                    <p style="color: #888; font-size: 14px; margin: 0;">
+                      Best regards,<br>
+                      <strong>The Serenity Wellness Team</strong>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate email content for therapist cancel request notification to business
+   */
+  private generateTherapistCancelRequestEmail(data: any): string {
+    const { customerName, therapistName, serviceDetails, cancelReason, booking } = data;
+    const bookingDate = new Date(booking.date).toLocaleDateString();
+    const bookingTime = booking.time;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Therapist Cancellation Request</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f7fa;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f7fa;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <tr>
+                  <td style="padding: 40px 30px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #667eea; margin-bottom: 20px;">
+                      🧘‍♀️ Serenity Wellness
+                    </div>
+                    <h2 style="color: #ff9800; margin: 0 0 20px 0; font-size: 24px;">Therapist Cancellation Request</h2>
+                    <p style="color: #666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                      A therapist has requested to cancel a booking. Please review and approve or reject this request.
+                    </p>
+                    
+                    <div style="background-color: #fff3e0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left; border-left: 4px solid #ff9800;">
+                      <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Booking Details:</h3>
+                      <p style="margin: 8px 0; color: #555;"><strong>Service:</strong> ${serviceDetails}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Customer:</strong> ${customerName}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Therapist:</strong> ${therapistName}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Date:</strong> ${bookingDate}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Time:</strong> ${bookingTime}</p>
+                      <p style="margin: 8px 0; color: #ff9800; font-weight: bold;">Status: Pending Your Review</p>
+                    </div>
+                    
+                    <div style="background-color: #ffebee; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+                      <h3 style="color: #d32f2f; margin: 0 0 15px 0; font-size: 18px;">Cancellation Reason:</h3>
+                      <p style="margin: 0; color: #555; font-style: italic;">${cancelReason}</p>
+                    </div>
+                    
+                    <p style="color: #888; font-size: 14px; line-height: 1.5; margin: 20px 0 10px 0;">
+                      Please log in to your business dashboard to approve or reject this cancellation request.
+                    </p>
+                    
+                    <div style="border-top: 1px solid #eee; margin: 30px 0 20px 0;"></div>
+                    <p style="color: #888; font-size: 14px; margin: 0;">
+                      Best regards,<br>
+                      <strong>The Serenity Wellness Team</strong>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate email content for therapist cancel approved notification
+   */
+  private generateTherapistCancelApprovedEmail(data: any): string {
+    const { therapistName, customerName, booking } = data;
+    const bookingDate = new Date(booking.date).toLocaleDateString();
+    const bookingTime = booking.time;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cancellation Request Approved</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f7fa;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f7fa;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <tr>
+                  <td style="padding: 40px 30px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #667eea; margin-bottom: 20px;">
+                      🧘‍♀️ Serenity Wellness
+                    </div>
+                    <h2 style="color: #52c41a; margin: 0 0 20px 0; font-size: 24px;">Cancellation Request Approved</h2>
+                    <p style="color: #666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                      Your cancellation request has been approved by the business.
+                    </p>
+                    
+                    <div style="background-color: #f0f9ff; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+                      <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Cancelled Booking:</h3>
+                      <p style="margin: 8px 0; color: #555;"><strong>Customer:</strong> ${customerName}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Date:</strong> ${bookingDate}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Time:</strong> ${bookingTime}</p>
+                      <p style="margin: 8px 0; color: #52c41a; font-weight: bold;">Status: Cancelled</p>
+                    </div>
+                    
+                    <p style="color: #888; font-size: 14px; line-height: 1.5; margin: 20px 0 10px 0;">
+                      The booking slot has been released back to your availability.
+                    </p>
+                    
+                    <div style="border-top: 1px solid #eee; margin: 30px 0 20px 0;"></div>
+                    <p style="color: #888; font-size: 14px; margin: 0;">
+                      Best regards,<br>
+                      <strong>The Serenity Wellness Team</strong>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate email content for therapist cancel rejected notification
+   */
+  private generateTherapistCancelRejectedEmail(data: any): string {
+    const { therapistName, customerName, booking, reason } = data;
+    const bookingDate = new Date(booking.date).toLocaleDateString();
+    const bookingTime = booking.time;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cancellation Request Rejected</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f7fa;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f7fa;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <tr>
+                  <td style="padding: 40px 30px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #667eea; margin-bottom: 20px;">
+                      🧘‍♀️ Serenity Wellness
+                    </div>
+                    <h2 style="color: #ff4d4f; margin: 0 0 20px 0; font-size: 24px;">Cancellation Request Rejected</h2>
+                    <p style="color: #666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                      Your cancellation request has been rejected by the business.
+                    </p>
+                    
+                    <div style="background-color: #fff0f0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+                      <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Booking Details:</h3>
+                      <p style="margin: 8px 0; color: #555;"><strong>Customer:</strong> ${customerName}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Date:</strong> ${bookingDate}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Time:</strong> ${bookingTime}</p>
+                      <p style="margin: 8px 0; color: #ff4d4f; font-weight: bold;">Status: Remains Confirmed</p>
+                    </div>
+                    
+                    <p style="color: #888; font-size: 14px; line-height: 1.5; margin: 20px 0 10px 0;">
+                      The booking remains confirmed. Please fulfill your commitment as scheduled.
+                    </p>
+                    
+                    <div style="border-top: 1px solid #eee; margin: 30px 0 20px 0;"></div>
+                    <p style="color: #888; font-size: 14px; margin: 0;">
+                      Best regards,<br>
+                      <strong>The Serenity Wellness Team</strong>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate email content for booking cancelled by therapist notification to customer
+   */
+  private generateBookingCancelledByTherapistEmail(data: any): string {
+    const { customerName, therapistName, serviceDetails, refundAmount, booking } = data;
+    const bookingDate = new Date(booking.date).toLocaleDateString();
+    const bookingTime = booking.time;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Booking Cancelled by Therapist</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f7fa;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f7fa;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <tr>
+                  <td style="padding: 40px 30px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #667eea; margin-bottom: 20px;">
+                      🧘‍♀️ Serenity Wellness
+                    </div>
+                    <h2 style="color: #d32f2f; margin: 0 0 20px 0; font-size: 24px;">Your Booking Has Been Cancelled</h2>
+                    <p style="color: #666; font-size: 16px; line-height: 1.5; margin: 0 0 20px 0;">
+                      We regret to inform you that your booking has been cancelled by the therapist.
+                    </p>
+                    
+                    <div style="background-color: #fff0f0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+                      <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Cancelled Booking Details:</h3>
+                      <p style="margin: 8px 0; color: #555;"><strong>Service:</strong> ${serviceDetails}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Therapist:</strong> ${therapistName}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Date:</strong> ${bookingDate}</p>
+                      <p style="margin: 8px 0; color: #555;"><strong>Time:</strong> ${bookingTime}</p>
+                      <p style="margin: 8px 0; color: #d32f2f; font-weight: bold;">Status: Cancelled</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f5e9; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left; border-left: 4px solid #4caf50;">
+                      <h3 style="color: #2e7d32; margin: 0 0 15px 0; font-size: 18px;">Refund Information:</h3>
+                      <p style="margin: 8px 0; color: #555;">A full refund of your advance payment will be processed:</p>
+                      <p style="margin: 8px 0; color: #2e7d32; font-weight: bold; font-size: 18px;">Refund Amount: ${refundAmount}</p>
+                      <p style="margin: 8px 0; color: #666; font-size: 14px;">The refund will be credited to your original payment method within 5-7 business days.</p>
+                    </div>
+                    
+                    <p style="color: #888; font-size: 14px; line-height: 1.5; margin: 20px 0 10px 0;">
+                      We apologize for any inconvenience caused. You may book another appointment at your convenience.
                     </p>
                     
                     <div style="border-top: 1px solid #eee; margin: 30px 0 20px 0;"></div>

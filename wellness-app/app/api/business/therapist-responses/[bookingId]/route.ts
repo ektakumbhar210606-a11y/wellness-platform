@@ -180,13 +180,15 @@ export async function PATCH(
     // by checking if it was ever in therapist_confirmed or therapist_rejected status
     // or if it's in a state that resulted from a therapist response
     // Include paid bookings since business should be able to confirm therapist responses after payment
+    // Include therapist_cancel_requested for backward compatibility
     const hasTherapistResponse = booking.status === BookingStatus.TherapistConfirmed || 
                          booking.status === BookingStatus.TherapistRejected ||
                          booking.status === BookingStatus.Confirmed ||
                          booking.status === BookingStatus.Paid ||
                          booking.status === BookingStatus.Pending ||
                          booking.status === BookingStatus.NoShow ||
-                         booking.status === BookingStatus.Rescheduled;
+                         booking.status === BookingStatus.Rescheduled ||
+                         booking.status === BookingStatus.TherapistCancelRequested;
 
     if (!hasTherapistResponse) {
       return Response.json(

@@ -15,7 +15,11 @@ import {
   Tabs,
   List,
   Divider,
-  notification
+  notification,
+  Modal,
+  DatePicker,
+  TimePicker,
+  message
 } from 'antd';
 import {
   CalendarOutlined,
@@ -27,7 +31,8 @@ import {
   ClockCircleOutlined,
   MailOutlined,
   PhoneOutlined,
-  CheckOutlined
+  CheckOutlined,
+  StopOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { formatCurrency } from '../../utils/currencyFormatter';
@@ -35,6 +40,14 @@ import { makeAuthenticatedRequest } from '@/app/utils/apiUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// Predefined cancel reasons
+const CANCEL_REASONS = [
+  'Personal emergency / Unavailable',
+  'Double booked / Scheduling conflict',
+  'Customer no-show (pre-emptive)',
+  'Equipment not available'
+];
 
 interface BusinessResponse {
   id: string;
@@ -78,6 +91,16 @@ const TherapistSchedule: React.FC = () => {
   const [activeTab, setActiveTab] = useState('confirmed');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loadingBookingId, setLoadingBookingId] = useState<string | null>(null);
+  
+  // New state for cancel and reschedule functionality
+  const [selectedBooking, setSelectedBooking] = useState<BusinessResponse | null>(null);
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [cancelReasonModalVisible, setCancelReasonModalVisible] = useState(false); // New modal for cancel reason
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState<dayjs.Dayjs | null>(null);
+  const [rescheduleTime, setRescheduleTime] = useState<dayjs.Dayjs | null>(null);
+  const [selectedCancelReason, setSelectedCancelReason] = useState<string>(''); // Selected cancel reason
 
   const fetchBusinessResponses = async () => {
     try {
@@ -188,6 +211,114 @@ const TherapistSchedule: React.FC = () => {
       });
     } finally {
       setLoadingBookingId(null);
+    }
+  };
+
+  // New handler for therapist cancellation
+  const handleCancelBooking = async () => {
+    if (!selectedBooking) return;
+    
+    try {
+      setActionLoading(true);
+      const response = await makeAuthenticatedRequest(`/api/therapist/bookings/${selectedBooking.id}/cancel`, {
+        method: 'PATCH'
+      });
+      
+      if (response.success) {
+        message.success('Booking cancelled successfully. Auto-refund of 50% advance will be processed.');
+        setCancelConfirmVisible(false);
+        setSelectedBooking(null);
+        await fetchBusinessResponses();
+      } else {
+        message.error(response.error || 'Failed to cancel booking');
+      }
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+      message.error('Failed to cancel booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // New handler for reschedule
+  const handleRescheduleBooking = async () => {
+    if (!selectedBooking || !rescheduleDate || !rescheduleTime) {
+      message.warning('Please select both date and time');
+      return;
+    }
+    
+    try {
+      setActionLoading(true);
+      const newDate = rescheduleDate.toDate();
+      const newTime = rescheduleTime.format('HH:mm');
+      
+      const response = await makeAuthenticatedRequest(`/api/therapist/bookings/${selectedBooking.id}/reschedule`, {
+        method: 'PATCH',
+        body: JSON.stringify({ newDate, newTime })
+      });
+      
+      if (response.success) {
+        message.success('Booking rescheduled successfully');
+        setRescheduleModalVisible(false);
+        setSelectedBooking(null);
+        setRescheduleDate(null);
+        setRescheduleTime(null);
+        await fetchBusinessResponses();
+      } else {
+        message.error(response.error || 'Failed to reschedule booking');
+      }
+    } catch (error: any) {
+      console.error('Error rescheduling booking:', error);
+      message.error('Failed to reschedule booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Helper to open reschedule modal
+  const openRescheduleModal = (booking: BusinessResponse) => {
+    setSelectedBooking(booking);
+    setRescheduleDate(null);
+    setRescheduleTime(null);
+    setRescheduleModalVisible(true);
+  };
+
+  // Helper to open cancel reason modal (NEW - replaces direct cancel confirmation)
+  const openCancelReasonModal = (booking: BusinessResponse) => {
+    setSelectedBooking(booking);
+    setSelectedCancelReason('');
+    setCancelReasonModalVisible(true);
+  };
+
+  // New handler for submitting cancel request to business
+  const handleSubmitCancelRequest = async () => {
+    if (!selectedBooking || !selectedCancelReason) {
+      message.warning('Please select a cancellation reason');
+      return;
+    }
+    
+    try {
+      setActionLoading(true);
+      // Call NEW API endpoint for therapist cancel request
+      const response = await makeAuthenticatedRequest(`/api/therapist/bookings/${selectedBooking.id}/cancel-request`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cancelReason: selectedCancelReason })
+      });
+      
+      if (response.success) {
+        message.success('Cancellation request sent to business. Awaiting approval.');
+        setCancelReasonModalVisible(false);
+        setSelectedBooking(null);
+        setSelectedCancelReason('');
+        await fetchBusinessResponses();
+      } else {
+        message.error(response.error || 'Failed to submit cancellation request');
+      }
+    } catch (error: any) {
+      console.error('Error submitting cancellation request:', error);
+      message.error('Failed to submit cancellation request');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -353,27 +484,44 @@ const TherapistSchedule: React.FC = () => {
                               )}
                             </div>
                             <div style={{ marginLeft: 24 }}>
-                              <Button
-                                type="primary"
-                                icon={<CheckOutlined />}
-                                style={{ 
-                                  width: 120,
-                                  backgroundColor: '#52c41a',
-                                  borderColor: '#52c41a'
-                                }}
-                                onClick={() => handleMarkAsCompleted(response.id)}
-                                loading={loadingBookingId === response.id}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#389e0d';
-                                  e.currentTarget.style.borderColor = '#389e0d';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#52c41a';
-                                  e.currentTarget.style.borderColor = '#52c41a';
-                                }}
-                              >
-                                Completed
-                              </Button>
+                              <Space orientation="vertical" size="small">
+                                <Button
+                                  type="primary"
+                                  icon={<CheckOutlined />}
+                                  style={{ 
+                                    width: 120,
+                                    backgroundColor: '#52c41a',
+                                    borderColor: '#52c41a'
+                                  }}
+                                  onClick={() => handleMarkAsCompleted(response.id)}
+                                  loading={loadingBookingId === response.id}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#389e0d';
+                                    e.currentTarget.style.borderColor = '#389e0d';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#52c41a';
+                                    e.currentTarget.style.borderColor = '#52c41a';
+                                  }}
+                                >
+                                  Completed
+                                </Button>
+                                <Button
+                                  icon={<SyncOutlined />}
+                                  onClick={() => openRescheduleModal(response)}
+                                  disabled={actionLoading}
+                                >
+                                  Reschedule
+                                </Button>
+                                <Button
+                                  danger
+                                  icon={<StopOutlined />}
+                                  onClick={() => openCancelReasonModal(response)}
+                                  disabled={actionLoading}
+                                >
+                                  Cancel & Refund
+                                </Button>
+                              </Space>
                             </div>
                           </div>
                         </Card>
@@ -629,6 +777,203 @@ const TherapistSchedule: React.FC = () => {
           }
         ]}
       />
+      
+      {/* Cancel Reason Modal - NEW */}
+      <Modal
+        title="Request Cancellation & Refund"
+        open={cancelReasonModalVisible}
+        onCancel={() => {
+          setCancelReasonModalVisible(false);
+          setSelectedBooking(null);
+          setSelectedCancelReason('');
+        }}
+        footer={[
+          <Button key="back" onClick={() => {
+            setCancelReasonModalVisible(false);
+            setSelectedBooking(null);
+            setSelectedCancelReason('');
+          }}>
+            Back
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            danger
+            onClick={handleSubmitCancelRequest}
+            loading={actionLoading}
+            disabled={!selectedCancelReason}
+          >
+            Send Request to Business
+          </Button>
+        ]}
+      >
+        {selectedBooking && (
+          <div>
+            <Title level={5}>Booking Details</Title>
+            <p><strong>Customer:</strong> {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}</p>
+            <p><strong>Service:</strong> {selectedBooking.service.name}</p>
+            <p><strong>Date:</strong> {formatDate(selectedBooking.date)}</p>
+            <p><strong>Time:</strong> {formatTime(selectedBooking.time)}</p>
+            
+            <Divider />
+            
+            <Title level={5}>Select Cancellation Reason</Title>
+            <p style={{ color: '#666', marginBottom: 16 }}>
+              Please select the reason for cancellation. This will be sent to the business for approval.
+            </p>
+            
+            <Space orientation="vertical" style={{ width: '100%' }} size="small">
+              {CANCEL_REASONS.map((reason) => (
+                <div
+                  key={reason}
+                  onClick={() => setSelectedCancelReason(reason)}
+                  style={{
+                    padding: '12px 16px',
+                    border: `2px solid ${selectedCancelReason === reason ? '#d32f2f' : '#e8e8e8'}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedCancelReason === reason ? '#fff0f0' : 'white',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Space align="start">
+                    <input
+                      type="radio"
+                      checked={selectedCancelReason === reason}
+                      onChange={() => setSelectedCancelReason(reason)}
+                      style={{ marginTop: '4px' }}
+                    />
+                    <Text>{reason}</Text>
+                  </Space>
+                </div>
+              ))}
+            </Space>
+            
+            <div style={{ marginTop: 20, padding: '12px', backgroundColor: '#fff7e6', borderRadius: '8px', border: '1px solid #ffd591' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                ℹ️ The business will review your request and either approve (triggering 50% refund to customer) or reject it. You will be notified of their decision.
+              </Text>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reschedule Modal */}
+      <Modal
+        title="Reschedule Booking"
+        open={rescheduleModalVisible}
+        onCancel={() => {
+          setRescheduleModalVisible(false);
+          setSelectedBooking(null);
+          setRescheduleDate(null);
+          setRescheduleTime(null);
+        }}
+        footer={[
+          <Button key="cancel" onClick={() => {
+            setRescheduleModalVisible(false);
+            setSelectedBooking(null);
+            setRescheduleDate(null);
+            setRescheduleTime(null);
+          }}>
+            Cancel
+          </Button>,
+          <Button
+            key="reschedule"
+            type="primary"
+            onClick={handleRescheduleBooking}
+            loading={actionLoading}
+          >
+            Reschedule
+          </Button>
+        ]}
+      >
+        {selectedBooking && (
+          <div style={{ marginBottom: 24 }}>
+            <Title level={5}>Booking Details</Title>
+            <p><strong>Customer:</strong> {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}</p>
+            <p><strong>Service:</strong> {selectedBooking.service.name}</p>
+            <p><strong>Current Date:</strong> {formatDate(selectedBooking.date)}</p>
+            <p><strong>Current Time:</strong> {formatTime(selectedBooking.time)}</p>
+          </div>
+        )}
+
+        <div>
+          <Title level={5}>New Date & Time</Title>
+          <Space vertical style={{ width: '100%' }}>
+            <div>
+              <Text strong>New Date:</Text>
+              <DatePicker
+                value={rescheduleDate}
+                onChange={setRescheduleDate}
+                style={{ width: '100%', marginTop: 8 }}
+                disabledDate={(current) => current && current < dayjs().startOf('day')}
+              />
+            </div>
+            <div>
+              <Text strong>New Time:</Text>
+              <TimePicker
+                value={rescheduleTime}
+                onChange={setRescheduleTime}
+                format="HH:mm"
+                style={{ width: '100%', marginTop: 8 }}
+                minuteStep={15}
+              />
+            </div>
+          </Space>
+        </div>
+      </Modal>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        title="Cancel Booking"
+        open={cancelConfirmVisible}
+        onCancel={() => {
+          setCancelConfirmVisible(false);
+          setSelectedBooking(null);
+        }}
+        footer={[
+          <Button key="back" onClick={() => {
+            setCancelConfirmVisible(false);
+            setSelectedBooking(null);
+          }}>
+            Back
+          </Button>,
+          <Button
+            key="cancel"
+            danger
+            onClick={handleCancelBooking}
+            loading={actionLoading}
+          >
+            Confirm Cancellation
+          </Button>
+        ]}
+      >
+        {selectedBooking && (
+          <div>
+            <Title level={5}>Booking Details</Title>
+            <p><strong>Customer:</strong> {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}</p>
+            <p><strong>Service:</strong> {selectedBooking.service.name}</p>
+            <p><strong>Date:</strong> {formatDate(selectedBooking.date)}</p>
+            <p><strong>Time:</strong> {formatTime(selectedBooking.time)}</p>
+            
+            <Divider />
+            
+            <div style={{ backgroundColor: '#fff0f0', padding: 16, borderRadius: 8, marginTop: 16 }}>
+              <Title level={5} style={{ color: '#d32f2f', marginTop: 0 }}>Important Information:</Title>
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                <li style={{ marginBottom: 8 }}>This will cancel the booking immediately</li>
+                <li style={{ marginBottom: 8 }}>An auto-refund of 50% advance payment will be processed to the customer</li>
+                <li style={{ marginBottom: 8 }}>The customer will be notified of this cancellation</li>
+                <li>The booking slot will be released back to your availability</li>
+              </ul>
+            </div>
+            
+            <div style={{ marginTop: 16, fontWeight: 'bold' }}>
+              Are you sure you want to proceed with this cancellation?
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

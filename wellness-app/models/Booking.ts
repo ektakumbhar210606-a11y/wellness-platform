@@ -13,7 +13,9 @@ export enum BookingStatus {
   Completed = 'completed',
   Cancelled = 'cancelled',
   NoShow = 'no-show',
-  Rescheduled = 'rescheduled'
+  Rescheduled = 'rescheduled',
+  TherapistCancelRequested = 'therapist_cancel_requested',
+  CancelledByTherapist = 'cancelled_by_therapist'
 }
 
 // Define the interface for the Booking document
@@ -39,6 +41,11 @@ export interface IBooking extends Document {
   confirmedAt?: Date; // When the booking was confirmed
   cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
   cancelledAt?: Date; // When the booking was cancelled
+  cancelReason?: string; // Reason for cancellation (therapist or business)
+  therapistCancelReason?: string; // Specific reason provided by therapist for cancel request
+  therapistCancelRequestedAt?: Date; // When therapist requested cancellation
+  businessReviewStatus?: 'pending' | 'approved' | 'rejected'; // Business review status for therapist cancel request
+  businessReviewedAt?: Date; // When business reviewed the cancel request
   completedAt?: Date; // When the booking was completed
   reviewSubmitted?: boolean; // Whether a review has been submitted for this booking
   paymentStatus?: 'pending' | 'partial' | 'paid'; // Overall payment status of the booking
@@ -100,8 +107,8 @@ const BookingSchema: Schema<IBooking> = new Schema({
   status: {
     type: String,
     enum: {
-      values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'paid', 'completed', 'cancelled', 'no-show', 'rescheduled'],
-      message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, paid, completed, cancelled, no-show, or rescheduled'
+      values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'paid', 'completed', 'cancelled', 'no-show', 'rescheduled', 'therapist_cancel_requested', 'cancelled_by_therapist'],
+      message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, paid, completed, cancelled, no-show, rescheduled, therapist_cancel_requested, or cancelled_by_therapist'
     },
     default: BookingStatus.Pending
   },

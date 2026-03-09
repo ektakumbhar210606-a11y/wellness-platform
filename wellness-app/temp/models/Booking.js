@@ -82,8 +82,8 @@ const BookingSchema = new mongoose_1.Schema({
     status: {
         type: String,
         enum: {
-            values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'paid', 'completed', 'cancelled', 'no-show', 'rescheduled'],
-            message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, paid, completed, cancelled, no-show, or rescheduled'
+            values: ['pending', 'therapist_confirmed', 'therapist_rejected', 'confirmed', 'paid', 'completed', 'cancelled', 'no-show', 'rescheduled', 'therapist_cancel_requested', 'cancelled_by_therapist'],
+            message: 'Status must be either pending, therapist_confirmed, therapist_rejected, confirmed, paid, completed, cancelled, no-show, rescheduled, therapist_cancel_requested, or cancelled_by_therapist'
         },
         default: BookingStatus.Pending
     },
@@ -147,6 +147,27 @@ const BookingSchema = new mongoose_1.Schema({
     },
     cancelledAt: {
         type: Date, // When the booking was cancelled
+        required: false
+    },
+    cancelReason: {
+        type: String, // Reason for cancellation (therapist or business)
+        required: false
+    },
+    therapistCancelReason: {
+        type: String, // Specific reason provided by therapist for cancel request
+        required: false
+    },
+    therapistCancelRequestedAt: {
+        type: Date, // When therapist requested cancellation
+        required: false
+    },
+    businessReviewStatus: {
+        type: String, // Business review status for therapist cancel request
+        enum: ['pending', 'approved', 'rejected'],
+        required: false
+    },
+    businessReviewedAt: {
+        type: Date, // When business reviewed the cancel request
         required: false
     },
     completedAt: {
