@@ -556,20 +556,20 @@ const TherapistReviews: React.FC = () => {
                   </Col>
                   <Col xs={24} sm={8}>
                     <Card>
-                      <Statistic 
+                      <Statistic
                         title="Paid" 
                         value={bonuses.filter(b => b.status === 'paid').length} 
-                        valueStyle={{ color: '#52c41a' }}
+                        styles={{ content: { color: '#52c41a' } }}
                         prefix={<DollarOutlined />}
                       />
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Card>
-                      <Statistic 
+                      <Statistic
                         title="Pending" 
                         value={bonuses.filter(b => b.status === 'pending').length} 
-                        valueStyle={{ color: '#faad14' }}
+                        styles={{ content: { color: '#faad14' } }}
                       />
                     </Card>
                   </Col>

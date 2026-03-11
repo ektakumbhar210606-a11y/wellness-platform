@@ -163,8 +163,9 @@ export async function GET(request: NextRequest) {
     const totalEarnings = bookingEarnings + bonusEarnings;
 
     // STEP 2: Calculate average rating from reviews
+    // Note: Review.therapist references User ID, not Therapist profile ID
     const reviewSummary = await ReviewModel.aggregate([
-      { $match: { therapist: therapist._id } },
+      { $match: { therapist: therapist.user } },
       {
         $group: {
           _id: null,
@@ -297,8 +298,9 @@ export async function GET(request: NextRequest) {
     ]);
 
     // STEP 5: Rating Trend Per Month
+    // Note: Review.therapist references User ID, not Therapist profile ID
     const monthlyRatingsData = await ReviewModel.aggregate([
-      { $match: { therapist: therapist._id } },
+      { $match: { therapist: therapist.user } },
       {
         $group: {
           _id: {
@@ -360,8 +362,9 @@ export async function GET(request: NextRequest) {
     ]);
 
     // STEP 7: Monthly Reviews Count
+    // Note: Review.therapist references User ID, not Therapist profile ID
     const monthlyReviewCountData = await ReviewModel.aggregate([
-      { $match: { therapist: therapist._id } },
+      { $match: { therapist: therapist.user } },
       {
         $group: {
           _id: {
