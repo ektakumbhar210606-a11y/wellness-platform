@@ -148,16 +148,17 @@ export async function PATCH(
       );
     }
 
-    // Update booking status to cancelled
+    // Update booking status to therapist_cancel_requested (requires business approval)
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
       { 
-        status: BookingStatus.Cancelled,
+        status: BookingStatus.TherapistCancelRequested,
         therapistResponded: true, // Mark that therapist has responded
         responseVisibleToBusinessOnly: true, // Therapist responses should only be visible to business
-        // Track who cancelled and when
-        cancelledBy: decoded.id,
-        cancelledAt: new Date()
+        // Track therapist cancellation request
+        therapistCancelReason: 'Therapist initiated cancellation',
+        therapistCancelRequestedAt: new Date(),
+        businessReviewStatus: 'pending' // Awaiting business review
       },
       { new: true, runValidators: true }
     )

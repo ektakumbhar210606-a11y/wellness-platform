@@ -96,6 +96,18 @@ export async function PATCH(
     const awaitedParams = await params;
     const bookingId = awaitedParams.bookingId;
 
+    // Parse request body
+    const body = await req.json();
+    const { cancelReason, initiatedBy } = body || {};
+    
+    // Debug logging
+    console.log('Business cancellation request:', {
+      bookingId,
+      cancelReason: cancelReason ? 'PROVIDED' : 'NOT PROVIDED',
+      initiatedBy,
+      bodyKeys: Object.keys(body || {})
+    });
+
     // Validate ObjectId format
     if (!Types.ObjectId.isValid(bookingId)) {
       return Response.json(
@@ -141,25 +153,45 @@ export async function PATCH(
       );
     }
 
-    // Check if booking can be cancelled (only pending or confirmed bookings)
-    if (booking.status !== BookingStatus.Pending && booking.status !== BookingStatus.Confirmed && booking.status !== BookingStatus.Rescheduled) {
+    // Check if booking can be cancelled
+    // Allow business to cancel pending, confirmed, rescheduled, or therapist-cancel-requested bookings
+    const allowedStatuses = [
+      BookingStatus.Pending,
+      BookingStatus.Confirmed,
+      BookingStatus.Rescheduled,
+      BookingStatus.TherapistCancelRequested
+    ];
+    
+    if (!allowedStatuses.includes(booking.status)) {
       return Response.json(
-        { success: false, error: 'Only pending, confirmed, or rescheduled bookings can be cancelled' },
+        { success: false, error: 'This booking cannot be cancelled as it is already in a final state' },
         { status: 400 }
       );
     }
 
     // Update booking status to cancelled
+    const updateData: any = {
+      status: BookingStatus.Cancelled,
+      therapistResponded: true, // Mark that therapist has responded (business cancelling counts as therapist response)
+      responseVisibleToBusinessOnly: false, // Business cancellation makes response visible to customer
+      // Track who cancelled and when
+      cancelledBy: decoded.id,
+      cancelledAt: new Date()
+    };
+
+    // If business-initiated cancellation with reason
+    // Save business cancellation reason if provided (regardless of initiatedBy flag)
+    if (cancelReason && cancelReason.trim()) {
+      updateData.businessCancelReason = cancelReason.trim();
+      updateData.notificationDestination = 'customer'; // Ensure customer is notified
+      console.log('Setting businessCancelReason:', cancelReason);
+    } else {
+      console.log('No cancelReason provided. initiatedBy:', initiatedBy);
+    }
+
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
-      { 
-        status: BookingStatus.Cancelled,
-        therapistResponded: true, // Mark that therapist has responded (business cancelling counts as therapist response)
-        responseVisibleToBusinessOnly: false, // Business cancellation makes response visible to customer
-        // Track who cancelled and when
-        cancelledBy: decoded.id,
-        cancelledAt: new Date()
-      },
+      updateData,
       { new: true, runValidators: true }
     )
       .populate({

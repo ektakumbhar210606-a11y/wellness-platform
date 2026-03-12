@@ -120,7 +120,7 @@ export async function PATCH(
     await connectToDatabase();
 
     // Find business profile by user ID
-    const business = await BusinessModel.findOne({ user: decoded.id });
+    const business = await BusinessModel.findOne({ owner: decoded.id });
     if (!business) {
       return Response.json(
         { success: false, error: 'Business profile not found' },

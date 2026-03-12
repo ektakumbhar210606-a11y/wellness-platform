@@ -43,6 +43,7 @@ export interface IBooking extends Document {
   cancelledAt?: Date; // When the booking was cancelled
   cancelReason?: string; // Reason for cancellation (therapist or business)
   therapistCancelReason?: string; // Specific reason provided by therapist for cancel request
+  businessCancelReason?: string; // Specific reason provided by business for cancellation
   therapistCancelRequestedAt?: Date; // When therapist requested cancellation
   businessReviewStatus?: 'pending' | 'approved' | 'rejected'; // Business review status for therapist cancel request
   businessReviewedAt?: Date; // When business reviewed the cancel request
@@ -173,6 +174,19 @@ const BookingSchema: Schema<IBooking> = new Schema({
   cancelledAt: {
     type: Date, // When the booking was cancelled
     required: false
+  },
+  cancelReason: {
+    type: String, // Reason for cancellation
+    required: false
+  },
+  therapistCancelReason: {
+    type: String, // Specific reason provided by therapist
+    required: false
+  },
+  businessCancelReason: {
+    type: String, // Specific reason provided by business
+    required: false,
+    maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
   },
   completedAt: {
     type: Date, // When the booking was completed

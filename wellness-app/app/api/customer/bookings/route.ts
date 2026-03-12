@@ -109,17 +109,25 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // Optional status filter
     const skip = (page - 1) * limit;
 
-    // Build query for customer bookings - show bookings based on visibility rules
-    // Include bookings where response is not visible to business only (responseVisibleToBusinessOnly != true)
-    // This ensures customer can see their own bookings except when therapists respond but business hasn't processed
-    const query: { customer: string; responseVisibleToBusinessOnly?: boolean | { $ne: boolean } } = {
-      customer: customerId,
-      responseVisibleToBusinessOnly: { $ne: true }
+    // Build query for customer bookings
+    // Show all customer's cancelled bookings, and other bookings where responseVisibleToBusinessOnly is not true
+    const cancelledStatuses = ['cancelled', 'cancelled_by_therapist', 'therapist_cancel_requested'];
+    
+    const query: any = {
+      $and: [
+        { customer: customerId },
+        {
+          $or: [
+            { status: { $in: cancelledStatuses } }, // Always show cancelled bookings
+            { responseVisibleToBusinessOnly: { $ne: true } } // Show other bookings if not business-only visible
+          ]
+        }
+      ]
     };
 
     // Fetch bookings with populated data
     const bookings = await BookingModel.find(query)
-      .select('+therapistCancelReason +cancelReason +cancelledBy') // Ensure cancel fields are included
+      .select('+therapistCancelReason +cancelReason +cancelledBy +businessCancelReason') // Ensure cancel fields are included
       .populate({
         path: 'service',
         select: 'name price duration description business'

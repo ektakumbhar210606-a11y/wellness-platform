@@ -461,15 +461,29 @@ const CustomerBookingsPage = () => {
       title: 'Cancel Reason',
       key: 'cancelReason',
       render: (record: any) => {
-        // Always use therapistCancelReason field (therapist's choice)
-        const reason = record.therapistCancelReason || record.cancelReason || 'Customer initiated';
+        // Debug: Log the entire record to see what fields are available
+        console.log('Booking cancel data:', {
+          id: record.id,
+          businessCancelReason: record.businessCancelReason,
+          therapistCancelReason: record.therapistCancelReason,
+          cancelReason: record.cancelReason,
+          cancelledBy: record.cancelledBy,
+          status: record.status
+        });
+        
+        // Check for business cancellation reason first, then therapist reason
+        const reason = record.businessCancelReason || record.therapistCancelReason || record.cancelReason || 'Not specified';
+        const isBusinessCancel = !!record.businessCancelReason;
+        const isTherapistCancel = !!record.therapistCancelReason;
+        
         return (
           <Text 
-            style={{ maxWidth: 250, color: record.therapistCancelReason ? '#d32f2f' : 'inherit' }} 
+            style={{ maxWidth: 250, color: isBusinessCancel ? '#1890ff' : isTherapistCancel ? '#d32f2f' : 'inherit' }} 
             ellipsis
             title={reason}
           >
-            {record.therapistCancelReason && <span style={{ fontWeight: 500 }}>📍 </span>}
+            {isBusinessCancel && <span style={{ fontWeight: 500 }}>🏢 </span>}
+            {isTherapistCancel && !isBusinessCancel && <span style={{ fontWeight: 500 }}>📍 </span>}
             {reason}
           </Text>
         );
@@ -512,6 +526,9 @@ const CustomerBookingsPage = () => {
         } else if (record.status === 'therapist_cancel_requested') {
           // Pending business approval
           return <Tag color="gold">Pending Approval</Tag>;
+        } else if (record.businessCancelReason) {
+          // Business-initiated cancellation
+          return <Tag color="purple">Business</Tag>;
         } else if (record.cancelledBy) {
           // For other cancellations, check if it's customer or business
           // If therapistCancelReason exists, it was therapist-initiated even if status is just 'cancelled'

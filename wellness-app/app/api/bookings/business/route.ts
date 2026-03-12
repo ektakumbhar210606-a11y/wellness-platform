@@ -133,14 +133,30 @@ export async function GET(req: NextRequest) {
     const serviceIds = services.map((service: IService) => service._id);
 
     // Build query based on status parameter
-    const query: { service?: { $in: Types.ObjectId[] }; status?: string | { $in: string[] }; paymentStatus?: { $in: string[] } } = { 
+    const query: { 
+      service?: { $in: Types.ObjectId[] }; 
+      status?: string | { $in: string[] }; 
+      paymentStatus?: { $in: string[] };
+      therapistResponded?: boolean;
+      $or?: any[]
+    } = { 
       service: { $in: serviceIds }
     };
     // If status is specified in query params, filter by that status
     if (status) {
       if (status === 'requests') {
-        // For booking requests, include pending and therapist_confirmed bookings
-        query.status = { $in: ['pending', 'therapist_confirmed'] };
+        // For booking requests, include:
+        // 1. Pending bookings (awaiting therapist response)
+        // 2. Therapist_confirmed bookings (therapist confirmed, awaiting business action)
+        // 3. Bookings where therapist has responded and business has processed the response (confirmed/cancelled/rescheduled)
+        // This ensures business can see the original customer request along with therapist response
+        query.$or = [
+          { status: { $in: ['pending', 'therapist_confirmed'] } },
+          { 
+            status: { $in: ['confirmed', 'cancelled', 'rescheduled'] },
+            therapistResponded: true 
+          }
+        ];
       } else if (status === 'confirmed') {
         // For confirmed bookings, include confirmed bookings with partial or completed payment
         query.status = 'confirmed';
@@ -149,8 +165,19 @@ export async function GET(req: NextRequest) {
         query.status = status;
       }
     } else {
-      // Default behavior: if no status specified, assume requests (pending/therapist_confirmed)
-      query.status = { $in: ['pending', 'therapist_confirmed'] };
+      // Default behavior: if no status specified, assume requests
+      // Include:
+      // 1. Pending bookings (awaiting therapist response)
+      // 2. Therapist_confirmed bookings (therapist confirmed, awaiting business action)
+      // 3. Bookings where therapist has responded and business has processed the response (confirmed/cancelled/rescheduled)
+      // This ensures business can see the original customer request along with therapist response
+      query.$or = [
+        { status: { $in: ['pending', 'therapist_confirmed'] } },
+        { 
+          status: { $in: ['confirmed', 'cancelled', 'rescheduled'] },
+          therapistResponded: true 
+        }
+      ];
     }
     
     // Explicitly ensure that the query includes both assigned and unassigned bookings
@@ -190,41 +217,26 @@ export async function GET(req: NextRequest) {
       .skip((page - 1) * limit)
       .limit(limit);
       
-    // Additional verification: Make sure we're getting all expected bookings
-    // If we're looking for pending bookings, also check if there are any assigned bookings that might be missed
-    if (query.status === 'pending') {
-      // Get count of all pending bookings for this business to make sure our query is accurate
-      const totalCount = await BookingModel.countDocuments({
-        service: { $in: serviceIds },
-        status: 'pending'
-      });
-      
-      console.log(`Expected up to ${limit} pending bookings (page ${page}), found ${bookings.length}, total available: ${totalCount}`);
-      
-      if (bookings.length < totalCount) {
-        console.log(`Note: Pagination limiting results to ${limit} per page. Total pending bookings: ${totalCount}`);
-      }
-    }
-      
-    // DEBUG: Additional check to ensure assigned bookings are included
-    // If we're querying for pending bookings, explicitly check for any missing assigned bookings
-    if (query.status === 'pending') {
-      // Find any pending bookings for this business's services that might have been missed
-      const allPendingBookingsForBusiness = await BookingModel.find({
-        service: { $in: serviceIds },
-        status: 'pending'
-      }).countDocuments();
-      
-      const allAssignedBookingsForBusiness = await BookingModel.find({
-        service: { $in: serviceIds },
-        status: 'pending',
-        assignedByAdmin: true
-      }).countDocuments();
-      
-      console.log(`DEBUG: Total pending bookings for business services: ${allPendingBookingsForBusiness}`);
-      console.log(`DEBUG: Total assigned pending bookings for business services: ${allAssignedBookingsForBusiness}`);
-      console.log(`DEBUG: Actually retrieved bookings: ${bookings.length}`);
-    }
+    // Additional verification: Check total counts for different booking statuses
+    // This helps verify we're getting the right mix of bookings
+    const pendingCount = await BookingModel.countDocuments({
+      service: { $in: serviceIds },
+      status: 'pending'
+    });
+    
+    const therapistConfirmedCount = await BookingModel.countDocuments({
+      service: { $in: serviceIds },
+      status: 'therapist_confirmed'
+    });
+    
+    const respondedBookingsCount = await BookingModel.countDocuments({
+      service: { $in: serviceIds },
+      status: { $in: ['confirmed', 'cancelled', 'rescheduled'] },
+      therapistResponded: true
+    });
+    
+    console.log(`Booking counts - Pending: ${pendingCount}, Therapist Confirmed: ${therapistConfirmedCount}, Responded (confirmed/cancelled/rescheduled): ${respondedBookingsCount}`);
+    console.log(`Retrieved ${bookings.length} bookings (page ${page}, limit ${limit})`);
 
     console.log(`Business bookings API - Query:`, JSON.stringify(query, null, 2));
     console.log(`Found ${bookings.length} bookings`);
@@ -457,8 +469,10 @@ export async function PATCH(req: NextRequest) {
       // Set response visibility to business only initially
       updateData.responseVisibleToBusinessOnly = true;
     } else {
-      // For direct customer bookings, make response visible to customer immediately
-      updateData.therapistResponded = false;
+      // For direct customer bookings, also mark as therapist responded since business is taking action
+      // This ensures the booking remains visible in the requests tab for business reference
+      updateData.therapistResponded = true;
+      // Make response visible to customer immediately
       updateData.responseVisibleToBusinessOnly = false;
     }
     

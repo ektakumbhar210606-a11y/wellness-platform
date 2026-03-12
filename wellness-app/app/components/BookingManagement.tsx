@@ -12,7 +12,9 @@ import {
   Tabs, 
   Typography,
   Modal,
-  Descriptions
+  Descriptions,
+  Form,
+  Input
 } from 'antd';
 import { formatCurrency, getCurrencySymbol } from '../../utils/currencyFormatter';
 import { shouldRestrictReschedule } from '../utils/bookingTimeUtils';
@@ -67,13 +69,18 @@ interface Booking {
   currentDate?: string;
   currentTime?: string;
   duration: number;
-  status: 'pending' | 'therapist_confirmed' | 'therapist_rejected' | 'confirmed' | 'paid' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
+  status: 'pending' | 'therapist_confirmed' | 'therapist_rejected' | 'confirmed' | 'paid' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled' | 'therapist_cancel_requested';
   notes?: string;
   assignedByAdmin?: boolean;
   createdAt: string;
   originalDate?: Date | null;
   originalTime?: string | null;
   hasBeenRescheduled?: boolean;
+  therapistCancelReason?: string;
+  therapistCancelRequestedAt?: Date;
+  businessReviewStatus?: 'pending' | 'approved' | 'rejected';
+  advancePaid?: number;
+  businessCancelReason?: string;
 }
 
 interface BookingManagementProps {
@@ -84,10 +91,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
   const [activeTab, setActiveTab] = useState('requests');
   const [bookingRequests, setBookingRequests] = useState<Booking[]>([]);
   const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
+  const [cancelledBookings, setCancelledBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
 
   // Fetch booking requests (pending and rescheduled bookings)
   const fetchBookingRequests = async () => {
@@ -157,6 +168,58 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
     }
   };
 
+  // Fetch cancelled bookings (therapist cancellations awaiting business approval)
+  const fetchCancelledBookings = async () => {
+    try {
+      setLoading(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/therapist-cancel-requests`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch cancelled bookings');
+      }
+      
+      // Map the cancel requests to Booking format for the table
+      const formattedBookings = (result.data || []).map((request: any) => ({
+        id: request.id,
+        displayId: request.displayId,
+        customer: request.customer,
+        service: request.service,
+        therapist: request.therapist,
+        date: request.bookingDetails.date,
+        time: request.bookingDetails.time,
+        status: 'therapist_cancel_requested',
+        therapistCancelReason: request.cancelRequest.reason,
+        therapistCancelRequestedAt: request.cancelRequest.requestedAt,
+        businessReviewStatus: request.cancelRequest.reviewStatus,
+        paymentStatus: request.paymentInfo.paymentStatus,
+        advancePaid: request.paymentInfo.advancePaid,
+        createdAt: request.createdAt
+      }));
+      
+      setCancelledBookings(formattedBookings);
+    } catch (error: any) {
+      console.error('Error fetching cancelled bookings:', error);
+      message.error(error.message || 'Failed to load cancelled bookings');
+      setCancelledBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle booking confirmation
   const handleConfirmBooking = async (bookingId: string) => {
     try {
@@ -192,7 +255,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
     }
   };
 
-  // Handle booking cancellation
+  // Handle booking cancellation (old method - direct cancel)
   const handleCancelBooking = async (bookingId: string) => {
     try {
       setActionLoading(bookingId);
@@ -222,6 +285,135 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
     } catch (error: any) {
       console.error('Error cancelling booking:', error);
       message.error(error.message || 'Failed to cancel booking');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Show cancel modal for business-initiated cancellation
+  const showCancelModal = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setCancelReason('');
+    setCancelModalVisible(true);
+  };
+
+  // Handle business-initiated cancellation with reason
+  const handleBusinessCancellation = async () => {
+    if (!selectedBooking || !cancelReason.trim()) {
+      message.error('Please provide a cancellation reason');
+      return;
+    }
+
+    try {
+      setCancellingBookingId(selectedBooking.id);
+      
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/assigned-bookings/cancel/${selectedBooking.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          cancelReason: cancelReason.trim(),
+          initiatedBy: 'business'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to cancel booking');
+      }
+      
+      message.success('Booking cancelled successfully! Refund will be processed to customer.');
+      setCancelModalVisible(false);
+      setSelectedBooking(null);
+      setCancelReason('');
+      
+      // Refresh lists
+      await Promise.all([
+        fetchBookingRequests(), 
+        fetchConfirmedBookings(),
+        fetchCancelledBookings()
+      ]);
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+      message.error(error.message || 'Failed to cancel booking');
+    } finally {
+      setCancellingBookingId(null);
+    }
+  };
+
+  // Handle approve therapist cancellation (with refund)
+  const handleApproveCancellation = async (bookingId: string) => {
+    try {
+      setActionLoading(bookingId);
+      
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/therapist-cancel-requests/${bookingId}/process`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'approve' })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to approve cancellation');
+      }
+      
+      message.success('Cancellation approved. 50% refund will be processed to customer.');
+      await fetchCancelledBookings(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error approving cancellation:', error);
+      message.error(error.message || 'Failed to approve cancellation');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle reject therapist cancellation
+  const handleRejectCancellation = async (bookingId: string) => {
+    try {
+      setActionLoading(bookingId);
+      
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business/therapist-cancel-requests/${bookingId}/process`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'reject' })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reject cancellation');
+      }
+      
+      message.success('Cancellation request rejected. Booking remains confirmed.');
+      await fetchCancelledBookings(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error rejecting cancellation:', error);
+      message.error(error.message || 'Failed to reject cancellation');
     } finally {
       setActionLoading(null);
     }
@@ -289,6 +481,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       fetchBookingRequests();
     } else if (key === 'confirmed') {
       fetchConfirmedBookings();
+    } else if (key === 'cancelled') {
+      fetchCancelledBookings();
     }
   };
 
@@ -298,6 +492,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       fetchBookingRequests();
     } else if (activeTab === 'confirmed') {
       fetchConfirmedBookings();
+    } else if (activeTab === 'cancelled') {
+      fetchCancelledBookings();
     }
   }, [activeTab]);
 
@@ -552,6 +748,139 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
     },
   ];
 
+  // Columns for cancelled bookings table (therapist cancellations awaiting business approval)
+  const cancelledColumns = [
+    {
+      title: 'Customer',
+      dataIndex: ['customer', 'firstName'],
+      key: 'customer',
+      render: (_: any, record: Booking) => (
+        <div>
+          <div><UserOutlined /> {record.customer.firstName ? `${record.customer.firstName} ${record.customer.lastName || ''}` : (record.customer.name || 'N/A')}</div>
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            <MailOutlined /> {record.customer.email}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Service',
+      dataIndex: ['service', 'name'],
+      key: 'service',
+      render: (_: any, record: Booking) => (
+        <div>
+          <div>{record.service.name}</div>
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            {record.service.duration} mins • {formatCurrency(record.service.price, record.service.business?.address?.country || 'default')}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Therapist',
+      dataIndex: ['therapist', 'fullName'],
+      key: 'therapist',
+      render: (_: any, record: Booking) => (
+        <div>
+          <div>{record.therapist.fullName}</div>
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            {record.therapist.professionalTitle}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Date & Time',
+      key: 'datetime',
+      render: (_: any, record: Booking) => (
+        <div>
+          <div><CalendarOutlined /> {new Date(record.date).toLocaleDateString()}</div>
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            {record.time}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Cancel Reason',
+      dataIndex: 'therapistCancelReason',
+      key: 'therapistCancelReason',
+      render: (text: string) => (
+        <Text ellipsis={{ tooltip: text }} style={{ maxWidth: 200 }}>
+          {text || 'Not provided'}
+        </Text>
+      ),
+    },
+    {
+      title: 'Refund Amount',
+      key: 'advancePaid',
+      render: (_: any, record: Booking) => (
+        <div>
+          <Tag color="orange">{formatCurrency(record.advancePaid || 0, record.service.business?.address?.country || 'default')}</Tag>
+          <div style={{ fontSize: '11px', color: '#888' }}>50% of advance</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string, record: Booking) => (
+        <Tag 
+          color="red"
+          icon={<CloseCircleOutlined />}
+        >
+          {record.businessReviewStatus === 'pending' ? 'Pending Approval' : 
+           record.businessReviewStatus === 'approved' ? 'Approved' : 'Rejected'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: Booking) => (
+        <Space orientation="vertical" size="small">
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => showBookingDetails(record)}
+          >
+            View Details
+          </Button>
+          <Button 
+            type="primary" 
+            size="small"
+            danger
+            onClick={() => showCancelModal(record)}
+            loading={actionLoading === record.id}
+          >
+            Cancel Booking
+          </Button>
+          {record.businessReviewStatus === 'pending' && (
+            <>
+              <Button 
+                type="primary" 
+                size="small"
+                danger
+                onClick={() => handleApproveCancellation(record.id)}
+                loading={actionLoading === record.id}
+              >
+                Approve & Refund
+              </Button>
+              <Button 
+                size="small"
+                onClick={() => handleRejectCancellation(record.id)}
+                loading={actionLoading === record.id}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
   return (
     <div>
       <Title level={3}>Booking Management</Title>
@@ -643,6 +972,46 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
               </Card>
             ),
           },
+          {
+            key: 'cancelled',
+            label: (
+              <span>
+                <CloseCircleOutlined />
+                Cancelled Bookings ({cancelledBookings.length})
+              </span>
+            ),
+            children: (
+              <Card style={{ marginTop: 16 }}>
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <Spin size="large" />
+                    <div style={{ marginTop: 16 }}>
+                      <Text>Loading cancelled bookings...</Text>
+                    </div>
+                  </div>
+                ) : cancelledBookings.length > 0 ? (
+                  <Table
+                    dataSource={cancelledBookings}
+                    columns={cancelledColumns}
+                    rowKey="id"
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Total ${total} cancellations`
+                    }}
+                  />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <CloseCircleOutlined style={{ fontSize: '48px', color: '#ccc', marginBottom: 16 }} />
+                    <Title level={4}>No Cancelled Bookings</Title>
+                    <Text type="secondary">
+                      You don't have any therapist cancellation requests at the moment.
+                    </Text>
+                  </div>
+                )}
+              </Card>
+            ),
+          },
         ]}
       />
 
@@ -723,6 +1092,71 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
             )}
           </Descriptions>
         )}
+      </Modal>
+
+      {/* Business Cancellation Modal */}
+      <Modal
+        title="Cancel Booking"
+        open={cancelModalVisible}
+        onCancel={() => {
+          setCancelModalVisible(false);
+          setSelectedBooking(null);
+          setCancelReason('');
+        }}
+        onOk={handleBusinessCancellation}
+        confirmLoading={cancellingBookingId !== null}
+        okText="Cancel & Refund"
+        cancelText="Back"
+        okButtonProps={{ danger: true }}
+        width={500}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Title level={5}>Booking Details</Title>
+          <Descriptions column={1} size="small" bordered>
+            <Descriptions.Item label="Booking ID">
+              {selectedBooking?.displayId || selectedBooking?.id}
+            </Descriptions.Item>
+            <Descriptions.Item label="Customer">
+              {selectedBooking?.customer.firstName 
+                ? `${selectedBooking.customer.firstName} ${selectedBooking.customer.lastName || ''}`
+                : (selectedBooking?.customer.name || 'N/A')}
+            </Descriptions.Item>
+            <Descriptions.Item label="Service">
+              {selectedBooking?.service.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Date & Time">
+              {selectedBooking?.date && new Date(selectedBooking.date).toLocaleDateString()} at {selectedBooking?.time}
+            </Descriptions.Item>
+            <Descriptions.Item label="Amount">
+              {formatCurrency(selectedBooking?.service.price || 0, selectedBooking?.service.business?.address?.country || 'default')}
+            </Descriptions.Item>
+          </Descriptions>
+        </div>
+
+        <div style={{ background: '#fff7e6', padding: '12px', borderRadius: '4px', marginBottom: 16 }}>
+          <Text type="warning" strong>⚠️ Important:</Text>
+          <div style={{ marginTop: '8px' }}>
+            <Text type="secondary" style={{ fontSize: '13px' }}>
+              Cancelling this booking will notify the customer and process a 50% refund of the advance payment.
+            </Text>
+          </div>
+        </div>
+
+        <Form layout="vertical">
+          <Form.Item
+            label={<span><strong>Cancellation Reason</strong> <span style={{ color: 'red' }}>*</span></span>}
+            required
+          >
+            <Input.TextArea
+              rows={4}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Please provide a reason for cancelling this booking (this will be sent to the customer)"
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
