@@ -8,6 +8,7 @@ import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import NotificationService from '@/app/utils/notifications';
 import BusinessModel, { IBusiness } from '@/models/Business';
+import TherapistModel from '@/models/Therapist';
 
 async function requireBusinessAuth(request: NextRequest) {
   try {
@@ -113,8 +114,9 @@ export async function PATCH(
       );
     }
 
-    // Find the booking
-    const booking = await BookingModel.findById(bookingId);
+    // Find the booking and populate therapist to access user reference
+    const booking = await BookingModel.findById(bookingId)
+      .populate('therapist', 'fullName professionalTitle user');
     if (!booking) {
       return Response.json(
         { success: false, error: 'Booking not found' },
@@ -168,6 +170,11 @@ export async function PATCH(
       // Default action: reject the therapist's response and make visible to customer
       updateData.status = BookingStatus.Cancelled; // Or we could set it to a specific rejected status
       updateData.responseVisibleToBusinessOnly = false; // Make response visible to customer so they know the status
+      
+      // If this was a therapist-confirmed booking that business is now rejecting, track as therapist cancellation
+      if (booking.status === BookingStatus.TherapistConfirmed && booking.therapist) {
+        updateData.therapistCancelReason = 'Business rejected therapist confirmation';
+      }
     }
 
     const bookingWithPopulatedData = await BookingModel.findByIdAndUpdate(
@@ -178,6 +185,10 @@ export async function PATCH(
     .populate({
       path: 'customer',
       select: 'name email phone'
+    })
+    .populate({
+      path: 'therapist',
+      select: 'fullName professionalTitle user'
     })
     .populate({
       path: 'service',
@@ -226,6 +237,39 @@ export async function PATCH(
         console.error('Error populating business data:', error);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (service as any).business = undefined;
+      }
+    }
+
+    // STEP: If this is a therapist-initiated cancellation, update therapist's cancellation stats
+    if (updateData.therapistCancelReason && booking.therapist) {
+      const cancellingTherapist = await TherapistModel.findOne({ 
+        user: (booking.therapist as any).user 
+      });
+      
+      if (cancellingTherapist) {
+        // Increase therapist cancellation counters
+        cancellingTherapist.monthlyCancelCount = (cancellingTherapist.monthlyCancelCount || 0) + 1;
+        cancellingTherapist.totalCancelCount = (cancellingTherapist.totalCancelCount || 0) + 1;
+        
+        // Evaluate cancellation rules and apply penalties
+        const monthlyCount = cancellingTherapist.monthlyCancelCount;
+        
+        if (monthlyCount >= 7) {
+          cancellingTherapist.cancelWarnings = 1;
+          cancellingTherapist.bonusPenaltyPercentage = 100;
+        } else if (monthlyCount >= 6) {
+          cancellingTherapist.cancelWarnings = 1;
+          cancellingTherapist.bonusPenaltyPercentage = 25;
+        } else if (monthlyCount >= 5) {
+          cancellingTherapist.cancelWarnings = 1;
+          cancellingTherapist.bonusPenaltyPercentage = 10;
+        } else if (monthlyCount >= 3) {
+          cancellingTherapist.cancelWarnings = 1;
+        }
+        
+        // Save therapist document
+        await cancellingTherapist.save();
+        console.log(`Therapist cancellation tracked via process-response: ${cancellingTherapist.fullName} - Monthly: ${cancellingTherapist.monthlyCancelCount}, Total: ${cancellingTherapist.totalCancelCount}`);
       }
     }
 

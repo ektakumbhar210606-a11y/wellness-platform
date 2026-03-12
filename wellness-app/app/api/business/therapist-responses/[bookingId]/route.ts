@@ -7,6 +7,7 @@ import * as jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import BusinessModel from '../../../../../models/Business';
 import TherapistModel from '../../../../../models/Therapist';
+import TherapistAvailabilityModel, { TherapistAvailabilityStatus } from '../../../../../models/TherapistAvailability';
 import NotificationService from '@/app/utils/notifications';
 
 interface JwtPayload {
@@ -122,8 +123,9 @@ export async function PATCH(
       );
     }
 
-    // Find the booking
-    const booking = await BookingModel.findById(bookingId);
+    // Find the booking and populate therapist to access user reference
+    const booking = await BookingModel.findById(bookingId)
+      .populate('therapist', 'fullName professionalTitle user');
     if (!booking) {
       return Response.json(
         { success: false, error: 'Booking not found' },
@@ -224,6 +226,13 @@ export async function PATCH(
       updateData.cancelledBy = decoded.id;
       updateData.cancelledAt = new Date();
       updateData.responseVisibleToBusinessOnly = false; // Make cancellation visible to customer
+      
+      // STEP: Track therapist cancellation if this was originally a therapist-initiated cancellation
+      // Check if the booking was in TherapistCancelRequested status (meaning therapist wanted to cancel)
+      if (booking.status === BookingStatus.TherapistCancelRequested && booking.therapist) {
+        // Mark this as a therapist cancellation for tracking purposes
+        updateData.therapistCancelReason = booking.therapistCancelReason || 'Therapist requested cancellation';
+      }
     } else if (action === 'reschedule') {
       // Reschedule the booking
       if (!newDate || !newTime) {
@@ -287,7 +296,7 @@ export async function PATCH(
     })
     .populate({
       path: 'therapist',
-      select: 'fullName professionalTitle'
+      select: 'fullName professionalTitle user'
     });
 
     if (!updatedBooking) {
@@ -295,6 +304,39 @@ export async function PATCH(
         { success: false, error: 'Failed to update booking' },
         { status: 500 }
       );
+    }
+
+    // STEP: If this is a therapist-initiated cancellation, update therapist's cancellation stats
+    if (updateData.therapistCancelReason && booking.therapist) {
+      const cancellingTherapist = await TherapistModel.findOne({ 
+        user: (booking.therapist as any).user 
+      });
+      
+      if (cancellingTherapist) {
+        // Increase therapist cancellation counters
+        cancellingTherapist.monthlyCancelCount = (cancellingTherapist.monthlyCancelCount || 0) + 1;
+        cancellingTherapist.totalCancelCount = (cancellingTherapist.totalCancelCount || 0) + 1;
+        
+        // Evaluate cancellation rules and apply penalties
+        const monthlyCount = cancellingTherapist.monthlyCancelCount;
+        
+        if (monthlyCount >= 7) {
+          cancellingTherapist.cancelWarnings = 1;
+          cancellingTherapist.bonusPenaltyPercentage = 100;
+        } else if (monthlyCount >= 6) {
+          cancellingTherapist.cancelWarnings = 1;
+          cancellingTherapist.bonusPenaltyPercentage = 25;
+        } else if (monthlyCount >= 5) {
+          cancellingTherapist.cancelWarnings = 1;
+          cancellingTherapist.bonusPenaltyPercentage = 10;
+        } else if (monthlyCount >= 3) {
+          cancellingTherapist.cancelWarnings = 1;
+        }
+        
+        // Save therapist document
+        await cancellingTherapist.save();
+        console.log(`Therapist cancellation tracked via business response: ${cancellingTherapist.fullName} - Monthly: ${cancellingTherapist.monthlyCancelCount}, Total: ${cancellingTherapist.totalCancelCount}`);
+      }
     }
 
     // Send notification to therapist about business decision

@@ -1,0 +1,216 @@
+# Therapist Cancellation Performance - Visual Mockup
+
+## Dashboard Tab Location
+```
+Business Dashboard → "Cancellation Performance" tab (5th tab)
+```
+
+## UI Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📊 Business Dashboard                                                      │
+│  Welcome to your business management center                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  [Dashboard Overview] [Bonuses] [Reviews] [Cancel Requests] [📊 Cancellation Performance] │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ⚠️  Therapist Cancellation Performance                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │ Therapist Name  │ Completed │ Monthly │ Total   │ Warning │ Bonus   │  │
+│  │                 │ Bookings  │ Cancel  │ Cancel  │         │ Penalty │  │
+│  ├─────────────────┼───────────┼─────────┼─────────┼─────────┼─────────┤  │
+│  │ Rahul Kumar     │    32     │    2    │   10    │  ✅ No  │   0%    │  │
+│  │                 │           │         │         │         │         │  │
+│  ├─────────────────┼───────────┼─────────┼─────────┼─────────┼─────────┤  │
+│  │ Meera Sharma    │    25     │    5    │   15    │ ⚠️ Yes  │  10%    │  │
+│  │                 │           │         │         │         │         │  │
+│  ├─────────────────┼───────────┼─────────┼─────────┼─────────┼─────────┤  │
+│  │ Amit Patel      │    40     │    3    │    8    │ ⚠️ Yes  │   0%    │  │
+│  │                 │           │         │         │         │         │  │
+│  ├─────────────────┼───────────┼─────────┼─────────┼─────────┼─────────┤  │
+│  │ Priya Singh     │    28     │    7    │   20    │ ⚠️ Yes  │  100%   │  │
+│  │                 │           │         │         │         │         │  │
+│  ├─────────────────┼───────────┼─────────┼─────────┼─────────┼─────────┤  │
+│  │ Rajesh Verma    │    35     │    1    │    5    │  ✅ No  │   0%    │  │
+│  │                 │           │         │         │         │         │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ← Previous  1-5 of 8 therapists  Next →                                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Summary Statistics                                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Total Therapists: 5    With Warnings: 3    With Penalties: 1    Avg: 3.6  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Color Legend
+
+### Monthly Cancel Column
+| Value | Color | Meaning |
+|-------|-------|---------|
+| 0-2 | 🟢 Green | Normal |
+| 3-4 | 🟡 Yellow | Warning zone |
+| 5-6 | 🟠 Orange | High cancellations |
+| 7+ | 🔴 Red | Critical |
+
+### Warning Column
+| Status | Color | Icon |
+|--------|-------|------|
+| No | Green | ✅ Check circle |
+| Yes | Orange | ⚠️ Warning |
+
+### Bonus Penalty Column
+| Percentage | Color | Severity |
+|------------|-------|----------|
+| 0% | Green | None |
+| 1-10% | Yellow | Light |
+| 11-25% | Orange | Medium |
+| 100% | Red | Maximum |
+
+## Interactive Features
+
+### Sorting
+Click any column header to sort ascending/descending:
+```
+Therapist Name ▲  (A-Z)
+Completed Bookings ▼  (High to Low)
+Monthly Cancel ▲  (Low to High)
+```
+
+### Filtering
+Warning column has filter dropdown:
+```
+☑ Yes
+☑ No
+```
+
+### Pagination Controls
+```
+[◀ Previous]  [1] [2] [3]  [Next ▶]
+
+Show: [10 ▼] entries
+Jump to page: [___]
+```
+
+## Responsive Behavior
+
+### Desktop (>1024px)
+- Full table visible
+- All columns displayed
+- Standard pagination
+
+### Tablet (768px - 1024px)
+- Horizontal scroll enabled
+- Fixed first column (Therapist Name)
+- Scrollable remaining columns
+
+### Mobile (<768px)
+- Compact table view
+- Larger touch targets
+- Simplified pagination
+- Swipe gestures for horizontal scroll
+
+## Loading State
+```
+┌─────────────────────────────────────────────────────────┐
+│  ⚠️  Therapist Cancellation Performance                 │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│              ⟳ (spinning loader)                        │
+│                                                         │
+│         Loading cancellation statistics...              │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Error State
+```
+┌─────────────────────────────────────────────────────────┐
+│  ⚠️  Therapist Cancellation Performance                 │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ❌ Error Loading Data                                  │
+│                                                         │
+│  Failed to fetch cancellation statistics.               │
+│  Please check your connection and try again.            │
+│                                                         │
+│                              [Retry]                    │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Empty State
+```
+┌─────────────────────────────────────────────────────────┐
+│  ⚠️  Therapist Cancellation Performance                 │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│              📭                                         │
+│                                                         │
+│         No therapists found                             │
+│                                                         │
+│  Add therapists to your business to see their          │
+│  cancellation performance metrics.                      │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Sample Data Display
+
+### Scenario 1: Excellent Performance (All Green)
+```
+┌──────────────────────────────────────────────────────┐
+│ Therapist  │ Completed │ Monthly │ Warning │ Bonus  │
+├────────────┼───────────┼─────────┼─────────┼────────┤
+│ Rahul      │    30     │    1    │  ✅ No  │   0%   │
+│ Priya      │    28     │    0    │  ✅ No  │   0%   │
+│ Amit       │    35     │    2    │  ✅ No  │   0%   │
+└──────────────────────────────────────────────────────┘
+```
+
+### Scenario 2: Mixed Performance
+```
+┌──────────────────────────────────────────────────────┐
+│ Therapist  │ Completed │ Monthly │ Warning │ Bonus  │
+├────────────┼───────────┼─────────┼─────────┼────────┤
+│ Rahul      │    30     │  🟢 1   │  ✅ No  │   0%   │
+│ Meera      │    25     │  🟡 3   │ ⚠️ Yes  │   0%   │
+│ Priya      │    20     │  🟠 5   │ ⚠️ Yes  │  10%   │
+│ Amit       │    15     │  🔴 7   │ ⚠️ Yes  │  100%  │
+└──────────────────────────────────────────────────────┘
+```
+
+### Scenario 3: Needs Attention (Multiple Red Flags)
+```
+┌──────────────────────────────────────────────────────┐
+│ Therapist  │ Completed │ Monthly │ Warning │ Bonus  │
+├────────────┼───────────┼─────────┼─────────┼────────┤
+│ John       │    10     │  🔴 8   │ ⚠️ Yes  │  100%  │
+│ Sarah      │    12     │  🔴 9   │ ⚠️ Yes  │  100%  │
+│ Mike       │     8     │  🔴 7   │ ⚠️ Yes  │  100%  │
+└──────────────────────────────────────────────────────┘
+Summary: 3 therapists with 100% penalty - Immediate action required!
+```
+
+---
+
+**Design Notes:**
+- Clean, professional dashboard aesthetic
+- Color coding provides instant visual feedback
+- Sorting helps identify top/bottom performers
+- Summary stats give quick overview
+- Responsive design works on all devices
+
+**Created**: March 12, 2026  
+**Status**: Ready for implementation

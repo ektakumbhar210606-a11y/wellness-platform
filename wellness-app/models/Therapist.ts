@@ -61,6 +61,12 @@ export interface ITherapist extends Document {
   // Expertise information
   areaOfExpertise?: string[];
   
+  // Cancellation tracking fields
+  monthlyCancelCount?: number;
+  totalCancelCount?: number;
+  cancelWarnings?: number;
+  bonusPenaltyPercentage?: number;
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -233,6 +239,26 @@ const TherapistSchema: Schema<ITherapist> = new Schema({
       }
     ]
   },
+  
+  // Cancellation tracking fields
+  monthlyCancelCount: {
+    type: Number,
+    default: 0
+  },
+  totalCancelCount: {
+    type: Number,
+    default: 0
+  },
+  cancelWarnings: {
+    type: Number,
+    default: 0
+  },
+  bonusPenaltyPercentage: {
+    type: Number,
+    default: 0,
+    min: [0, 'Bonus penalty percentage cannot be negative'],
+    max: [100, 'Bonus penalty percentage cannot exceed 100']
+  },
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });
@@ -245,6 +271,9 @@ TherapistSchema.index({ rating: 1 }); // Index on rating for sorting/filtering
 TherapistSchema.index({ availabilityStatus: 1 }); // Index on availability status for filtering
 TherapistSchema.index({ 'associatedBusinesses.businessId': 1 }); // Index on associated businesses for marketplace queries
 TherapistSchema.index({ 'associatedBusinesses.status': 1 }); // Index on association status for filtering
+TherapistSchema.index({ monthlyCancelCount: 1 }); // Index on monthly cancel count for analytics
+TherapistSchema.index({ totalCancelCount: 1 }); // Index on total cancel count for analytics
+TherapistSchema.index({ bonusPenaltyPercentage: 1 }); // Index on bonus penalty percentage for filtering
 
 // Create and export the Therapist model
 const TherapistModel = mongoose.models.Therapist || mongoose.model<ITherapist>('Therapist', TherapistSchema);

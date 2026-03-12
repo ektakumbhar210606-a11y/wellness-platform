@@ -148,17 +148,21 @@ export async function PATCH(
       );
     }
 
-    // Update booking status to therapist_cancel_requested (requires business approval)
+    // Parse request body to get cancel reason
+    const body = await req.json();
+    const { cancelReason } = body;
+
+    // Update booking status to cancelled by therapist
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,
       { 
-        status: BookingStatus.TherapistCancelRequested,
+        status: BookingStatus.Cancelled,
+        cancelledBy: decoded.id, // Store therapist user ID
+        cancelledAt: new Date(),
+        cancelReason: cancelReason || 'Therapist initiated cancellation',
+        therapistCancelReason: cancelReason || 'Therapist initiated cancellation',
         therapistResponded: true, // Mark that therapist has responded
-        responseVisibleToBusinessOnly: true, // Therapist responses should only be visible to business
-        // Track therapist cancellation request
-        therapistCancelReason: 'Therapist initiated cancellation',
-        therapistCancelRequestedAt: new Date(),
-        businessReviewStatus: 'pending' // Awaiting business review
+        responseVisibleToBusinessOnly: true // Therapist responses should only be visible to business
       },
       { new: true, runValidators: true }
     )
@@ -170,6 +174,34 @@ export async function PATCH(
       path: 'service',
       select: 'name price duration description business'
     });
+
+    // STEP 3: Find the therapist who cancelled the booking and update cancellation counters
+    const cancellingTherapist = await TherapistModel.findOne({ user: decoded.id });
+    
+    if (cancellingTherapist) {
+      // STEP 4: Increase therapist cancellation counters
+      cancellingTherapist.monthlyCancelCount = (cancellingTherapist.monthlyCancelCount || 0) + 1;
+      cancellingTherapist.totalCancelCount = (cancellingTherapist.totalCancelCount || 0) + 1;
+      
+      // STEP 5: Evaluate cancellation rules and apply penalties
+      const monthlyCount = cancellingTherapist.monthlyCancelCount;
+      
+      if (monthlyCount >= 7) {
+        cancellingTherapist.cancelWarnings = 1;
+        cancellingTherapist.bonusPenaltyPercentage = 100;
+      } else if (monthlyCount >= 6) {
+        cancellingTherapist.cancelWarnings = 1;
+        cancellingTherapist.bonusPenaltyPercentage = 25;
+      } else if (monthlyCount >= 5) {
+        cancellingTherapist.cancelWarnings = 1;
+        cancellingTherapist.bonusPenaltyPercentage = 10;
+      } else if (monthlyCount >= 3) {
+        cancellingTherapist.cancelWarnings = 1;
+      }
+      
+      // STEP 6: Save therapist document
+      await cancellingTherapist.save();
+    }
 
     // Release the slot by updating the therapist's availability back to available
     if (updatedBooking) {

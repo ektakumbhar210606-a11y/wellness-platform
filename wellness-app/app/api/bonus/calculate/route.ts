@@ -176,7 +176,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate bonus amount
-    const bonusAmount = 3000;
+    const baseBonus = 3000;
+    
+    // Get therapist's cancellation penalty percentage
+    const penalty = therapistProfile.bonusPenaltyPercentage || 0;
+    
+    // Apply cancellation penalty to calculate final bonus
+    // Formula: finalBonus = baseBonus - (baseBonus * penalty / 100)
+    const finalBonus = baseBonus - (baseBonus * penalty / 100);
+    
+    // Ensure bonus doesn't go below 0
+    const bonusAmount = Math.max(0, finalBonus);
 
     // Create TherapistBonus record
     const newBonus = new TherapistBonus({

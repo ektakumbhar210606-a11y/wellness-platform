@@ -59,7 +59,12 @@ export async function GET(req: NextRequest) {
       licenseNumber: therapist.licenseNumber,
       weeklyAvailability: therapist.weeklyAvailability,
       createdAt: therapist.createdAt,
-      updatedAt: therapist.updatedAt
+      updatedAt: therapist.updatedAt,
+      // Cancellation tracking fields
+      monthlyCancelCount: therapist.monthlyCancelCount || 0,
+      totalCancelCount: therapist.totalCancelCount || 0,
+      cancelWarnings: therapist.cancelWarnings || 0,
+      bonusPenaltyPercentage: therapist.bonusPenaltyPercentage || 0
     };
 
     return Response.json({

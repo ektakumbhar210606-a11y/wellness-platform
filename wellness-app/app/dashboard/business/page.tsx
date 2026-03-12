@@ -8,11 +8,13 @@ import {
   BookOutlined,
   StarOutlined,
   TrophyOutlined,
-  StopOutlined
+  StopOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import BusinessReviews from '../../components/BusinessReviews';
 import TherapistBonuses from '../../components/business/TherapistBonuses';
 import TherapistCancelRequests from '../../components/business/TherapistCancelRequests';
+import TherapistCancellationPerformance from '../../components/business/TherapistCancellationPerformance';
 
 const { Title, Text } = Typography;
 
@@ -107,6 +109,20 @@ const BusinessDashboardPage = () => {
       children: (
         <div style={{ marginTop: '24px' }}>
           <TherapistCancelRequests />
+        </div>
+      ),
+    },
+    {
+      key: 'cancellation-performance',
+      label: (
+        <span>
+          <BarChartOutlined style={{ color: '#faad14' }} />
+          Cancellation Performance
+        </span>
+      ),
+      children: (
+        <div style={{ marginTop: '24px' }}>
+          <TherapistCancellationPerformance />
         </div>
       ),
     },
