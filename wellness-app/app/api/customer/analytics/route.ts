@@ -168,6 +168,13 @@ export async function GET(request: NextRequest) {
               servicePrice: { $ifNull: ['$serviceInfo.price', 0] },
               month: { $dateToString: { format: "%Y-%m", date: '$date' } }
             }
+          },
+          cancellationData: {
+            $push: {
+              status: '$status',
+              cancelRequest: '$cancelRequest',
+              month: { $dateToString: { format: "%Y-%m", date: '$date' } }
+            }
           }
         }
       },
@@ -243,18 +250,46 @@ export async function GET(request: NextRequest) {
     const dailyTrend = Array.from(dailyTrendMap.values())
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Calculate monthly spending from completed bookings
-    const monthlySpendingMap = new Map<string, number>();
-    result.monthlySpendingData.forEach((detail: any) => {
-      if (detail.status === 'completed') {
-        const current = monthlySpendingMap.get(detail.month) || 0;
-        monthlySpendingMap.set(detail.month, current + (detail.servicePrice || 0));
-      }
-    });
+    // Calculate cancellation analytics
+    const cancelledBookings = result.bookingDetails.filter((detail: any) => 
+      detail.status === 'cancelled'
+    ).length;
 
-    const monthlySpending = Array.from(monthlySpendingMap.entries())
-      .map(([month, total]) => ({ month, total }))
+    // Monthly cancellation trend
+    const monthlyCancellationMap = new Map<string, number>();
+    if (result.cancellationData && Array.isArray(result.cancellationData)) {
+      result.cancellationData.forEach((item: any) => {
+        if (item.status === 'cancelled') {
+          const current = monthlyCancellationMap.get(item.month) || 0;
+          monthlyCancellationMap.set(item.month, current + 1);
+        }
+      });
+    }
+
+    const monthlyCancellations = Array.from(monthlyCancellationMap.entries())
+      .map(([month, count]) => ({ month, count }))
       .sort((a, b) => a.month.localeCompare(b.month));
+
+    // Cancellation reasons breakdown (from cancelRequest)
+    const reasonCountMap = new Map<string, number>();
+    if (result.cancellationData && Array.isArray(result.cancellationData)) {
+      result.cancellationData.forEach((item: any) => {
+        if (item.status === 'cancelled' && item.cancelRequest?.reason) {
+          const reason = item.cancelRequest.reason;
+          const current = reasonCountMap.get(reason) || 0;
+          reasonCountMap.set(reason, current + 1);
+        }
+      });
+    }
+
+    const cancellationReasons = Array.from(reasonCountMap.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Calculate cancellation rate
+    const cancellationRate = result.totalBookings > 0 
+      ? ((cancelledBookings / result.totalBookings) * 100).toFixed(1) 
+      : '0.0';
 
     // Process service breakdown - count occurrences
     const serviceCountMap = new Map<string, number>();
@@ -296,6 +331,19 @@ export async function GET(request: NextRequest) {
       .map(([month, count]) => ({ month, count }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
+    // Calculate monthly spending from completed bookings
+    const monthlySpendingMap = new Map<string, number>();
+    result.monthlySpendingData.forEach((detail: any) => {
+      if (detail.status === 'completed') {
+        const current = monthlySpendingMap.get(detail.month) || 0;
+        monthlySpendingMap.set(detail.month, current + (detail.servicePrice || 0));
+      }
+    });
+
+    const monthlySpending = Array.from(monthlySpendingMap.entries())
+      .map(([month, total]) => ({ month, total }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
     // Return clean JSON response with all analytics
     return NextResponse.json({
       totalBookings: result.totalBookings,
@@ -307,7 +355,12 @@ export async function GET(request: NextRequest) {
       monthlyBookings,
       monthlySpending,
       dailyBookings,
-      dailyTrend
+      dailyTrend,
+      // Cancellation analytics
+      cancelledBookings,
+      cancellationRate: parseFloat(cancellationRate),
+      monthlyCancellations,
+      cancellationReasons
     }, { status: 200 });
 
   } catch (error: unknown) {

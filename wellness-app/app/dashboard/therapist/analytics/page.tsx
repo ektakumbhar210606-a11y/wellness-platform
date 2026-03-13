@@ -21,7 +21,9 @@ import {
   TrophyOutlined,
   RiseOutlined,
   TeamOutlined,
-  MessageOutlined
+  MessageOutlined,
+  CloseCircleOutlined,
+  LineChartOutlined
 } from '@ant-design/icons';
 import {
   BarChart,
@@ -53,6 +55,12 @@ interface AnalyticsData {
   monthlyRatings: Array<{ month: string; avgRating: number }>;
   serviceDistribution: Array<{ serviceName: string; totalSessions: number }>;
   monthlyReviewCount: Array<{ month: string; reviewCount: number }>;
+  // Cancellation analytics
+  totalBookings: number;
+  cancelledBookings: number;
+  cancellationRate: number;
+  monthlyCancellations: Array<{ month: string; cancellations: number }>;
+  cancellationReasons: Array<{ reason: string; count: number }>;
 }
 
 const TherapistAnalyticsPage = () => {
@@ -235,6 +243,34 @@ const TherapistAnalyticsPage = () => {
                 prefix="₹"
                 icon={<TrophyOutlined style={{ fontSize: '28px', color: 'white' }} />}
                 color="#f093fb"
+              />
+            </Col>
+          </Row>
+
+          {/* Cancellation Statistics */}
+          <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} lg={8}>
+              <StatCard 
+                title="Total Bookings" 
+                value={analytics.totalBookings || 0}
+                icon={<TeamOutlined style={{ fontSize: '28px', color: 'white' }} />}
+                color="#667eea"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <StatCard 
+                title="Cancelled Bookings" 
+                value={analytics.cancelledBookings || 0}
+                icon={<CloseCircleOutlined style={{ fontSize: '28px', color: 'white' }} />}
+                color="#ff4d4f"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <StatCard 
+                title="Cancellation Rate" 
+                value={`${(analytics.cancellationRate || 0).toFixed(1)}%`}
+                icon={<LineChartOutlined style={{ fontSize: '28px', color: 'white' }} />}
+                color="#faad14"
               />
             </Col>
           </Row>
@@ -477,6 +513,125 @@ const TherapistAnalyticsPage = () => {
                 ) : (
                   <Empty 
                     description="No review data available"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Cancellation Analytics Section */}
+          <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+            <Col xs={24}>
+              <Card 
+                title={
+                  <Space>
+                    <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+                    <span>Monthly Cancellation Trend</span>
+                  </Space>
+                }
+              >
+                {analytics.monthlyCancellations && analytics.monthlyCancellations.length > 0 ? (
+                  <div style={{ width: '100%', height: 350 }}>
+                    <ResponsiveContainer>
+                      <LineChart data={analytics.monthlyCancellations}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" label={{ value: 'Month', position: 'insideBottom', offset: -5 }} />
+                        <YAxis allowDecimals={false} label={{ value: 'Number of Cancellations', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="cancellations" 
+                          name="Cancellations" 
+                          stroke="#ff4d4f" 
+                          strokeWidth={3}
+                          dot={{ fill: '#ff4d4f', r: 6 }}
+                          activeDot={{ r: 8 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <div style={{ textAlign: 'center', marginTop: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
+                      <Text type="secondary" style={{ fontSize: '14px' }}>📉 Line Chart - Monthly Cancellation Trend</Text>
+                    </div>
+                  </div>
+                ) : (
+                  <Empty 
+                    description="No cancellation data available"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+            <Col xs={24}>
+              <Card 
+                title={
+                  <Space>
+                    <CloseCircleOutlined style={{ color: '#ff7875' }} />
+                    <span>Cancellation Reasons</span>
+                  </Space>
+                }
+              >
+                {analytics.cancellationReasons && analytics.cancellationReasons.length > 0 ? (
+                  <div style={{ width: '100%', height: 400 }}>
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie
+                          data={analytics.cancellationReasons}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={(entry: any) => `${entry.reason}: ${(entry.percent! * 100).toFixed(0)}%`}
+                          outerRadius={120}
+                          fill="#ff4d4f"
+                          dataKey="count"
+                        >
+                          {analytics.cancellationReasons.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div style={{ textAlign: 'center', marginTop: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
+                      <Text type="secondary" style={{ fontSize: '14px' }}>🥧 Pie Chart - Cancellation Reasons Distribution</Text>
+                    </div>
+                    
+                    {/* Cancellation reasons breakdown table */}
+                    <div style={{ marginTop: '24px' }}>
+                      <Title level={5}>Reason Breakdown</Title>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {analytics.cancellationReasons.map((item) => {
+                          const totalCancellations = analytics.cancellationReasons.reduce((sum, r) => sum + r.count, 0);
+                          const percent = ((item.count / totalCancellations) * 100).toFixed(1);
+                          return (
+                            <div key={item.reason} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ 
+                                  width: '16px', 
+                                  height: '16px', 
+                                  backgroundColor: CHART_COLORS[analytics.cancellationReasons.indexOf(item) % CHART_COLORS.length],
+                                  borderRadius: '4px'
+                                }} />
+                                <Text strong>{item.reason}</Text>
+                              </div>
+                              <Space>
+                                <Text>{item.count} cancellations</Text>
+                                <Text type="secondary">({percent}%)</Text>
+                              </Space>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Empty 
+                    description="No cancellation reason data available"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
