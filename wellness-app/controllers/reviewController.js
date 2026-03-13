@@ -72,6 +72,12 @@ const submitReview = async (req, res) => {
     );
 
     customer.rewardPoints = newPoints;
+    
+    // Initialize rewardHistory array if it doesn't exist
+    if (!customer.rewardHistory) {
+      customer.rewardHistory = [];
+    }
+    
     customer.rewardHistory.push(rewardEntry);
     
     await customer.save();

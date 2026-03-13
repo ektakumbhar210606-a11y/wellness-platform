@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import NotificationService from '@/app/utils/notifications';
+import PaymentModel from '@/models/Payment';
 
 async function requireTherapistAuth(request: NextRequest) {
   try {
@@ -222,6 +223,19 @@ export async function PATCH(
         await availabilitySlot.save();
       }
     }
+
+    // Process refund - update payment status to refunded
+    const advanceAmount = (updatedBooking?.finalPrice || (booking.service as any)?.price || 0) * 0.5;
+    
+    // Update payment record to reflect refund
+    await PaymentModel.updateMany(
+      { booking: bookingId },
+      { 
+        status: 'refunded',
+        refundAmount: advanceAmount,
+        refundedAt: new Date()
+      }
+    );
 
     // Split the full name into first and last name
     let firstName = '';

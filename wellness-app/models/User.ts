@@ -7,6 +7,13 @@ export enum UserRole {
   Therapist = 'Therapist'
 }
 
+export interface IRewardHistoryEntry {
+  type: 'REVIEW_REWARD' | 'DISCOUNT_USED';
+  points: number;
+  description: string;
+  date: Date;
+}
+
 // Define the interface for the User document
 export interface IUser extends Document {
   firstName: string;
@@ -19,6 +26,7 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   rewardPoints?: number; // Reward points earned from completed bookings and reviews
+  rewardHistory?: IRewardHistoryEntry[]; // History of reward point transactions
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,7 +90,26 @@ const UserSchema: Schema<IUser> = new Schema({
     type: Number,
     default: 0,
     min: [0, 'Reward points cannot be negative']
-  }
+  },
+  rewardHistory: [{
+    type: {
+      type: String,
+      enum: ['REVIEW_REWARD', 'DISCOUNT_USED'],
+      required: true
+    },
+    points: {
+      type: Number,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });

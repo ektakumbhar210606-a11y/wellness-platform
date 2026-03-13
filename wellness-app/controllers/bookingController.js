@@ -64,6 +64,12 @@ const createBooking = async (req, res) => {
         -100,
         '10% reward discount used'
       );
+      
+      // Initialize rewardHistory array if it doesn't exist
+      if (!customer.rewardHistory) {
+        customer.rewardHistory = [];
+      }
+      
       customer.rewardHistory.push(discountEntry);
       
       await customer.save();

@@ -76,7 +76,23 @@ export async function GET(request: NextRequest) {
 
     // Add status filter if provided
     if (statusFilter && Object.values(PaymentStatus).includes(statusFilter as PaymentStatus)) {
-      paymentQuery.status = statusFilter;
+      // For "refunded" filter, also include cancelled bookings even if payment status wasn't updated
+      if (statusFilter === 'refunded') {
+        // Get all cancelled bookings for this customer
+        const cancelledBookings = await BookingModel.find({ 
+          customer: userId,
+          status: { $in: ['cancelled', 'cancelled_by_therapist'] }
+        }).select('_id');
+        const cancelledBookingIds = cancelledBookings.map(b => b._id);
+        
+        // Include payments that are either marked as refunded OR belong to cancelled bookings
+        paymentQuery.$or = [
+          { status: 'refunded' },
+          { booking: { $in: cancelledBookingIds } }
+        ];
+      } else {
+        paymentQuery.status = statusFilter;
+      }
     }
 
     // Fetch payments with populated booking data

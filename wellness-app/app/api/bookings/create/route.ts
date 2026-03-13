@@ -125,6 +125,11 @@ export async function POST(request: NextRequest) {
         // Reset reward points to 0
         customer.rewardPoints = 0;
         
+        // Initialize rewardHistory array if it doesn't exist
+        if (!customer.rewardHistory) {
+          customer.rewardHistory = [];
+        }
+        
         // Add reward history entry
         customer.rewardHistory.push({
           type: 'DISCOUNT_USED',
