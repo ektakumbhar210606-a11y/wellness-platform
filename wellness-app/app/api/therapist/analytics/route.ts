@@ -456,12 +456,12 @@ export async function GET(request: NextRequest) {
       { $match: { 
           therapist: therapist._id,
           status: BookingStatus.Cancelled,
-          'cancelRequest.reason': { $exists: true, $ne: null }
+          therapistCancelReason: { $exists: true, $ne: null }
         } 
       },
       {
         $group: {
-          _id: '$cancelRequest.reason',
+          _id: '$therapistCancelReason',
           count: { $sum: 1 }
         }
       },

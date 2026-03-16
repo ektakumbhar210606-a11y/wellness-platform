@@ -7,7 +7,7 @@ import {
   startMonthlyCancellationResetJob, 
   stopMonthlyCancellationResetJob,
   getMonthlyCancellationResetJobStatus
-} from './scheduledJobs/resetTherapistCancellationCountersJob';
+} from './resetTherapistCancellationCountersJob';
 
 /**
  * Initialize and start all scheduled jobs
