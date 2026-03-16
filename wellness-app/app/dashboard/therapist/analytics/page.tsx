@@ -604,23 +604,51 @@ const TherapistAnalyticsPage = () => {
                     {/* Cancellation reasons breakdown table */}
                     <div style={{ marginTop: '24px' }}>
                       <Title level={5}>Reason Breakdown</Title>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {analytics.cancellationReasons.map((item) => {
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '12px',
+                        backgroundColor: '#fafafa',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        border: '1px solid #f0f0f0'
+                      }}>
+                        {analytics.cancellationReasons.map((item, index) => {
                           const totalCancellations = analytics.cancellationReasons.reduce((sum, r) => sum + r.count, 0);
                           const percent = ((item.count / totalCancellations) * 100).toFixed(1);
                           return (
-                            <div key={item.reason} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div 
+                              key={item.reason} 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between', 
+                                padding: '12px 16px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '6px',
+                                border: '1px solid #e8e8e8',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                                 <div style={{ 
                                   width: '16px', 
                                   height: '16px', 
-                                  backgroundColor: CHART_COLORS[analytics.cancellationReasons.indexOf(item) % CHART_COLORS.length],
-                                  borderRadius: '4px'
+                                  backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                                  borderRadius: '4px',
+                                  flexShrink: 0
                                 }} />
-                                <Text strong>{item.reason}</Text>
+                                <Text strong style={{ 
+                                  wordBreak: 'break-word',
+                                  overflowWrap: 'break-word',
+                                  maxWidth: '60%',
+                                  color: '#262626',
+                                  fontSize: '14px',
+                                  lineHeight: 1.5
+                                }}>{item.reason}</Text>
                               </div>
-                              <Space>
-                                <Text>{item.count} cancellations</Text>
+                              <Space size="middle" style={{ flexShrink: 0, marginLeft: '16px' }}>
+                                <Text style={{ fontWeight: 600, color: '#262626', fontSize: '14px' }}>{item.count} cancellations</Text>
                                 <Text type="secondary">({percent}%)</Text>
                               </Space>
                             </div>
@@ -638,6 +666,7 @@ const TherapistAnalyticsPage = () => {
               </Card>
             </Col>
           </Row>
+
 
         </div>
       </Content>
