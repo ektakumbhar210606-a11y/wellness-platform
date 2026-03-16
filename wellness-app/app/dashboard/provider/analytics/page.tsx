@@ -802,26 +802,90 @@ const BusinessAnalyticsPage = () => {
                     </div>
                     
                     {/* Cancellation reasons breakdown table */}
-                    <div style={{ marginTop: '24px' }}>
-                      <Title level={5}>Reason Breakdown</Title>
+                    <div style={{ 
+                      marginTop: '24px',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '8px',
+                      padding: '20px',
+                      border: '1px solid #e8e8e8',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+                    }}>
+                      <Title level={5} style={{ 
+                        margin: '0 0 16px 0',
+                        color: '#262626',
+                        fontSize: '16px',
+                        fontWeight: 600
+                      }}>
+                        Reason Breakdown
+                      </Title>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {analytics.cancellationReasons.map((item) => {
                           const totalCancellations = analytics.cancellationReasons.reduce((sum, r) => sum + r.count, 0);
                           const percent = ((item.count / totalCancellations) * 100).toFixed(1);
                           return (
-                            <div key={item.reason} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div 
+                              key={item.reason} 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between',
+                                padding: '14px 16px',
+                                backgroundColor: '#fafafa',
+                                borderRadius: '6px',
+                                border: '1px solid #f0f0f0',
+                                transition: 'all 0.2s ease',
+                                cursor: 'default'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                e.currentTarget.style.borderColor = '#d9d9d9';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#fafafa';
+                                e.currentTarget.style.borderColor = '#f0f0f0';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                                 <div style={{ 
-                                  width: '16px', 
-                                  height: '16px', 
+                                  width: '18px', 
+                                  height: '18px', 
                                   backgroundColor: CHART_COLORS[analytics.cancellationReasons.indexOf(item) % CHART_COLORS.length],
-                                  borderRadius: '4px'
+                                  borderRadius: '4px',
+                                  flexShrink: 0,
+                                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.15)'
                                 }} />
-                                <Text strong>{item.reason}</Text>
+                                <Text strong style={{ 
+                                  color: '#262626',
+                                  fontSize: '14px',
+                                  lineHeight: 1.5,
+                                  fontWeight: 500,
+                                  letterSpacing: '0.15px'
+                                }}>
+                                  {item.reason}
+                                </Text>
                               </div>
-                              <Space>
-                                <Text>{item.count} cancellations</Text>
-                                <Text type="secondary">({percent}%)</Text>
+                              <Space size="large" style={{ flexShrink: 0, marginLeft: '16px' }}>
+                                <Text style={{ 
+                                  color: '#262626',
+                                  fontSize: '14px',
+                                  fontWeight: 500
+                                }}>
+                                  {item.count} {item.count === 1 ? 'cancellation' : 'cancellations'}
+                                </Text>
+                                <Text style={{ 
+                                  color: '#8c8c8c',
+                                  fontSize: '13px',
+                                  backgroundColor: '#f5f5f5',
+                                  padding: '4px 10px',
+                                  borderRadius: '4px',
+                                  fontWeight: 500
+                                }}>
+                                  {percent}%
+                                </Text>
                               </Space>
                             </div>
                           );

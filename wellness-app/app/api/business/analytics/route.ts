@@ -205,7 +205,9 @@ export async function GET(req: NextRequest) {
               dayOfWeek: { $dayOfWeek: '$date' },
               month: { $dateToString: { format: '%Y-%m', date: '$date' } },
               paymentStatus: '$paymentStatus',
-              cancelRequest: '$cancelRequest'
+              cancelRequest: '$cancelRequest',
+              therapistCancelReason: '$therapistCancelReason',
+              businessCancelReason: '$businessCancelReason'
             }
           }
         }
@@ -402,10 +404,23 @@ export async function GET(req: NextRequest) {
     const reasonCountMap = new Map<string, number>();
     if (result.bookingDetails && Array.isArray(result.bookingDetails)) {
       result.bookingDetails.forEach((detail: any) => {
-        if (detail.status === 'cancelled' && detail.cancelRequest?.reason) {
-          const reason = detail.cancelRequest.reason;
-          const current = reasonCountMap.get(reason) || 0;
-          reasonCountMap.set(reason, current + 1);
+        if (detail.status === 'cancelled') {
+          // Check all possible cancellation reason fields in priority order
+          // Priority: therapistCancelReason > businessCancelReason > cancelRequest.reason
+          let reason: string | null = null;
+          
+          if (detail.therapistCancelReason) {
+            reason = detail.therapistCancelReason;
+          } else if (detail.businessCancelReason) {
+            reason = detail.businessCancelReason;
+          } else if (detail.cancelRequest?.reason) {
+            reason = detail.cancelRequest.reason;
+          }
+          
+          if (reason) {
+            const current = reasonCountMap.get(reason) || 0;
+            reasonCountMap.set(reason, current + 1);
+          }
         }
       });
     }
