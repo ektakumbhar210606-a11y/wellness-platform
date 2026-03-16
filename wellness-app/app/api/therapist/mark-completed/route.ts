@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import BookingModel, { BookingStatus } from '@/models/Booking';
 import TherapistModel from '@/models/Therapist';
 import UserModel from '@/models/User';
+import PaymentModel, { PaymentMethod, PaymentStatus } from '@/models/Payment';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '@/lib/middleware/authMiddleware';
 import { Types } from 'mongoose';
@@ -163,6 +164,45 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Failed to update booking' },
         { status: 500 }
       );
+    }
+
+    // Create final payment record for venue payment (if not already exists)
+    try {
+      const existingFinalPayment = await PaymentModel.findOne({
+        booking: bookingId,
+        paymentType: 'FULL'
+      });
+
+      if (!existingFinalPayment) {
+        // Find the advance payment to get amounts
+        const advancePayment = await PaymentModel.findOne({
+          booking: bookingId,
+          paymentType: 'ADVANCE'
+        });
+
+        const totalAmount = updatedBooking.finalPrice || updatedBooking.originalPrice || 0;
+        const advancePaid = advancePayment?.amount || 0;
+        const remainingAmount = Math.max(0, totalAmount - advancePaid);
+
+        // Create final payment record for the remaining amount
+        const finalPayment = new PaymentModel({
+          booking: bookingId,
+          amount: remainingAmount,
+          totalAmount: totalAmount,
+          advancePaid: advancePaid,
+          remainingAmount: 0,
+          paymentType: 'FULL',
+          method: PaymentMethod.Cash, // Default to cash for venue payments
+          status: PaymentStatus.Completed,
+          paymentDate: new Date()
+        });
+
+        await finalPayment.save();
+        console.log('Final payment record created for completed booking:', finalPayment._id);
+      }
+    } catch (paymentError) {
+      console.error('Warning: Could not create final payment record:', paymentError);
+      // Continue - booking is still marked as completed even if payment recording fails
     }
 
     // Note: No notification sent for completion as it's typically the end of the booking lifecycle

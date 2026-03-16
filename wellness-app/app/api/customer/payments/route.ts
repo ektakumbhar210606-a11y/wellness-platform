@@ -96,12 +96,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch payments with populated booking data
+    // Sort by payment date descending to show most recent first
     const payments = await PaymentModel.find(paymentQuery)
       .populate({
         path: 'booking',
         select: 'service date time status finalPrice originalPrice rewardDiscountApplied therapist'
       })
-      .sort({ paymentDate: -1 })
+      .sort({ paymentDate: -1, createdAt: -1 })
       .skip(skip)
       .limit(validLimit);
 
@@ -147,11 +148,27 @@ export async function GET(request: NextRequest) {
       const therapist = booking?.therapist;
       const business = booking?.business;
 
+      // Use the service price from database as the authoritative source
+      // Fall back to booking prices if service is not available
+      const servicePriceFromDB = service?.price || 0;
+      const bookingFinalPrice = booking.finalPrice || 0;
+      const bookingOriginalPrice = booking.originalPrice || 0;
+      
+      // Determine the total amount to display:
+      // Priority 1: Service price from database (most authoritative)
+      // Priority 2: Booking final price (after discount)
+      // Priority 3: Booking original price
+      // Priority 4: Payment total amount (legacy fallback)
+      const totalAmountToDisplay = servicePriceFromDB > 0 
+        ? servicePriceFromDB 
+        : (bookingFinalPrice > 0 ? bookingFinalPrice : (bookingOriginalPrice > 0 ? bookingOriginalPrice : payment.totalAmount));
+
       return {
         id: payment._id.toString(),
         paymentDate: payment.paymentDate,
         amount: payment.amount,
-        totalAmount: payment.totalAmount,
+        totalAmount: totalAmountToDisplay, // Use service price from DB when available
+        servicePriceFromDB: servicePriceFromDB, // Include raw service price for reference
         advancePaid: payment.advancePaid,
         remainingAmount: payment.remainingAmount,
         paymentType: payment.paymentType,
@@ -164,7 +181,7 @@ export async function GET(request: NextRequest) {
           service: service ? {
             id: service._id.toString(),
             name: service.name,
-            price: service.price,
+            price: service.price, // Service price from database
             duration: service.duration,
             description: service.description
           } : null,
