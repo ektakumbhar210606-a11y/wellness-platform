@@ -45,7 +45,6 @@ interface DashboardStats {
   appointments: number;
   upcomingAppointments: number;
   servicesUsed: number;
-  avgRating: number;
 }
 
 interface UpcomingBooking {
@@ -334,19 +333,6 @@ const CustomerDashboardContent = () => {
                 value={stats?.servicesUsed || 0}
                 icon={<ProfileOutlined style={{ fontSize: '24px', color: 'white' }} />}
                 color="#43e97b"
-              />
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <StatCard 
-                title="Avg Rating" 
-                value={
-                  <Space>
-                    <span>{stats?.avgRating?.toFixed(1) || '0.0'}</span>
-                    <StarOutlined style={{ color: '#faad14' }} />
-                  </Space>
-                }
-                icon={<StarOutlined style={{ fontSize: '24px', color: 'white' }} />}
-                color="#fa8bfd"
               />
             </Col>
           </Row>

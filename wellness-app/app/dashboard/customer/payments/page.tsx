@@ -16,7 +16,8 @@ import {
   Descriptions,
   Divider,
   Select,
-  Statistic
+  Statistic,
+  Tooltip
 } from 'antd';
 import { 
   WalletOutlined, 
@@ -75,6 +76,7 @@ interface Payment {
   paymentDate: string;
   amount: number;
   totalAmount: number;
+  servicePriceFromDB?: number; // Service price from database (authoritative source)
   advancePaid: number;
   remainingAmount: number;
   paymentType: 'FULL' | 'ADVANCE';
@@ -199,9 +201,9 @@ const CustomerPaymentsPage = () => {
 
   const getPaymentTypeTag = (type: 'FULL' | 'ADVANCE') => {
     return type === 'FULL' ? (
-      <Tag color="green">Full Payment</Tag>
+      <Tag color="green" icon={<CheckCircleOutlined />}>Final Payment</Tag>
     ) : (
-      <Tag color="blue">Advance Payment</Tag>
+      <Tag color="blue" icon={<ClockCircleOutlined />}>Advance Payment</Tag>
     );
   };
 
@@ -542,20 +544,29 @@ const CustomerPaymentsPage = () => {
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label="Total Service Amount">
-                {formatCurrency(
-                  selectedPayment.totalAmount, 
-                  selectedPayment.booking?.business?.currency || 'default'
-                )}
-              </Descriptions.Item>
-              {selectedPayment.paymentType === 'ADVANCE' && (
-                <>
-                  <Descriptions.Item label="Advance Paid">
+                <Tooltip title={selectedPayment.servicePriceFromDB ? `Service price from database: ₹${selectedPayment.servicePriceFromDB}` : 'Price from booking record'}>
+                  <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
                     {formatCurrency(
-                      selectedPayment.advancePaid, 
+                      selectedPayment.totalAmount, 
                       selectedPayment.booking?.business?.currency || 'default'
                     )}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Remaining Amount">
+                  </Text>
+                </Tooltip>
+              </Descriptions.Item>
+              
+              {/* Show advance and remaining for all payments */}
+              <Descriptions.Item label="Advance Paid">
+                <Text strong>
+                  {formatCurrency(
+                    selectedPayment.advancePaid, 
+                    selectedPayment.booking?.business?.currency || 'default'
+                  )}
+                </Text>
+              </Descriptions.Item>
+              
+              {selectedPayment.paymentType === 'ADVANCE' ? (
+                <>
+                  <Descriptions.Item label="Remaining After This Payment">
                     <Text type="danger">
                       {formatCurrency(
                         selectedPayment.remainingAmount, 
@@ -563,8 +574,26 @@ const CustomerPaymentsPage = () => {
                       )}
                     </Text>
                   </Descriptions.Item>
+                  <Descriptions.Item label="Payment Stage">
+                    <Tag color="blue">1st of 2</Tag>
+                  </Descriptions.Item>
                 </>
-              )}
+              ) : selectedPayment.paymentType === 'FULL' ? (
+                <>
+                  <Descriptions.Item label="Balance Paid">
+                    <Text strong style={{ color: '#52c41a' }}>
+                      {formatCurrency(
+                        selectedPayment.amount, 
+                        selectedPayment.booking?.business?.currency || 'default'
+                      )}
+                    </Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Payment Stage">
+                    <Tag color="green">2nd of 2</Tag>
+                  </Descriptions.Item>
+                </>
+              ) : null}
+              
               {selectedPayment.booking?.rewardDiscountApplied && (
                 <>
                   <Descriptions.Item label="Original Price">
@@ -586,6 +615,102 @@ const CustomerPaymentsPage = () => {
                 </>
               )}
             </Descriptions>
+            
+            {/* Complete Payment Summary for All Payments */}
+            <>
+              <Divider />
+              <div style={{ 
+                background: selectedPayment.paymentType === 'FULL' ? '#f0f9ff' : '#fff7e6', 
+                padding: '16px', 
+                borderRadius: '8px',
+                border: `1px solid ${selectedPayment.paymentType === 'FULL' ? '#bae7ff' : '#ffd591'}`
+              }}>
+                <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+                  <Title level={5} style={{ margin: 0 }}>Payment Breakdown</Title>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text strong>Total Service Cost:</Text>
+                    <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                      {formatCurrency(
+                        selectedPayment.totalAmount, 
+                        selectedPayment.booking?.business?.currency || 'default'
+                      )}
+                    </Text>
+                  </div>
+                  
+                  {selectedPayment.paymentType === 'ADVANCE' && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text>Advance Payment (Paid Online):</Text>
+                        <Text strong style={{ color: '#52c41a' }}>
+                          {formatCurrency(
+                            selectedPayment.advancePaid, 
+                            selectedPayment.booking?.business?.currency || 'default'
+                          )}
+                        </Text>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text>Remaining to Pay:</Text>
+                        <Text strong style={{ color: '#ff4d4f' }}>
+                          {formatCurrency(
+                            selectedPayment.remainingAmount, 
+                            selectedPayment.booking?.business?.currency || 'default'
+                          )}
+                        </Text>
+                      </div>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text strong>Paid So Far:</Text>
+                        <Text strong style={{ color: '#52c41a', fontSize: '18px' }}>
+                          {formatCurrency(
+                            selectedPayment.advancePaid, 
+                            selectedPayment.booking?.business?.currency || 'default'
+                          )}
+                        </Text>
+                      </div>
+                      <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                        <Tag color="blue" icon={<ClockCircleOutlined />}>Partially Paid</Tag>
+                      </div>
+                    </>
+                  )}
+                  
+                  {selectedPayment.paymentType === 'FULL' && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text>Less: Advance Payment (Online):</Text>
+                        <Text>
+                          -{formatCurrency(
+                            selectedPayment.advancePaid, 
+                            selectedPayment.booking?.business?.currency || 'default'
+                          )}
+                        </Text>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text>Plus: Final Payment (at venue):</Text>
+                        <Text strong style={{ color: '#52c41a' }}>
+                          {formatCurrency(
+                            selectedPayment.amount, 
+                            selectedPayment.booking?.business?.currency || 'default'
+                          )}
+                        </Text>
+                      </div>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text strong>Total Paid:</Text>
+                        <Text strong style={{ color: '#52c41a', fontSize: '18px' }}>
+                          {formatCurrency(
+                            selectedPayment.totalAmount, 
+                            selectedPayment.booking?.business?.currency || 'default'
+                          )}
+                        </Text>
+                      </div>
+                      <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                        <Tag color="green" icon={<CheckCircleOutlined />}>Fully Paid</Tag>
+                      </div>
+                    </>
+                  )}
+                </Space>
+              </div>
+            </>
 
             <Divider />
 
@@ -593,13 +718,21 @@ const CustomerPaymentsPage = () => {
             <Title level={5}>Booking Details</Title>
             {selectedPayment.booking ? (
               <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-                <Descriptions.Item label="Service Name" span={2}>
+                <Descriptions.Item label="Service Name" span={{ xs: 2, sm: 2 }}>
                   {selectedPayment.booking.service?.name || 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Service Price (from DB)">
+                  <Text strong style={{ color: '#1890ff' }}>
+                    {formatCurrency(
+                      selectedPayment.booking.service?.price || 0, 
+                      selectedPayment.booking?.business?.currency || 'default'
+                    )}
+                  </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Service Duration">
                   {selectedPayment.booking.service?.duration || 60} minutes
                 </Descriptions.Item>
-                <Descriptions.Item label="Therapist">
+                <Descriptions.Item label="Therapist" span={{ xs: 2, sm: 2 }}>
                   {selectedPayment.booking.therapist?.fullName || 'N/A'}
                   {selectedPayment.booking.therapist?.professionalTitle && (
                     <Text type="secondary">
@@ -619,7 +752,7 @@ const CustomerPaymentsPage = () => {
                   <Tag>{selectedPayment.booking.status}</Tag>
                 </Descriptions.Item>
                 {selectedPayment.booking.service?.description && (
-                  <Descriptions.Item label="Service Description" span={2}>
+                  <Descriptions.Item label="Service Description" span={{ xs: 2, sm: 2 }}>
                     {selectedPayment.booking.service.description}
                   </Descriptions.Item>
                 )}

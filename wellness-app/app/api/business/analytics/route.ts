@@ -204,7 +204,10 @@ export async function GET(req: NextRequest) {
               date: '$date',
               dayOfWeek: { $dayOfWeek: '$date' },
               month: { $dateToString: { format: '%Y-%m', date: '$date' } },
-              paymentStatus: '$paymentStatus'
+              paymentStatus: '$paymentStatus',
+              cancelRequest: '$cancelRequest',
+              therapistCancelReason: '$therapistCancelReason',
+              businessCancelReason: '$businessCancelReason'
             }
           }
         }
@@ -341,6 +344,96 @@ export async function GET(req: NextRequest) {
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // Calculate cancellation analytics
+    const cancelledBookings = result.bookingDetails.filter((detail: any) => 
+      detail.status === 'cancelled'
+    ).length;
+
+    // Monthly cancellation trend
+    const monthlyCancellationMap = new Map<string, number>();
+    if (result.bookingDetails && Array.isArray(result.bookingDetails)) {
+      result.bookingDetails.forEach((detail: any) => {
+        if (detail.status === 'cancelled') {
+          const current = monthlyCancellationMap.get(detail.month) || 0;
+          monthlyCancellationMap.set(detail.month, current + 1);
+        }
+      });
+    }
+
+    const monthlyCancellations = Array.from(monthlyCancellationMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    // Cancellation by therapist
+    const therapistCancellationMap = new Map<string, { name: string; cancellations: number; totalBookings: number }>();
+    if (result.bookingDetails && Array.isArray(result.bookingDetails)) {
+      result.bookingDetails.forEach((detail: any) => {
+        if (detail.therapistId) {
+          const therapistInfo = result.therapistBreakdown.find((tb: any) => 
+            tb.therapistId?.toString() === detail.therapistId?.toString()
+          );
+          
+          if (therapistInfo) {
+            const existing = therapistCancellationMap.get(therapistInfo.therapistName) || {
+              name: therapistInfo.therapistName,
+              cancellations: 0,
+              totalBookings: 0
+            };
+            
+            existing.totalBookings += 1;
+            if (detail.status === 'cancelled') {
+              existing.cancellations += 1;
+            }
+            
+            therapistCancellationMap.set(therapistInfo.therapistName, existing);
+          }
+        }
+      });
+    }
+
+    const therapistCancellations = Array.from(therapistCancellationMap.values())
+      .map(therapist => ({
+        therapistName: therapist.name,
+        cancellations: therapist.cancellations,
+        totalBookings: therapist.totalBookings,
+        cancellationRate: ((therapist.cancellations / therapist.totalBookings) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.cancellations - a.cancellations);
+
+    // Cancellation reasons breakdown
+    const reasonCountMap = new Map<string, number>();
+    if (result.bookingDetails && Array.isArray(result.bookingDetails)) {
+      result.bookingDetails.forEach((detail: any) => {
+        if (detail.status === 'cancelled') {
+          // Check all possible cancellation reason fields in priority order
+          // Priority: therapistCancelReason > businessCancelReason > cancelRequest.reason
+          let reason: string | null = null;
+          
+          if (detail.therapistCancelReason) {
+            reason = detail.therapistCancelReason;
+          } else if (detail.businessCancelReason) {
+            reason = detail.businessCancelReason;
+          } else if (detail.cancelRequest?.reason) {
+            reason = detail.cancelRequest.reason;
+          }
+          
+          if (reason) {
+            const current = reasonCountMap.get(reason) || 0;
+            reasonCountMap.set(reason, current + 1);
+          }
+        }
+      });
+    }
+
+    const cancellationReasons = Array.from(reasonCountMap.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Overall cancellation rate
+    const cancellationRate = result.totalBookings > 0 
+      ? ((cancelledBookings / result.totalBookings) * 100).toFixed(1) 
+      : '0.0';
+
     // Get reviews for business therapists
     const approvedTherapists = await TherapistModel.find({
       'associatedBusinesses.businessId': business._id,
@@ -461,7 +554,12 @@ export async function GET(req: NextRequest) {
         monthlyRevenue,
         monthlyBookings,
         dailyBookings,
-        recentReviews
+        recentReviews,
+        // Cancellation analytics
+        cancellationRate: parseFloat(cancellationRate),
+        monthlyCancellations,
+        therapistCancellations,
+        cancellationReasons
       }
     });
 

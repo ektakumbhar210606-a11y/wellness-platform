@@ -391,9 +391,98 @@ export async function GET(request: NextRequest) {
       }
     ]);
 
+    // STEP 8: Cancellation Analytics
+    const cancellationData = await BookingModel.aggregate([
+      { $match: { therapist: therapist._id } },
+      {
+        $group: {
+          _id: null,
+          totalBookings: { $sum: 1 },
+          cancelledBookings: {
+            $sum: { $cond: [{ $eq: ['$status', BookingStatus.Cancelled] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalBookings: 1,
+          cancelledBookings: 1,
+          cancellationRate: {
+            $multiply: [
+              { $divide: ['$cancelledBookings', '$totalBookings'] },
+              100
+            ]
+          }
+        }
+      }
+    ]);
+
+    // Monthly cancellation trend
+    const monthlyCancellationData = await BookingModel.aggregate([
+      { $match: { 
+          therapist: therapist._id,
+          status: BookingStatus.Cancelled
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' }
+          },
+          cancellations: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      {
+        $project: {
+          _id: 0,
+          month: {
+            $concat: [
+              { $toString: '$_id.year' },
+              '-',
+              { $cond: [{ $lt: ['$_id.month', 10] }, '0', ''] },
+              { $toString: '$_id.month' }
+            ]
+          },
+          cancellations: 1
+        }
+      }
+    ]);
+
+    // Cancellation reasons breakdown
+    const cancellationReasonsData = await BookingModel.aggregate([
+      { $match: { 
+          therapist: therapist._id,
+          status: BookingStatus.Cancelled,
+          therapistCancelReason: { $exists: true, $ne: null }
+        } 
+      },
+      {
+        $group: {
+          _id: '$therapistCancelReason',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      {
+        $project: {
+          _id: 0,
+          reason: '$_id',
+          count: 1
+        }
+      }
+    ]);
+
     // Extract values with safe defaults
     const summary = bookingSummary[0] || { totalSessionsCompleted: 0, totalBookingEarnings: 0 };
     const reviewStats = reviewSummary[0] || { averageRating: 0, totalReviews: 0 };
+    const cancellationStats = cancellationData[0] || { 
+      totalBookings: 0, 
+      cancelledBookings: 0, 
+      cancellationRate: 0 
+    };
 
     // Calculate monthly bonus earned (current month paid bonuses)
     const currentMonth = new Date().getMonth() + 1;
@@ -429,7 +518,13 @@ export async function GET(request: NextRequest) {
         monthlySessions: monthlySessionsData || [],
         monthlyRatings: monthlyRatingsData || [],
         serviceDistribution: serviceDistributionData || [],
-        monthlyReviewCount: monthlyReviewCountData || []
+        monthlyReviewCount: monthlyReviewCountData || [],
+        // Cancellation analytics
+        totalBookings: cancellationStats.totalBookings || 0,
+        cancelledBookings: cancellationStats.cancelledBookings || 0,
+        cancellationRate: Math.round(cancellationStats.cancellationRate || 0),
+        monthlyCancellations: monthlyCancellationData || [],
+        cancellationReasons: cancellationReasonsData || []
       }
     });
 

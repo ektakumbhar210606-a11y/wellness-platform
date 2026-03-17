@@ -11,7 +11,7 @@
  */
 
 import cron from 'node-cron';
-import { resetTherapistMonthlyCancellationCounters } from '../utils/resetTherapistMonthlyCancellationCounters';
+import { resetTherapistMonthlyCancellationCounters } from '../../utils/resetTherapistMonthlyCancellationCounters';
 
 // Cron schedule: "0 0 1 * *" = Midnight on the 1st of every month
 const MONTHLY_RESET_SCHEDULE = '0 0 1 * *';
@@ -94,6 +94,6 @@ export function getMonthlyCancellationResetJobStatus(): {
   return {
     isRunning: !!scheduledTask,
     schedule: MONTHLY_RESET_SCHEDULE,
-    nextExecution: scheduledTask ? scheduledTask.getNextDates()[0] : undefined,
+    nextExecution: undefined, // node-cron doesn't provide next execution date in this API
   };
 }

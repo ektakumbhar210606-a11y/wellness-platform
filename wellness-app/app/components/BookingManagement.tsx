@@ -610,51 +610,75 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: any, record: Booking) => (
-        <Space>
-          <Button 
-            type="primary" 
-            size="small"
-            loading={actionLoading === record.id}
-            onClick={() => handleConfirmBooking(record.id)}
-          >
-            {record.hasBeenRescheduled ? 'Confirm Original Request' : 'Confirm Request'}
-          </Button>
-          {!shouldRestrictReschedule(record.date, record.time, 'business') && (
-            <Button 
-              type="default"
-              size="small"
-              loading={actionLoading === record.id}
-              onClick={() => handleRescheduleBooking(record)}
-            >
-              {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
-            </Button>
-          )}
-          <Button 
-            danger 
-            size="small"
-            loading={actionLoading === record.id}
-            onClick={() => {
-              confirm({
-                title: record.hasBeenRescheduled ? 'Cancel Original Request' : 'Cancel Booking',
-                content: record.hasBeenRescheduled 
-                  ? 'Are you sure you want to cancel this original customer request? (This will override the therapist\'s rescheduling)'
-                  : 'Are you sure you want to cancel this booking request?',
-                onOk: () => handleCancelBooking(record.id),
-              });
-            }}
-          >
-            {record.hasBeenRescheduled ? 'Cancel Original' : 'Cancel'}
-          </Button>
-          <Button 
-            type="link" 
-            size="small"
-            onClick={() => showBookingDetails(record)}
-          >
-            View Details
-          </Button>
-        </Space>
-      ),
+      render: (_: any, record: Booking) => {
+        // Check if booking has already been processed with one of these actions
+        const isProcessed = 
+          record.status === 'confirmed' || 
+          record.status === 'cancelled' || 
+          record.status === 'rescheduled' ||
+          record.status === 'therapist_confirmed' ||
+          record.status === 'therapist_rejected';
+        
+        return (
+          <Space>
+            {isProcessed ? (
+              // Only show View Details for processed bookings
+              <Button 
+                type="link" 
+                size="small"
+                onClick={() => showBookingDetails(record)}
+              >
+                View Details
+              </Button>
+            ) : (
+              // Show all action buttons for pending bookings
+              <>
+                <Button 
+                  type="primary" 
+                  size="small"
+                  loading={actionLoading === record.id}
+                  onClick={() => handleConfirmBooking(record.id)}
+                >
+                  {record.hasBeenRescheduled ? 'Confirm Original Request' : 'Confirm Request'}
+                </Button>
+                {!shouldRestrictReschedule(record.date, record.time, 'business') && (
+                  <Button 
+                    type="default"
+                    size="small"
+                    loading={actionLoading === record.id}
+                    onClick={() => handleRescheduleBooking(record)}
+                  >
+                    {record.hasBeenRescheduled ? 'Reschedule Original' : 'Reschedule'}
+                  </Button>
+                )}
+                <Button 
+                  danger 
+                  size="small"
+                  loading={actionLoading === record.id}
+                  onClick={() => {
+                    confirm({
+                      title: record.hasBeenRescheduled ? 'Cancel Original Request' : 'Cancel Booking',
+                      content: record.hasBeenRescheduled 
+                        ? 'Are you sure you want to cancel this original customer request? (This will override the therapist\'s rescheduling)'
+                        : 'Are you sure you want to cancel this booking request?',
+                      onOk: () => handleCancelBooking(record.id),
+                    });
+                  }}
+                >
+                  {record.hasBeenRescheduled ? 'Cancel Original' : 'Cancel'}
+                </Button>
+                <Button 
+                  type="link" 
+                  size="small"
+                  onClick={() => showBookingDetails(record)}
+                >
+                  View Details
+                </Button>
+              </>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
