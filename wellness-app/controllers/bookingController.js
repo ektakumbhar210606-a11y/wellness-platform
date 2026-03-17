@@ -1,6 +1,6 @@
-const BookingModel = require('../models/Booking');
-const UserModel = require('../models/User');
-const ServiceModel = require('../models/Service'); // Assuming Service model exists
+const BookingModel = require('../models/Booking.js');
+const UserModel = require('../models/User.js');
+const ServiceModel = require('../models/Service.js'); // Assuming Service model exists
 const { checkRewardDiscount, calculateDiscountedPrice, createRewardHistoryEntry } = require('../utils/rewardUtils');
 
 /**

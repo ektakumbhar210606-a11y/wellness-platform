@@ -1,4 +1,4 @@
-const UserModel = require('../models/User');
+const UserModel = require('../models/User.js');
 
 /**
  * Get reward system statistics for admin

@@ -1,4 +1,4 @@
-const UserModel = require('../models/User');
+const UserModel = require('../models/User.js');
 const { checkRewardDiscount, MAX_REWARD_POINTS } = require('../utils/rewardUtils');
 
 /**

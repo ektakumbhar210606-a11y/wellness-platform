@@ -1,5 +1,5 @@
-const ReviewModel = require('../models/Review');
-const UserModel = require('../models/User');
+const ReviewModel = require('../models/Review.js');
+const UserModel = require('../models/User.js');
 const { REWARD_POINTS_PER_REVIEW, calculateUpdatedPoints, createRewardHistoryEntry } = require('../utils/rewardUtils');
 
 /**

@@ -9,7 +9,8 @@ import {
   StarOutlined,
   TrophyOutlined,
   StopOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import BusinessReviews from '../../components/BusinessReviews';
 import TherapistBonuses from '../../components/business/TherapistBonuses';
@@ -123,6 +124,26 @@ const BusinessDashboardPage = () => {
       children: (
         <div style={{ marginTop: '24px' }}>
           <TherapistCancellationPerformance />
+        </div>
+      ),
+    },
+    {
+      key: 'reports',
+      label: (
+        <span>
+          <FileTextOutlined />
+          Reports
+        </span>
+      ),
+      children: (
+        <div style={{ marginTop: '24px' }}>
+          <Card>
+            <iframe 
+              src="/dashboard/business/reports" 
+              style={{ width: '100%', height: '800px', border: 'none' }}
+              title="Business Reports"
+            />
+          </Card>
         </div>
       ),
     },

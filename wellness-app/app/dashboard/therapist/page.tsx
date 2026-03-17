@@ -289,6 +289,15 @@ const TherapistDashboardPage = () => {
       },
     },
     {
+      key: '8',
+      label: 'Reports',
+      icon: <ProfileOutlined />,
+      onClick: () => {
+        router.push('/dashboard/therapist/reports');
+        setActiveTab('reports');
+      },
+    },
+    {
       key: 'logout',
       label: 'Logout',
       onClick: () => {

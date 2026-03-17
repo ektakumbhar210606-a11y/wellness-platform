@@ -172,6 +172,11 @@ const CustomerDashboardContent = () => {
       label: <Link href="/dashboard/customer/payments">Payments</Link>,
     },
     {
+      key: 'reports',
+      icon: <ProfileOutlined />,
+      label: <Link href="/dashboard/customer/reports">Reports</Link>,
+    },
+    {
       key: 'analytics',
       icon: <BarChartOutlined />,
       label: <Link href="/dashboard/customer/analytics">Analytics</Link>,
