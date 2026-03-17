@@ -607,95 +607,112 @@ const AssignedBookingsTracker: React.FC = () => {
                 {/* Action Buttons */}
                 <div style={{ marginLeft: 24 }}>
                   <Space orientation="vertical">
-                    <Button 
-                      size="small"
-                      onClick={async () => await showBookingDetails(booking)}
-                    >
-                      View Details
-                    </Button>
-                    {booking.status === 'pending' && (
+                    {/* Check if booking has already been processed */}
+                    {booking.status === 'confirmed' || 
+                     booking.status === 'cancelled' || 
+                     booking.status === 'therapist_confirmed' ||
+                     booking.status === 'therapist_rejected' ? (
+                      // Only show View Details for processed bookings
                       <Button 
                         size="small"
-                        type="primary"
-                        danger
-                        onClick={() => {
-                          // Future: Implement cancel assignment functionality
-                          message.info('Cancel assignment functionality coming soon');
-                        }}
+                        onClick={async () => await showBookingDetails(booking)}
                       >
-                        Cancel Assignment
+                        View Details
                       </Button>
-                    )}
-                    {(booking.status === 'pending' || booking.status === 'rescheduled') && (
-                      <Button 
-                        size="small"
-                        type="primary"
-                        onClick={async () => {
-                          try {
-                            const response = await makeAuthenticatedRequest(
-                              `/api/business/assigned-bookings/confirm/${booking.id}`,
-                              {
-                                method: 'PATCH'
+                    ) : (
+                      // Show all action buttons for pending/unprocessed bookings
+                      <>
+                        <Button 
+                          size="small"
+                          onClick={async () => await showBookingDetails(booking)}
+                        >
+                          View Details
+                        </Button>
+                        {booking.status === 'pending' && (
+                          <Button 
+                            size="small"
+                            type="primary"
+                            danger
+                            onClick={() => {
+                              // Future: Implement cancel assignment functionality
+                              message.info('Cancel assignment functionality coming soon');
+                            }}
+                          >
+                            Cancel Assignment
+                          </Button>
+                        )}
+                        {(booking.status === 'pending' || booking.status === 'rescheduled') && (
+                          <Button 
+                            size="small"
+                            type="primary"
+                            onClick={async () => {
+                              try {
+                                const response = await makeAuthenticatedRequest(
+                                  `/api/business/assigned-bookings/confirm/${booking.id}`,
+                                  {
+                                    method: 'PATCH'
+                                  }
+                                );
+                                
+                                if (response.success) {
+                                  message.success('Booking confirmed successfully');
+                                  // Refresh the data to reflect the new status
+                                  await fetchAssignedBookings();
+                                } else {
+                                  message.error(response.error || 'Failed to confirm booking');
+                                }
+                              } catch (error) {
+                                console.error('Error confirming booking:', error);
+                                message.error('An error occurred while confirming the booking');
                               }
-                            );
-                            
-                            if (response.success) {
-                              message.success('Booking confirmed successfully');
-                              // Refresh the data to reflect the new status
-                              await fetchAssignedBookings();
-                            } else {
-                              message.error(response.error || 'Failed to confirm booking');
-                            }
-                          } catch (error) {
-                            console.error('Error confirming booking:', error);
-                            message.error('An error occurred while confirming the booking');
-                          }
-                        }}
-                      >
-                        Confirm
-                      </Button>
-                    )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && !shouldRestrictReschedule(booking.date, booking.time, 'business') && (
-                      <Button 
-                        size="small"
-                        onClick={async () => {
-                          setSelectedBooking(booking);
-                          setRescheduleModalVisible(true);
-                        }}
-                        loading={actionLoading === booking.id}
-                      >
-                        Reschedule
-                      </Button>
-                    )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'rescheduled') && (
-                      <Button 
-                        size="small"
-                        danger
-                        onClick={async () => {
-                          try {
-                            const response = await makeAuthenticatedRequest(
-                              `/api/business/assigned-bookings/cancel/${booking.id}`,
-                              {
-                                method: 'PATCH'
+                            }}
+                          >
+                            Confirm
+                          </Button>
+                        )}
+                        {(booking.status === 'pending' || booking.status === 'rescheduled') && !shouldRestrictReschedule(booking.date, booking.time, 'business') && (
+                          <Button 
+                            size="small"
+                            onClick={async () => {
+                              setSelectedBooking(booking);
+                              setRescheduleModalVisible(true);
+                            }}
+                            loading={actionLoading === booking.id}
+                          >
+                            Reschedule
+                          </Button>
+                        )}
+                        {(booking.status === 'pending' || booking.status === 'rescheduled') && (
+                          <Button 
+                            size="small"
+                            danger
+                            onClick={async () => {
+                              try {
+                                const response = await makeAuthenticatedRequest(
+                                  `/api/business/assigned-bookings/cancel/${booking.id}`,
+                                  {
+                                    method: 'PATCH'
+                                  }
+                                );
+                                
+                                if (response.success) {
+                                  message.success('Booking cancelled successfully');
+                                  // Refresh the data to reflect the new status
+                                  await fetchAssignedBookings();
+                                } else {
+                                  message.error(response.error || 'Failed to cancel booking');
+                                }
+                              } catch (error) {
+                                console.error('Error cancelling booking:', error);
+                                message.error('An error occurred while cancelling the booking');
                               }
-                            );
-                            
-                            if (response.success) {
-                              message.success('Booking cancelled successfully');
-                              // Refresh the data to reflect the new status
-                              await fetchAssignedBookings();
-                            } else {
-                              message.error(response.error || 'Failed to cancel booking');
-                            }
-                          } catch (error) {
-                            console.error('Error cancelling booking:', error);
-                            message.error('An error occurred while cancelling the booking');
-                          }
-                        }}
-                        loading={actionLoading === booking.id}
-                      >
-                        Cancel
-                      </Button>
+                            }}
+                            loading={actionLoading === booking.id}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </>
                     )}
                   </Space>
                 </div>
