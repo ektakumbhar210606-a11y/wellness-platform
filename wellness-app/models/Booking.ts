@@ -39,11 +39,14 @@ export interface IBooking extends Document {
   rescheduledAt?: Date; // When the booking was rescheduled
   confirmedBy?: string; // ID of the user who confirmed the booking (therapist or business)
   confirmedAt?: Date; // When the booking was confirmed
-  cancelledBy?: string; // ID of the user who cancelled the booking (therapist or business)
+  cancelledBy?: string; // ID of the user who cancelled the booking (therapist, business, or customer)
   cancelledAt?: Date; // When the booking was cancelled
-  cancelReason?: string; // Reason for cancellation (therapist or business)
+  cancelReason?: string; // Reason for cancellation (generic)
+  customerCancelReason?: string; // Specific reason provided by customer for cancellation
   therapistCancelReason?: string; // Specific reason provided by therapist for cancel request
   businessCancelReason?: string; // Specific reason provided by business for cancellation
+  refundAmount?: number; // Amount refunded to customer
+  refundPenaltyPercentage?: number; // Percentage of penalty applied (e.g., 10 for 10% penalty)
   therapistCancelRequestedAt?: Date; // When therapist requested cancellation
   businessReviewStatus?: 'pending' | 'approved' | 'rejected'; // Business review status for therapist cancel request
   businessReviewedAt?: Date; // When business reviewed the cancel request
@@ -179,6 +182,11 @@ const BookingSchema: Schema<IBooking> = new Schema({
     type: String, // Reason for cancellation
     required: false
   },
+  customerCancelReason: {
+    type: String, // Specific reason provided by customer
+    required: false,
+    maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
+  },
   therapistCancelReason: {
     type: String, // Specific reason provided by therapist
     required: false
@@ -187,6 +195,17 @@ const BookingSchema: Schema<IBooking> = new Schema({
     type: String, // Specific reason provided by business
     required: false,
     maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
+  },
+  refundAmount: {
+    type: Number, // Amount refunded to customer
+    required: false,
+    min: [0, 'Refund amount cannot be negative']
+  },
+  refundPenaltyPercentage: {
+    type: Number, // Percentage of penalty applied (e.g., 10 for 10% penalty)
+    required: false,
+    min: [0, 'Penalty percentage cannot be negative'],
+    max: [100, 'Penalty percentage cannot exceed 100']
   },
   completedAt: {
     type: Date, // When the booking was completed

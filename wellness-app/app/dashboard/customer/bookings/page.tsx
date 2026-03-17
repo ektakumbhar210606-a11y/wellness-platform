@@ -25,6 +25,7 @@ const CustomerBookingsPage = () => {
   });
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<any>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   const [activeTab, setActiveTab] = useState('requests');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
@@ -466,25 +467,44 @@ const CustomerBookingsPage = () => {
           id: record.id,
           businessCancelReason: record.businessCancelReason,
           therapistCancelReason: record.therapistCancelReason,
+          customerCancelReason: record.customerCancelReason,
           cancelReason: record.cancelReason,
           cancelledBy: record.cancelledBy,
           status: record.status
         });
         
-        // Check for business cancellation reason first, then therapist reason
-        const reason = record.businessCancelReason || record.therapistCancelReason || record.cancelReason || 'Not specified';
-        const isBusinessCancel = !!record.businessCancelReason;
-        const isTherapistCancel = !!record.therapistCancelReason;
+        // Check for cancellation reason based on who cancelled
+        let reason = 'Not specified';
+        let icon = '';
+        let color = 'inherit';
+        
+        if (record.customerCancelReason) {
+          // Customer-initiated cancellation
+          reason = record.customerCancelReason;
+          icon = '👤 ';
+          color = '#52c41a'; // Green for customer cancellation
+        } else if (record.businessCancelReason) {
+          // Business-initiated cancellation
+          reason = record.businessCancelReason;
+          icon = '🏢 ';
+          color = '#1890ff'; // Blue for business cancellation
+        } else if (record.therapistCancelReason) {
+          // Therapist-initiated cancellation
+          reason = record.therapistCancelReason;
+          icon = '📍 ';
+          color = '#d32f2f'; // Red for therapist cancellation
+        } else if (record.cancelReason) {
+          // Fallback to generic cancelReason
+          reason = record.cancelReason;
+        }
         
         return (
           <Text 
-            style={{ maxWidth: 250, color: isBusinessCancel ? '#1890ff' : isTherapistCancel ? '#d32f2f' : 'inherit' }} 
+            style={{ maxWidth: 250, color: color }} 
             ellipsis
             title={reason}
           >
-            {isBusinessCancel && <span style={{ fontWeight: 500 }}>🏢 </span>}
-            {isTherapistCancel && !isBusinessCancel && <span style={{ fontWeight: 500 }}>📍 </span>}
-            {reason}
+            {icon}{reason}
           </Text>
         );
       },
@@ -493,18 +513,40 @@ const CustomerBookingsPage = () => {
       title: 'Refund Status',
       key: 'refundStatus',
       render: (record: any) => {
-        const refundAmount = (record.finalPrice || record.service?.price || 0) * 0.5;
-        const isTherapistCancel = record.status === 'cancelled_by_therapist';
+        // Determine refund amount based on who cancelled
+        const totalAmount = record.finalPrice || record.service?.price || 0;
+        let refundAmount = 0;
+        let isProcessing = false;
+        let showPenalty = false;
+        
+        if (record.status === 'cancelled_by_therapist') {
+          // Therapist cancellation - full refund
+          refundAmount = totalAmount * 0.5;
+          isProcessing = true;
+        } else if (record.cancelledBy && record.customerCancelReason) {
+          // Customer cancellation - 90% of advance (10% penalty)
+          refundAmount = totalAmount * 0.5 * 0.9; // 45% of total
+          showPenalty = true;
+        } else {
+          // Default - full advance refund
+          refundAmount = totalAmount * 0.5;
+        }
+        
         return (
           <div>
-            <Tag color={isTherapistCancel ? 'orange' : 'green'}>
-              {isTherapistCancel ? 'Refund Processing' : 'Refunded'}
+            <Tag color={isProcessing ? 'orange' : 'green'}>
+              {isProcessing ? 'Refund Processing' : 'Refunded'}
             </Tag>
             <br />
             <Text type="secondary" style={{ fontSize: '12px' }}>
               {formatCurrency(refundAmount, record.business?.address?.country || 'default')}
             </Text>
-            {isTherapistCancel && (
+            {showPenalty && (
+              <div style={{ fontSize: '10px', color: '#faad14', marginTop: '2px' }}>
+                ⚠️ 10% cancellation fee applied
+              </div>
+            )}
+            {isProcessing && (
               <div>
                 <Text type="secondary" style={{ fontSize: '11px' }}>
                   ⏳ 3-7 business days
@@ -564,13 +606,56 @@ const CustomerBookingsPage = () => {
 
   const handleCancelBooking = async () => {
     try {
-      // For customer-initiated cancellations, we should use the proper customer booking cancellation endpoint
-      // However, since this is a business-assigned booking, the customer shouldn't be able to cancel it directly
-      // The business should handle cancellations through their assigned-bookings interface
-      throw new Error('Cannot cancel business-assigned bookings directly. Please contact the business.');
+      if (!bookingToCancel) return;
+
+      console.log('Attempting to cancel booking:', {
+        id: bookingToCancel.id,
+        status: bookingToCancel.status,
+        paymentStatus: bookingToCancel.paymentStatus
+      });
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Call the customer booking cancellation API
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/customer/bookings/${bookingToCancel.id}/cancel`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            cancelReason: cancellationReason || 'Customer requested cancellation'
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Cancellation failed:', data);
+        throw new Error(data.error || 'Failed to cancel booking');
+      }
+
+      // Remove cancelled booking from the list
+      setBookings(bookings.filter(b => b.id !== bookingToCancel.id));
+      
+      message.success(
+        `Booking cancelled successfully. Refund of ${formatCurrency(
+          data.data.refundDetails.refundAmount, 
+          bookingToCancel.business?.address?.country || 'default'
+        )} will be processed (10% cancellation fee applied).`
+      );
+      
+      setCancelModalVisible(false);
+      setBookingToCancel(null);
+      setCancellationReason('');
     } catch (error: any) {
       console.error('Error cancelling booking:', error);
-      // Optionally show error message to user
       message.error(error.message || 'Failed to cancel booking');
     }
   };
@@ -759,13 +844,65 @@ const CustomerBookingsPage = () => {
         title="Confirm Cancellation"
         open={cancelModalVisible}
         onOk={handleCancelBooking}
-        onCancel={() => setCancelModalVisible(false)}
+        onCancel={() => {
+          setCancelModalVisible(false);
+          setBookingToCancel(null);
+          setCancellationReason('');
+        }}
         okText="Yes, Cancel"
         cancelText="No, Keep Booking"
         destroyOnHidden
+        width={500}
       >
-        <p>Are you sure you want to cancel the booking for <strong>{bookingToCancel?.service?.name || 'N/A'}</strong> on {bookingToCancel?.date ? new Date(bookingToCancel.date).toLocaleDateString() : 'N/A'} at {formatTimeTo12Hour(bookingToCancel?.time || '')}?</p>
-        <p>Please note that cancellation policies may apply depending on how far in advance you cancel.</p>
+        <div style={{ marginBottom: 16 }}>
+          <p>Are you sure you want to cancel the booking for <strong>{bookingToCancel?.service?.name || 'N/A'}</strong> on {bookingToCancel?.date ? new Date(bookingToCancel.date).toLocaleDateString() : 'N/A'} at {formatTimeTo12Hour(bookingToCancel?.time || '')}?</p>
+        </div>
+
+        {/* Cancellation Policy Notice */}
+        <div style={{ 
+          backgroundColor: '#fff7e6', 
+          border: '1px solid #ffd591', 
+          borderRadius: '4px', 
+          padding: '12px', 
+          marginBottom: '16px' 
+        }}>
+          <p style={{ margin: '0 0 8px 0', fontWeight: 500, color: '#d46b08' }}>
+            ⚠️ Cancellation Policy
+          </p>
+          <ul style={{ margin: 0, paddingLeft: '20px', color: '#555', fontSize: '13px' }}>
+            <li>Cancellations made within 24 hours of the booking time are not allowed</li>
+            <li>A 10% cancellation fee will be charged on the advance payment</li>
+            <li>You paid: <strong>{formatCurrency(bookingToCancel?.service?.price || 0, bookingToCancel?.business?.address?.country || 'default')}</strong></li>
+            <li>Advance paid (50%): <strong>{formatCurrency((bookingToCancel?.service?.price || 0) * 0.5, bookingToCancel?.business?.address?.country || 'default')}</strong></li>
+            <li>Cancellation fee (10% of advance): <strong>{formatCurrency((bookingToCancel?.service?.price || 0) * 0.5 * 0.1, bookingToCancel?.business?.address?.country || 'default')}</strong></li>
+            <li style={{ fontWeight: 600, marginTop: '4px' }}>
+              Refund amount: <strong>{formatCurrency((bookingToCancel?.service?.price || 0) * 0.5 * 0.9, bookingToCancel?.business?.address?.country || 'default')}</strong>
+            </li>
+          </ul>
+        </div>
+
+        {/* Cancellation Reason Input */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Cancellation Reason (optional)</label>
+          <textarea
+            rows={3}
+            style={{
+              width: '100%',
+              padding: '8px',
+              border: '1px solid #d9d9d9',
+              borderRadius: '4px',
+              resize: 'vertical',
+              fontFamily: 'inherit'
+            }}
+            placeholder="Please provide a reason for cancellation..."
+            value={cancellationReason}
+            onChange={(e) => setCancellationReason(e.target.value)}
+          />
+        </div>
+
+        <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>
+          The refund will be processed to your original payment method within 3-7 business days.
+        </p>
       </Modal>
 
       <BookingConfirmationModal
