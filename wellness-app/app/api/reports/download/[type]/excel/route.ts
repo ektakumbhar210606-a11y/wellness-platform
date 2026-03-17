@@ -5,6 +5,10 @@ import reportService from '../../../../../../services/reportService';
 import BusinessModel from '../../../../../../models/Business';
 import TherapistModel from '../../../../../../models/Therapist';
 import { generateExcel } from '../../../../../../utils/excelGenerator';
+// Import models to ensure they're registered with mongoose before service uses them
+import '../../../../../../models/Booking';
+import '../../../../../../models/Service';
+import '../../../../../../models/User';
 
 interface JwtPayload {
   id: string;
@@ -75,7 +79,7 @@ async function requireAuth(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -92,7 +96,10 @@ export async function GET(
     const user = authResult.user!;
     const userId = user.id;
     const userRole = user.role.toLowerCase();
-    const type = params.type;
+    const resolvedParams = await params;
+    const type = resolvedParams.type;
+
+    console.log('Excel Download - User ID:', userId, 'Role:', userRole, 'Type:', type);
 
     // Validate report type
     if (!type || !['customer', 'business', 'therapist'].includes(type)) {
@@ -126,7 +133,14 @@ export async function GET(
 
     // Get report data based on type
     if (type === 'customer') {
-      reportData = await reportService.getCustomerReport(userId);
+      console.log('Calling getCustomerReport with userId:', userId);
+      try {
+        reportData = await reportService.getCustomerReport(userId);
+        console.log('Customer report data received:', JSON.stringify(reportData, null, 2));
+      } catch (serviceError) {
+        console.error('Error in getCustomerReport:', serviceError);
+        throw serviceError;
+      }
     } else if (type === 'business') {
       const business = await BusinessModel.findOne({ owner: userId });
       if (!business) {
