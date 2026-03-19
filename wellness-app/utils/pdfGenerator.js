@@ -143,59 +143,169 @@ const generatePDF = async (data, type, title) => {
  * Generate customer HTML content
  */
 const generateCustomerHTML = (data) => {
-    return `
-        <h2>Overview</h2>
+    let html = `
+        <h2>Overview Statistics</h2>
         <div class="stat-grid">
+            ${data.totalBookings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Total Bookings</div>
                 <div class="stat-value">${data.totalBookings || 0}</div>
             </div>
+            ` : ''}
+            
+            ${data.completedBookings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Completed Bookings</div>
                 <div class="stat-value">${data.completedBookings || 0}</div>
             </div>
+            ` : ''}
+            
+            ${data.cancelledBookings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Cancelled Bookings</div>
                 <div class="stat-value">${data.cancelledBookings || 0}</div>
             </div>
+            ` : ''}
+            
+            ${data.totalSpent !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Total Spent</div>
                 <div class="stat-value">₹${(data.totalSpent || 0).toFixed(2)}</div>
             </div>
+            ` : ''}
+            
+            ${data.totalDiscountUsed !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Total Discount Used</div>
                 <div class="stat-value">₹${(data.totalDiscountUsed || 0).toFixed(2)}</div>
             </div>
+            ` : ''}
+            
+            ${data.mostBookedService !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Most Booked Service</div>
                 <div class="stat-value">${data.mostBookedService || 'N/A'}</div>
             </div>
+            ` : ''}
         </div>
+    `;
 
-        <h2>Recent Bookings</h2>
-        ${data.recentBookings && data.recentBookings.length > 0 ? `
+    // All Bookings History
+    if (data.bookings && data.bookings.length > 0) {
+        html += `
+            <h2>Complete Booking History</h2>
             <table>
                 <thead>
                     <tr>
                         <th>Service</th>
                         <th>Therapist</th>
-                        <th>Date</th>
+                        <th>Date & Time</th>
+                        <th>Status</th>
                         <th>Price</th>
+                        <th>Discount</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${data.recentBookings.map(booking => `
+                    ${data.bookings.slice(0, 50).map(booking => {
+                        const dateStr = new Date(booking.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                        });
+                        const timeStr = booking.time ? ` at ${booking.time}` : '';
+                        const statusColors = {
+                            completed: '#52c41a',
+                            cancelled: '#ff4d4f',
+                            pending: '#faad14',
+                            confirmed: '#1890ff',
+                        };
+                        const statusColor = statusColors[booking.status?.toLowerCase()] || '#666';
+                        
+                        return `
                         <tr>
-                            <td>${booking.serviceName || 'N/A'}</td>
+                            <td><strong>${booking.serviceName || 'N/A'}</strong></td>
                             <td>${booking.therapistName || 'N/A'}</td>
-                            <td>${new Date(booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td>${dateStr}${timeStr}</td>
+                            <td style="color: ${statusColor}; font-weight: bold;">${booking.status?.toUpperCase() || 'PENDING'}</td>
                             <td>₹${(booking.finalPrice || 0).toFixed(2)}</td>
+                            <td>${booking.discountApplied ? '✅ Yes' : '❌ No'}</td>
                         </tr>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </tbody>
             </table>
-        ` : '<div class="no-data">No recent bookings found.</div>'}
-    `;
+            ${data.bookings.length > 50 ? `<p style="text-align: center; color: #999; margin-top: 20px;">Showing first 50 of ${data.bookings.length} bookings</p>` : ''}
+        `;
+    }
+
+    // Monthly Booking Trend
+    if (data.monthlyBookings && data.monthlyBookings.length > 0) {
+        html += `
+            <h2>Monthly Booking Trend</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Bookings</th>
+                        <th>Total Spent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.monthlyBookings.map(item => {
+                        const monthStr = new Date(item.month + '-01').toLocaleString('en-US', { 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                        
+                        return `
+                        <tr>
+                            <td><strong>${monthStr}</strong></td>
+                            <td>${item.bookings}</td>
+                            <td style="color: #52c41a;">₹${(item.spent || 0).toFixed(2)}</td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Service History
+    if (data.serviceHistory && data.serviceHistory.length > 0) {
+        html += `
+            <h2>Service History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Times Booked</th>
+                        <th>Total Spent</th>
+                        <th>Last Booking</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.serviceHistory.map(item => {
+                        const lastBookingDate = new Date(item.lastBooking).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                        });
+                        
+                        return `
+                        <tr>
+                            <td><strong>${item.serviceName || 'N/A'}</strong></td>
+                            <td>${item.bookings || 0}</td>
+                            <td style="color: #52c41a;">₹${(item.totalSpent || 0).toFixed(2)}</td>
+                            <td>${lastBookingDate}</td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    return html;
 };
 
 /**
