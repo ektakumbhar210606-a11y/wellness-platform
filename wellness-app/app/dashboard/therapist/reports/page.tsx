@@ -3,12 +3,12 @@
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 
-const DynamicReportPage = dynamic(() => import('../../../components/ReportPage'), { ssr: false });
+const DynamicTherapistReportPage = dynamic(() => import('./TherapistReportPage'), { ssr: false });
 
 export default function TherapistReportsPage() {
   return (
     <Suspense fallback={<div>Loading report...</div>}>
-      <DynamicReportPage role="therapist" />
+      <DynamicTherapistReportPage />
     </Suspense>
   );
 }
