@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+import puppeteer from 'puppeteer';
 
 /**
  * Generate PDF report using Puppeteer
@@ -324,4 +324,4 @@ const generateTherapistHTML = (data) => {
     `;
 };
 
-module.exports = { generatePDF };
+export { generatePDF };

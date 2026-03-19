@@ -8,8 +8,7 @@ import TherapistModel from '../../../../../../models/Therapist';
 import '../../../../../../models/Booking';
 import '../../../../../../models/Service';
 import '../../../../../../models/User';
-// Dynamic import for CommonJS module
-let generatePDF: any;
+import { generatePDF } from '../../../../../../utils/pdfGenerator';
 
 interface JwtPayload {
   id: string;
@@ -84,12 +83,6 @@ export async function GET(
 ) {
   try {
     await connectToDatabase();
-
-    // Dynamically import the PDF generator (CommonJS module)
-    if (!generatePDF) {
-      const pdfModule = await import('../../../../../../utils/pdfGenerator');
-      generatePDF = pdfModule.generatePDF;
-    }
 
     // Authenticate the request
     const authResult = await requireAuth(request);
@@ -176,7 +169,7 @@ export async function GET(
     const pdfBuffer = await generatePDF(reportData, type, title);
 
     // Return PDF as downloadable file
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${type}_report_${Date.now()}.pdf"`
