@@ -93,8 +93,34 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse request body
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+      console.log('📥 Request body received:', body);
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
+      return Response.json(
+        { 
+          success: false, 
+          error: 'Invalid JSON in request body' 
+        },
+        { status: 400 }
+      );
+    }
+    
     const { selectedFields = [] } = body;
+    console.log('Selected fields from client:', selectedFields);
+
+    // Validate selected fields is an array
+    if (!Array.isArray(selectedFields)) {
+      return Response.json(
+        { 
+          success: false, 
+          error: 'selectedFields must be an array' 
+        },
+        { status: 400 }
+      );
+    }
 
     // Validate selected fields
     const allowedFields = [
@@ -153,6 +179,15 @@ export async function POST(req: NextRequest) {
       return sum + price;
     }, 0);
     
+    console.log('💰 Calculated totalSpent:', totalSpent);
+    console.log('Sample booking prices:', bookings.slice(0, 3).map(b => ({
+      serviceName: b.service?.name,
+      finalPrice: b.finalPrice,
+      originalPrice: b.originalPrice,
+      servicePrice: b.service?.price,
+      status: b.status
+    })));
+    
     const totalDiscountUsed = bookings.reduce((sum, booking) => {
       return sum + (booking.rewardDiscountAmount || booking.discountApplied || 0);
     }, 0);
@@ -176,147 +211,32 @@ export async function POST(req: NextRequest) {
     console.log('Selected fields:', selectedFields);
     console.log('Total bookings found:', bookings.length);
     
-    // Smart field inclusion with automatic related data
-    console.log('\n🔍 Processing fields with smart auto-inclusion...');
-    
-    // Always include detailed bookings data for comprehensive analysis
-    const shouldIncludeDetailedBookings = 
-      selectedFields.includes('bookings') ||
-      selectedFields.includes('totalBookings') ||
-      selectedFields.includes('completedBookings') ||
-      selectedFields.includes('cancelledBookings') ||
-      selectedFields.includes('totalSpent') ||
-      selectedFields.includes('totalDiscountUsed') ||
-      selectedFields.includes('monthlyBookings') ||
-      selectedFields.includes('serviceHistory');
-    
-    if (shouldIncludeDetailedBookings && !reportData.bookings) {
-      reportData.bookings = bookings.map((b, index) => {
-        let appointmentDate: Date | null = null;
-        if (b.appointmentDate) {
-          appointmentDate = new Date(b.appointmentDate);
-          if (isNaN(appointmentDate.getTime())) {
-            appointmentDate = null;
-          }
-        }
-        
-        let createdDate: Date | null = null;
-        if (b.createdAt) {
-          createdDate = new Date(b.createdAt);
-          if (isNaN(createdDate.getTime())) {
-            createdDate = new Date();
-          }
-        } else {
-          createdDate = new Date();
-        }
-        
-        const servicePrice = b.service?.price || 0;
-        const finalPrice = b.finalPrice || b.originalPrice || servicePrice || 0;
-        
-        const bookingData = {
-          _id: b._id.toString(),
-          serviceName: b.service?.name || 'Unknown Service',
-          therapistName: b.therapist?.fullName || 'Unknown Therapist',
-          date: appointmentDate ? appointmentDate.toISOString() : createdDate.toISOString(),
-          appointmentDate: appointmentDate ? appointmentDate.toISOString() : null,
-          createdAt: createdDate.toISOString(),
-          time: b.time || 'N/A',
-          status: b.status || 'pending',
-          finalPrice: finalPrice,
-          originalPrice: b.originalPrice || servicePrice || 0,
-          discountApplied: !!(b.rewardDiscountApplied || b.discountApplied),
-          discountAmount: b.rewardDiscountAmount || b.discountApplied || 0,
-          paymentStatus: b.paymentStatus || 'pending',
-          notes: b.notes || '',
-        };
-        
-        if (index < 2) {
-          console.log(`📚 Sample booking ${index}:`, { 
-            serviceName: bookingData.serviceName, 
-            status: bookingData.status,
-            finalPrice: bookingData.finalPrice 
-          });
-        }
-        
-        return bookingData;
-      });
-      console.log('📚 Added COMPREHENSIVE bookings array:', reportData.bookings.length, 'bookings');
-    }
+    // Include ONLY the exact fields requested - no auto-additions
     
     // Include basic stats if requested
     if (selectedFields.includes('totalBookings')) {
       reportData.totalBookings = totalBookings;
       console.log('✅ Added totalBookings:', totalBookings);
-      
-      // Auto-include breakdown for context
-      if (!selectedFields.includes('completedBookings')) {
-        reportData.completedBookings = completedBookings;
-        console.log('➕ Auto-added completedBookings:', completedBookings);
-      }
-      if (!selectedFields.includes('cancelledBookings')) {
-        reportData.cancelledBookings = cancelledBookings;
-        console.log('➕ Auto-added cancelledBookings:', cancelledBookings);
-      }
     }
     if (selectedFields.includes('completedBookings')) {
       reportData.completedBookings = completedBookings;
       console.log('✅ Added completedBookings:', completedBookings);
-      
-      // Auto-include total for context
-      if (!selectedFields.includes('totalBookings')) {
-        reportData.totalBookings = totalBookings;
-        console.log('➕ Auto-added totalBookings:', totalBookings);
-      }
     }
     if (selectedFields.includes('cancelledBookings')) {
       reportData.cancelledBookings = cancelledBookings;
       console.log('✅ Added cancelledBookings:', cancelledBookings);
-      
-      // Auto-include total for context
-      if (!selectedFields.includes('totalBookings')) {
-        reportData.totalBookings = totalBookings;
-        console.log('➕ Auto-added totalBookings:', totalBookings);
-      }
     }
     if (selectedFields.includes('totalSpent')) {
       reportData.totalSpent = totalSpent;
       console.log('💰 Added totalSpent:', totalSpent);
-      
-      // Auto-include discount info
-      if (!selectedFields.includes('totalDiscountUsed')) {
-        reportData.totalDiscountUsed = totalDiscountUsed;
-        console.log('➕ Auto-added totalDiscountUsed:', totalDiscountUsed);
-      }
     }
     if (selectedFields.includes('totalDiscountUsed')) {
       reportData.totalDiscountUsed = totalDiscountUsed;
       console.log('🎁 Added totalDiscountUsed:', totalDiscountUsed);
-      
-      // Auto-include spent for context
-      if (!selectedFields.includes('totalSpent')) {
-        reportData.totalSpent = totalSpent;
-        console.log('➕ Auto-added totalSpent:', totalSpent);
-      }
     }
     if (selectedFields.includes('mostBookedService')) {
       reportData.mostBookedService = mostBookedService;
       console.log('⭐ Added mostBookedService:', mostBookedService);
-      
-      // Auto-include service history
-      if (!selectedFields.includes('serviceHistory')) {
-        reportData.serviceHistory = serviceHistory;
-        console.log('➕ Auto-added serviceHistory:', serviceHistory.length, 'services');
-      }
-    }
-    if (selectedFields.includes('serviceHistory')) {
-      reportData.serviceHistory = serviceHistory;
-      console.log('🏢 Added serviceHistory:', serviceHistory.length, 'services');
-      
-      // Auto-include most booked
-      if (!selectedFields.includes('mostBookedService')) {
-        reportData.mostBookedService = mostBookedService;
-        console.log('➕ Auto-added mostBookedService:', mostBookedService);
-      }
     }
 
     // Include detailed bookings data if requested
@@ -402,7 +322,7 @@ export async function POST(req: NextRequest) {
         .map(([month, data]) => ({ month, bookings: data.bookings, spent: data.spent }))
         .sort((a, b) => b.month.localeCompare(a.month));
       
-      console.log('Added monthlyBookings array with length:', reportData.monthlyBookings.length);
+      console.log('📊 Added monthlyBookings array with length:', reportData.monthlyBookings.length);
     }
 
     // Calculate service history if requested
@@ -414,8 +334,21 @@ export async function POST(req: NextRequest) {
         lastBooking: string;
       }> = {};
 
-      bookings.forEach(booking => {
+      console.log('🔍 Calculating service history for', bookings.length, 'bookings');
+      
+      bookings.forEach((booking, index) => {
         const serviceName = booking.service?.name || 'Unknown Service';
+        
+        // Debug first 3 bookings to see price data
+        if (index < 3) {
+          console.log(`Booking ${index}:`, {
+            serviceName,
+            finalPrice: booking.finalPrice,
+            originalPrice: booking.originalPrice,
+            servicePrice: booking.service?.price,
+            status: booking.status
+          });
+        }
         
         if (!serviceHistory[serviceName]) {
           serviceHistory[serviceName] = {
@@ -427,7 +360,14 @@ export async function POST(req: NextRequest) {
         }
         
         serviceHistory[serviceName].bookings += 1;
-        serviceHistory[serviceName].totalSpent += booking.finalPrice || 0;
+        
+        // Use multiple fallback sources for price
+        const price = booking.finalPrice || booking.originalPrice || booking.service?.price || 0;
+        serviceHistory[serviceName].totalSpent += price;
+        
+        if (index < 3) {
+          console.log(`Added ${price} to service ${serviceName}, total now: ${serviceHistory[serviceName].totalSpent}`);
+        }
         
         // Update last booking date if this is more recent
         const bookingDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
@@ -441,7 +381,12 @@ export async function POST(req: NextRequest) {
       reportData.serviceHistory = Object.values(serviceHistory)
         .sort((a, b) => b.bookings - a.bookings);
       
-      console.log('Added serviceHistory array with length:', reportData.serviceHistory.length);
+      console.log('🏢 Added serviceHistory array with length:', reportData.serviceHistory.length);
+      console.log('Service history summary:', reportData.serviceHistory.map((s: any) => ({
+        serviceName: s.serviceName,
+        bookings: s.bookings,
+        totalSpent: s.totalSpent
+      })));
     }
 
     // If no specific fields selected but we have data, include all detailed reports
@@ -507,11 +452,18 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('Error generating custom customer report:', error);
+    console.error('❌ Error generating custom customer report:', error);
+    console.error('Stack trace:', (error instanceof Error) ? error.stack : 'No stack trace');
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    
+    const errorMessage = (error instanceof Error) ? error.message : 'Unknown error occurred';
+    console.error('Returning error message:', errorMessage);
+    
     return Response.json(
       { 
         success: false, 
-        error: (error instanceof Error) ? error.message : 'Failed to generate custom report' 
+        error: errorMessage,
+        details: (error instanceof Error) ? error.toString() : 'Unknown error'
       },
       { status: 500 }
     );

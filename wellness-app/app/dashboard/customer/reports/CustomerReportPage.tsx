@@ -89,99 +89,8 @@ const CustomerReportPage = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      // Smart auto-addition of related fields for comprehensive reports
-      let fieldsToRequest = [...selectedFields];
-      
-      // Rule 1: Total Bookings → Auto-add breakdown + detailed history
-      if (selectedFields.includes('totalBookings')) {
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📋 Auto-adding: All Bookings History (detailed table)');
-        }
-        if (!selectedFields.includes('completedBookings')) {
-          fieldsToRequest.push('completedBookings');
-          console.log('✅ Auto-adding: Completed Bookings (breakdown)');
-        }
-        if (!selectedFields.includes('cancelledBookings')) {
-          fieldsToRequest.push('cancelledBookings');
-          console.log('❌ Auto-adding: Cancelled Bookings (breakdown)');
-        }
-      }
-      
-      // Rule 2: Completed/Cancelled Bookings → Auto-add total + detailed history
-      if (selectedFields.includes('completedBookings') || selectedFields.includes('cancelledBookings')) {
-        if (!selectedFields.includes('totalBookings')) {
-          fieldsToRequest.push('totalBookings');
-          console.log('📊 Auto-adding: Total Bookings (overview)');
-        }
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📚 Auto-adding: All Bookings History (detailed table)');
-        }
-      }
-      
-      // Rule 3: Total Spent → Auto-add discount + detailed history
-      if (selectedFields.includes('totalSpent')) {
-        if (!selectedFields.includes('totalDiscountUsed')) {
-          fieldsToRequest.push('totalDiscountUsed');
-          console.log('🎁 Auto-adding: Total Discount Used (savings)');
-        }
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📚 Auto-adding: All Bookings History (price details)');
-        }
-      }
-      
-      // Rule 4: Discount Used → Auto-add spent + detailed history
-      if (selectedFields.includes('totalDiscountUsed')) {
-        if (!selectedFields.includes('totalSpent')) {
-          fieldsToRequest.push('totalSpent');
-          console.log('💰 Auto-adding: Total Spent (context)');
-        }
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📚 Auto-adding: All Bookings History (discount details)');
-        }
-      }
-      
-      // Rule 5: Most Booked Service → Auto-add detailed history
-      if (selectedFields.includes('mostBookedService')) {
-        if (!selectedFields.includes('serviceHistory')) {
-          fieldsToRequest.push('serviceHistory');
-          console.log('🏢 Auto-adding: Service History (service analysis)');
-        }
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📚 Auto-adding: All Bookings History (service context)');
-        }
-      }
-      
-      // Rule 6: Monthly Trend → Auto-add detailed history
-      if (selectedFields.includes('monthlyBookings')) {
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📚 Auto-adding: All Bookings History (monthly details)');
-        }
-      }
-      
-      // Rule 7: Service History → Auto-add most booked + detailed history
-      if (selectedFields.includes('serviceHistory')) {
-        if (!selectedFields.includes('mostBookedService')) {
-          fieldsToRequest.push('mostBookedService');
-          console.log('⭐ Auto-adding: Most Booked Service (top service)');
-        }
-        if (!selectedFields.includes('bookings')) {
-          fieldsToRequest.push('bookings');
-          console.log('📚 Auto-adding: All Bookings History (service data)');
-        }
-      }
-      
-      // Remove duplicates
-      fieldsToRequest = [...new Set(fieldsToRequest)];
-      
-      console.log('🚀 Generating COMPREHENSIVE report with fields:', fieldsToRequest);
-      console.log('Originally selected:', selectedFields);
-      console.log('Auto-added fields:', fieldsToRequest.filter(f => !selectedFields.includes(f)));
+      // Send only the selected fields - no auto-additions
+      console.log('🚀 Generating report with EXACTLY these fields:', selectedFields);
       
       const response = await fetch('/api/reports/customer/custom', {
         method: 'POST',
@@ -189,22 +98,32 @@ const CustomerReportPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ selectedFields: fieldsToRequest }),
+        body: JSON.stringify({ selectedFields }),
       });
 
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Report data received:', Object.keys(result.data));
         setReportData(result.data);
-        message.success('Comprehensive report generated successfully!');
+        message.success('Report generated successfully!');
       } else {
-        const errorData = await response.json();
-        console.error('❌ API Error:', errorData);
-        message.error(errorData.error || 'Failed to generate report');
+        // Handle non-OK response
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error('❌ API Error:', errorData);
+          message.error(errorData.error || `HTTP ${response.status}: Failed to generate report`);
+        } catch (parseError) {
+          // If response is not JSON, use status text
+          console.error('❌ API Error (non-JSON):', response.status, response.statusText);
+          message.error(`HTTP ${response.status}: ${response.statusText || 'Failed to generate report'}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error generating report:', error);
-      message.error('Network error. Please try again.');
+      message.error(
+        (error instanceof Error) ? error.message : 'Network error. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
