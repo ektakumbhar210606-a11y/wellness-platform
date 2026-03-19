@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Space, Typography, Avatar } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserOutlined, CalendarOutlined, BookOutlined, TeamOutlined, ShopOutlined, ProfileOutlined, MenuOutlined, DollarOutlined, StarOutlined, BarChartOutlined, WarningOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, BookOutlined, TeamOutlined, ShopOutlined, ProfileOutlined, MenuOutlined, DollarOutlined, StarOutlined, BarChartOutlined, WarningOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
 const { Header, Content, Sider } = Layout;
@@ -35,6 +35,7 @@ const ProviderDashboardLayout: React.FC<ProviderDashboardLayoutProps> = ({ child
         else if (pathname.includes('cancellation-performance')) setSelectedKey('cancellation-performance');
         else if (pathname === '/dashboard/business/reviews') setSelectedKey('reviews');
         else if (pathname === '/dashboard/provider/analytics') setSelectedKey('analytics');
+        else if (pathname === '/dashboard/business/reports') setSelectedKey('reports');
         else setSelectedKey('dashboard');
       }
     };
@@ -132,6 +133,14 @@ const ProviderDashboardLayout: React.FC<ProviderDashboardLayoutProps> = ({ child
       icon: <WarningOutlined style={{ color: '#faad14' }} />,
       onClick: () => {
         router.push('/dashboard/business/cancellation-performance');
+      },
+    },
+    {
+      key: 'reports',
+      label: 'Reports',
+      icon: <FileTextOutlined />,
+      onClick: () => {
+        router.push('/dashboard/business/reports');
       },
     },
     {

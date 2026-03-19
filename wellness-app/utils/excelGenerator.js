@@ -97,6 +97,9 @@ const generateCustomerExcel = async (workbook, data) => {
  * Generate business Excel report
  */
 const generateBusinessExcel = async (workbook, data) => {
+  // Check if we have selectedFields array or direct data
+  const reportData = data.selectedFields || data;
+  
   // Sheet 1: Overview
   const overviewSheet = workbook.addWorksheet('Overview');
   
@@ -104,45 +107,62 @@ const generateBusinessExcel = async (workbook, data) => {
   overviewSheet.getCell('A1').font = { bold: true, size: 16 };
   overviewSheet.getCell('A2').value = `Generated: ${moment().format('MMMM DD, YYYY HH:mm:ss')}`;
   
-  const stats = [
-    ['Total Services', data.totalServices],
-    ['Total Therapists', data.totalTherapists],
-    ['Total Bookings', data.totalBookings],
-    ['Completed Bookings', data.completedBookings],
-    ['Cancelled Bookings', data.cancelledBookings],
-    ['Total Revenue (₹)', data.totalRevenue],
-    ['Most Booked Service', data.mostBookedService || 'N/A'],
-    ['Top Therapist', data.topTherapist?.name || 'N/A'],
-    ['Top Therapist Bookings', data.topTherapist?.bookings || 0]
-  ];
+  const stats = [];
+  
+  // Add stats based on what fields are present in the data
+  if (reportData.totalServices !== undefined) {
+    stats.push(['Total Services', reportData.totalServices]);
+  }
+  if (reportData.totalTherapists !== undefined) {
+    stats.push(['Total Therapists', reportData.totalTherapists]);
+  }
+  if (reportData.totalBookings !== undefined) {
+    stats.push(['Total Bookings', reportData.totalBookings]);
+  }
+  if (reportData.completedBookings !== undefined) {
+    stats.push(['Completed Bookings', reportData.completedBookings]);
+  }
+  if (reportData.cancelledBookings !== undefined) {
+    stats.push(['Cancelled Bookings', reportData.cancelledBookings]);
+  }
+  if (reportData.totalRevenue !== undefined) {
+    stats.push(['Total Revenue (₹)', reportData.totalRevenue]);
+  }
+  if (reportData.mostBookedService !== undefined) {
+    stats.push(['Most Booked Service', reportData.mostBookedService || 'N/A']);
+  }
+  if (reportData.topTherapist !== undefined) {
+    stats.push(['Top Therapist', reportData.topTherapist?.name || 'N/A']);
+    stats.push(['Top Therapist Bookings', reportData.topTherapist?.bookings || 0]);
+  }
 
   overviewSheet.addRows(stats);
   overviewSheet.getColumn(1).width = 30;
   overviewSheet.getColumn(2).width = 20;
 
-  // Sheet 2: Monthly Revenue
-  const revenueSheet = workbook.addWorksheet('Monthly Revenue');
-  
-  revenueSheet.addRow(['Month', 'Revenue (₹)']);
-  revenueSheet.getRow(1).font = { bold: true };
-  revenueSheet.getRow(1).fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFDDDDDD' }
-  };
+  // Sheet 2: Monthly Revenue (if data is available)
+  if (reportData.monthlyRevenue && reportData.monthlyRevenue.length > 0) {
+    const revenueSheet = workbook.addWorksheet('Monthly Revenue');
+    
+    revenueSheet.addRow(['Month', 'Revenue (₹)']);
+    revenueSheet.getRow(1).font = { bold: true };
+    revenueSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFDDDDDD' }
+    };
 
-  if (data.monthlyRevenue && data.monthlyRevenue.length > 0) {
-    data.monthlyRevenue.forEach(month => {
+    reportData.monthlyRevenue.forEach(month => {
       revenueSheet.addRow([
         moment(month.month).format('MMMM YYYY'),
         month.revenue
       ]);
     });
-  }
 
-  revenueSheet.columns.forEach(column => {
-    column.width = 25;
-  });
+    revenueSheet.columns.forEach(column => {
+      column.width = 25;
+    });
+  }
 };
 
 /**

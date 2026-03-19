@@ -294,7 +294,6 @@ const TherapistDashboardPage = () => {
       icon: <ProfileOutlined />,
       onClick: () => {
         router.push('/dashboard/therapist/reports');
-        setActiveTab('reports');
       },
     },
     {
@@ -345,7 +344,7 @@ const TherapistDashboardPage = () => {
             <Menu
               mode="inline"
               defaultSelectedKeys={['1']}
-              selectedKeys={[activeTab === 'profile' ? '2' : '1']}
+              selectedKeys={[activeTab === 'profile' ? '2' : activeTab === 'reports' ? '8' : '1']}
               style={{ height: '100%', borderRight: 0 }}
               items={menuItems}
             />
@@ -390,7 +389,7 @@ const TherapistDashboardPage = () => {
           <Menu
             mode="inline"
             defaultSelectedKeys={['1']}
-            selectedKeys={[activeTab === 'profile' ? '2' : '1']}
+            selectedKeys={[activeTab === 'profile' ? '2' : activeTab === 'reports' ? '8' : '1']}
             style={{ height: '100%', borderRight: 0 }}
             items={menuItems}
           />
