@@ -40,19 +40,31 @@ const generateCustomerExcel = async (workbook, data) => {
   const overviewSheet = workbook.addWorksheet('Overview');
   
   // Title
-  overviewSheet.getCell('A1').value = 'Customer Report';
+  overviewSheet.getCell('A1').value = 'Customer Booking Report';
   overviewSheet.getCell('A1').font = { bold: true, size: 16 };
   overviewSheet.getCell('A2').value = `Generated: ${moment().format('MMMM DD, YYYY HH:mm:ss')}`;
   
-  // Stats
-  const stats = [
-    ['Total Bookings', data.totalBookings],
-    ['Completed Bookings', data.completedBookings],
-    ['Cancelled Bookings', data.cancelledBookings],
-    ['Total Spent (₹)', data.totalSpent],
-    ['Total Discount Used (₹)', data.totalDiscountUsed],
-    ['Most Booked Service', data.mostBookedService || 'N/A']
-  ];
+  // Add stats based on what fields are present in the data
+  const stats = [];
+  
+  if (data.totalBookings !== undefined) {
+    stats.push(['Total Bookings', data.totalBookings]);
+  }
+  if (data.completedBookings !== undefined) {
+    stats.push(['Completed Bookings', data.completedBookings]);
+  }
+  if (data.cancelledBookings !== undefined) {
+    stats.push(['Cancelled Bookings', data.cancelledBookings]);
+  }
+  if (data.totalSpent !== undefined) {
+    stats.push(['Total Spent (₹)', data.totalSpent]);
+  }
+  if (data.totalDiscountUsed !== undefined) {
+    stats.push(['Total Discount Used (₹)', data.totalDiscountUsed]);
+  }
+  if (data.mostBookedService !== undefined) {
+    stats.push(['Most Booked Service', data.mostBookedService || 'N/A']);
+  }
 
   overviewSheet.addRows(stats);
   
@@ -60,37 +72,132 @@ const generateCustomerExcel = async (workbook, data) => {
   overviewSheet.getColumn(1).width = 30;
   overviewSheet.getColumn(2).width = 20;
 
-  // Sheet 2: Recent Bookings
-  const bookingsSheet = workbook.addWorksheet('Recent Bookings');
-  
-  // Headers
-  bookingsSheet.addRow(['Service', 'Therapist', 'Date', 'Time', 'Status', 'Price (₹)', 'Discount Applied']);
-  bookingsSheet.getRow(1).font = { bold: true };
-  bookingsSheet.getRow(1).fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFDDDDDD' }
-  };
+  // Sheet 2: All Bookings History (if available)
+  if (data.bookings && data.bookings.length > 0) {
+    const bookingsSheet = workbook.addWorksheet('All Bookings');
+    
+    // Headers
+    bookingsSheet.addRow(['Service', 'Therapist', 'Date', 'Time', 'Status', 'Price (₹)', 'Discount Applied']);
+    bookingsSheet.getRow(1).font = { bold: true };
+    bookingsSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFDDDDDD' }
+    };
 
-  // Data rows
-  if (data.recentBookings && data.recentBookings.length > 0) {
-    data.recentBookings.forEach(booking => {
+    // Data rows
+    data.bookings.forEach(booking => {
       bookingsSheet.addRow([
-        booking.serviceName,
-        booking.therapistName,
+        booking.serviceName || 'N/A',
+        booking.therapistName || 'N/A',
         moment(booking.date).format('MMM DD, YYYY'),
-        booking.time,
-        booking.status,
-        booking.finalPrice,
+        booking.time || 'N/A',
+        booking.status || 'pending',
+        booking.finalPrice || 0,
         booking.discountApplied ? 'Yes' : 'No'
       ]);
     });
+
+    // Auto-width columns
+    bookingsSheet.columns.forEach(column => {
+      column.width = 20;
+    });
+    
+    // Add summary row
+    const totalBookings = data.bookings.length;
+    const totalPrice = data.bookings.reduce((sum, b) => sum + (b.finalPrice || 0), 0);
+    const completedCount = data.bookings.filter(b => b.status === 'completed').length;
+    const cancelledCount = data.bookings.filter(b => b.status === 'cancelled').length;
+    
+    const lastRow = bookingsSheet.rowCount + 1;
+    bookingsSheet.getCell(`A${lastRow}`).value = 'Summary';
+    bookingsSheet.getCell(`A${lastRow}`).font = { bold: true };
+    bookingsSheet.getCell(`D${lastRow}`).value = `${totalBookings} bookings`;
+    bookingsSheet.getCell(`D${lastRow}`).font = { bold: true };
+    bookingsSheet.getCell(`F${lastRow}`).value = totalPrice;
+    bookingsSheet.getCell(`F${lastRow}`).font = { bold: true };
   }
 
-  // Auto-width columns
-  bookingsSheet.columns.forEach(column => {
-    column.width = 20;
-  });
+  // Sheet 3: Monthly Booking Trend (if available)
+  if (data.monthlyBookings && data.monthlyBookings.length > 0) {
+    const monthlySheet = workbook.addWorksheet('Monthly Trend');
+    
+    // Headers
+    monthlySheet.addRow(['Month', 'Bookings', 'Total Spent (₹)']);
+    monthlySheet.getRow(1).font = { bold: true };
+    monthlySheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFDDDDDD' }
+    };
+
+    // Data rows
+    data.monthlyBookings.forEach(item => {
+      monthlySheet.addRow([
+        moment(item.month + '-01').format('MMMM YYYY'),
+        item.bookings,
+        item.spent
+      ]);
+    });
+
+    // Auto-width columns
+    monthlySheet.columns.forEach(column => {
+      column.width = 25;
+    });
+    
+    // Add summary row
+    const totalBookings = data.monthlyBookings.reduce((sum, item) => sum + item.bookings, 0);
+    const totalSpent = data.monthlyBookings.reduce((sum, item) => sum + item.spent, 0);
+    
+    const lastRow = monthlySheet.rowCount + 1;
+    monthlySheet.getCell(`A${lastRow}`).value = 'Total';
+    monthlySheet.getCell(`A${lastRow}`).font = { bold: true };
+    monthlySheet.getCell(`B${lastRow}`).value = totalBookings;
+    monthlySheet.getCell(`B${lastRow}`).font = { bold: true };
+    monthlySheet.getCell(`C${lastRow}`).value = totalSpent;
+    monthlySheet.getCell(`C${lastRow}`).font = { bold: true };
+  }
+
+  // Sheet 4: Service History (if available)
+  if (data.serviceHistory && data.serviceHistory.length > 0) {
+    const serviceSheet = workbook.addWorksheet('Service History');
+    
+    // Headers
+    serviceSheet.addRow(['Service Name', 'Times Booked', 'Total Spent (₹)', 'Last Booking']);
+    serviceSheet.getRow(1).font = { bold: true };
+    serviceSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFDDDDDD' }
+    };
+
+    // Data rows
+    data.serviceHistory.forEach(item => {
+      serviceSheet.addRow([
+        item.serviceName || 'N/A',
+        item.bookings,
+        item.totalSpent,
+        moment(item.lastBooking).format('MMM DD, YYYY')
+      ]);
+    });
+
+    // Auto-width columns
+    serviceSheet.columns.forEach(column => {
+      column.width = 25;
+    });
+    
+    // Add summary row
+    const totalBookings = data.serviceHistory.reduce((sum, item) => sum + item.bookings, 0);
+    const totalSpent = data.serviceHistory.reduce((sum, item) => sum + item.totalSpent, 0);
+    
+    const lastRow = serviceSheet.rowCount + 1;
+    serviceSheet.getCell(`A${lastRow}`).value = 'Total';
+    serviceSheet.getCell(`A${lastRow}`).font = { bold: true };
+    serviceSheet.getCell(`B${lastRow}`).value = totalBookings;
+    serviceSheet.getCell(`B${lastRow}`).font = { bold: true };
+    serviceSheet.getCell(`C${lastRow}`).value = totalSpent;
+    serviceSheet.getCell(`C${lastRow}`).font = { bold: true };
+  }
 };
 
 /**
