@@ -450,41 +450,187 @@ const generateBusinessHTML = (data) => {
  * Generate therapist HTML content
  */
 const generateTherapistHTML = (data) => {
-    return `
-        <h2>Overview</h2>
+    // Check if we have selectedFields array or direct data
+    const reportData = data.selectedFields || data;
+    
+    let html = `
+        <h2>Overview Statistics</h2>
         <div class="stat-grid">
+            ${reportData.totalBookings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Total Bookings</div>
-                <div class="stat-value">${data.totalBookings || 0}</div>
+                <div class="stat-value">${reportData.totalBookings || 0}</div>
             </div>
+            ` : ''}
+            
+            ${reportData.completedBookings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Completed Bookings</div>
-                <div class="stat-value">${data.completedBookings || 0}</div>
+                <div class="stat-value">${reportData.completedBookings || 0}</div>
             </div>
+            ` : ''}
+            
+            ${reportData.cancelledBookings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Cancelled Bookings</div>
-                <div class="stat-value">${data.cancelledBookings || 0}</div>
+                <div class="stat-value">${reportData.cancelledBookings || 0}</div>
             </div>
+            ` : ''}
+            
+            ${reportData.totalEarnings !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Total Earnings</div>
-                <div class="stat-value">₹${(data.totalEarnings || 0).toFixed(2)}</div>
+                <div class="stat-value">₹${(reportData.totalEarnings || 0).toFixed(2)}</div>
             </div>
+            ` : ''}
+            
+            ${reportData.totalServicesDone !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Services Performed</div>
-                <div class="stat-value">${data.totalServicesDone || 0}</div>
+                <div class="stat-value">${reportData.totalServicesDone || 0}</div>
             </div>
+            ` : ''}
+            
+            ${reportData.monthlyCancelCount !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Monthly Cancellations</div>
-                <div class="stat-value">${data.monthlyCancelCount || 0}</div>
+                <div class="stat-value">${reportData.monthlyCancelCount || 0}</div>
             </div>
+            ` : ''}
+            
+            ${reportData.bonusPenaltyPercentage !== undefined ? `
             <div class="stat-item">
                 <div class="stat-label">Bonus/Penalty</div>
-                <div class="stat-value">${data.bonusPenaltyPercentage >= 0 ? '+' : ''}${data.bonusPenaltyPercentage || 0}%</div>
+                <div class="stat-value">${reportData.bonusPenaltyPercentage >= 0 ? '+' : ''}${reportData.bonusPenaltyPercentage || 0}%</div>
             </div>
+            ` : ''}
         </div>
+    `;
 
-        <h2>Recent Bookings</h2>
-        ${data.recentBookings && data.recentBookings.length > 0 ? `
+    // Monthly Revenue
+    if (reportData.monthlyRevenue && reportData.monthlyRevenue.length > 0) {
+        html += `
+            <h2>Monthly Revenue Trend</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.monthlyRevenue.map(month => `
+                        <tr>
+                            <td>${new Date(month.month).toLocaleString('en-US', { month: 'long', year: 'numeric' })}</td>
+                            <td>₹${(month.revenue || 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Recent Bookings
+    if (reportData.recentBookings && reportData.recentBookings.length > 0) {
+        html += `
+            <h2>Recent Bookings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Earnings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.recentBookings.map(booking => `
+                        <tr>
+                            <td>${booking.serviceName || 'N/A'}</td>
+                            <td>${booking.customerName || 'N/A'}</td>
+                            <td>${new Date(booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td>${booking.status || 'N/A'}</td>
+                            <td>₹${(booking.earnings || 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Service Breakdown
+    if (reportData.serviceBreakdown && reportData.serviceBreakdown.length > 0) {
+        const totalBookings = reportData.serviceBreakdown.reduce((sum, item) => sum + (item.bookings || 0), 0);
+        const totalEarnings = reportData.serviceBreakdown.reduce((sum, item) => sum + (item.earnings || 0), 0);
+        
+        html += `
+            <h2>Service Breakdown Analysis</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Total Bookings</th>
+                        <th>Total Earnings</th>
+                        <th>Avg per Booking</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.serviceBreakdown.map(item => `
+                        <tr>
+                            <td>${item.serviceName || 'N/A'}</td>
+                            <td>${item.bookings || 0}</td>
+                            <td>₹${(item.earnings || 0).toFixed(2)}</td>
+                            <td>₹${(item.bookings > 0 ? (item.earnings / item.bookings) : 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th>${totalBookings}</th>
+                        <th>₹${totalEarnings.toFixed(2)}</th>
+                        <th>₹${(totalEarnings / totalBookings || 0).toFixed(2)}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+    }
+
+    // All Bookings Details
+    if (reportData.allBookingsDetails && reportData.allBookingsDetails.length > 0) {
+        html += `
+            <h2>All Bookings - Detailed List (${reportData.allBookingsDetails.length} total)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Earnings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.allBookingsDetails.map(booking => `
+                        <tr>
+                            <td>${booking.serviceName || 'N/A'}</td>
+                            <td>${booking.customerName || 'N/A'}</td>
+                            <td>${new Date(booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td style="text-transform: uppercase;">${booking.status || 'N/A'}</td>
+                            <td>₹${(booking.earnings || 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Completed Bookings Details
+    if (reportData.completedBookingsDetails && reportData.completedBookingsDetails.length > 0) {
+        const totalCompletedEarnings = reportData.completedBookingsDetails.reduce((sum, b) => sum + (b.earnings || 0), 0);
+        html += `
+            <h2>Completed Bookings - Detailed List (${reportData.completedBookingsDetails.length} total)</h2>
             <table>
                 <thead>
                     <tr>
@@ -495,7 +641,7 @@ const generateTherapistHTML = (data) => {
                     </tr>
                 </thead>
                 <tbody>
-                    ${data.recentBookings.map(booking => `
+                    ${reportData.completedBookingsDetails.map(booking => `
                         <tr>
                             <td>${booking.serviceName || 'N/A'}</td>
                             <td>${booking.customerName || 'N/A'}</td>
@@ -504,9 +650,119 @@ const generateTherapistHTML = (data) => {
                         </tr>
                     `).join('')}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3">Total Earnings</th>
+                        <th>₹${totalCompletedEarnings.toFixed(2)}</th>
+                    </tr>
+                </tfoot>
             </table>
-        ` : '<div class="no-data">No recent bookings found.</div>'}
-    `;
+        `;
+    }
+
+    // Cancelled Bookings Details
+    if (reportData.cancelledBookingsDetails && reportData.cancelledBookingsDetails.length > 0) {
+        html += `
+            <h2>Cancelled Bookings - Detailed List (${reportData.cancelledBookingsDetails.length} total)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Cancellation Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.cancelledBookingsDetails.map(booking => `
+                        <tr>
+                            <td>${booking.serviceName || 'N/A'}</td>
+                            <td>${booking.customerName || 'N/A'}</td>
+                            <td>${new Date(booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td>${booking.cancellationReason || 'N/A'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Earnings Details
+    if (reportData.earningsDetails && reportData.earningsDetails.length > 0) {
+        const totalPrice = reportData.earningsDetails.reduce((sum, b) => sum + (b.bookingPrice || 0), 0);
+        const totalEarnings = reportData.earningsDetails.reduce((sum, b) => sum + (b.earnings || 0), 0);
+        html += `
+            <h2>Earnings Breakdown - Detailed List (${reportData.earningsDetails.length} bookings)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Booking Price</th>
+                        <th>Your Earnings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.earningsDetails.map(item => `
+                        <tr>
+                            <td>${item.serviceName || 'N/A'}</td>
+                            <td>${item.customerName || 'N/A'}</td>
+                            <td>${new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                            <td>₹${(item.bookingPrice || 0).toFixed(2)}</td>
+                            <td>₹${(item.earnings || 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3">Totals</th>
+                        <th>₹${totalPrice.toFixed(2)}</th>
+                        <th>₹${totalEarnings.toFixed(2)}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+    }
+
+    // Services Done Details
+    if (reportData.servicesDoneDetails && reportData.servicesDoneDetails.length > 0) {
+        const totalCount = reportData.servicesDoneDetails.reduce((sum, s) => sum + (s.count || 0), 0);
+        const totalEarnings = reportData.servicesDoneDetails.reduce((sum, s) => sum + (s.earnings || 0), 0);
+        html += `
+            <h2>Services Performed - Detailed Breakdown (${reportData.servicesDoneDetails.length} services)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Count</th>
+                        <th>Total Earnings</th>
+                        <th>Avg per Service</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.servicesDoneDetails.map(item => `
+                        <tr>
+                            <td>${item.serviceName || 'N/A'}</td>
+                            <td>${item.count || 0}</td>
+                            <td>₹${(item.earnings || 0).toFixed(2)}</td>
+                            <td>₹${(item.count > 0 ? (item.earnings / item.count) : 0).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Totals</th>
+                        <th>${totalCount}</th>
+                        <th>₹${totalEarnings.toFixed(2)}</th>
+                        <th>₹${(totalEarnings / totalCount || 0).toFixed(2)}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+    }
+    
+    return html;
 };
 
 export { generatePDF };
