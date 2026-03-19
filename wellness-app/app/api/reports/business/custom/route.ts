@@ -168,14 +168,14 @@ export async function POST(req: NextRequest) {
       );
       // Also count therapists associated with this business
       const therapistCount = await TherapistModel.countDocuments({ 
-        businessAssociations: { $elemMatch: { businessId: business._id } }
+        associatedBusinesses: { $elemMatch: { businessId: business._id } }
       });
       reportData.totalTherapists = Math.max(uniqueTherapists.size, therapistCount);
       
       // Include detailed therapist data - get ALL therapists associated with business
       const allBusinessTherapists = await TherapistModel.find({
-        businessAssociations: { $elemMatch: { businessId: business._id } }
-      }).select('fullName specialization');
+        associatedBusinesses: { $elemMatch: { businessId: business._id } }
+      }).select('fullName specialization areaOfExpertise');
       
       // Map booking counts
       const therapistBookings: Record<string, number> = {};
@@ -188,8 +188,8 @@ export async function POST(req: NextRequest) {
       
       reportData.therapists = allBusinessTherapists.map(t => ({
         _id: t._id.toString(),
-        name: t.fullName,
-        specialization: t.specialization || 'Not specified',
+        name: t.fullName || 'Unknown',
+        specialization: t.areaOfExpertise?.join(', ') || t.specialization || 'Not specified',
         totalBookings: therapistBookings[t._id.toString()] || 0,
       }));
     }
