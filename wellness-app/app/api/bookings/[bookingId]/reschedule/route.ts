@@ -174,6 +174,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ bo
     // Update the booking status to rescheduled
     updateData.status = BookingStatus.Rescheduled;
     updateData.therapistResponded = true; // Mark that therapist has responded
+    updateData.responseVisibleToBusinessOnly = true; // Therapist responses should only be visible to business initially
 
     const updatedBooking = await BookingModel.findByIdAndUpdate(
       bookingId,

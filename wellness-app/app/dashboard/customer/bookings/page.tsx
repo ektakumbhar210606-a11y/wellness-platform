@@ -69,6 +69,12 @@ const CustomerBookingsPage = () => {
         const data = await response.json();
         if (data.success) {
           setBookings(data.data.bookings);
+          // DEBUG: Log bookings to see if rescheduled booking is included
+          console.log('Fetched bookings:', data.data.bookings);
+          const rescheduledBooking = data.data.bookings.find((b: any) => b.status === 'rescheduled' || b.originalDate);
+          if (rescheduledBooking) {
+            console.log('Found rescheduled booking:', rescheduledBooking);
+          }
         } else {
           throw new Error(data.error || 'Failed to fetch bookings');
         }
@@ -187,16 +193,45 @@ const CustomerBookingsPage = () => {
           {record.paymentStatus === 'pending' && (record.confirmedBy || record.cancelledBy || record.rescheduledBy || record.responseVisibleToBusinessOnly) ? (
             // Business response awaiting payment
             <>
-              <Button
-                size="small"
-                type="primary"
-                onClick={() => {
-                  setBookingToConfirm(record);
-                  setConfirmModalVisible(true);
-                }}
-              >
-                Confirm Payment
-              </Button>
+              {record.rescheduledBy ? (
+                // Business has rescheduled - show accept/decline actions
+                <>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={() => {
+                      setBookingToConfirm(record);
+                      setConfirmModalVisible(true);
+                    }}
+                  >
+                    Accept Reschedule
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    onClick={() => {
+                      setBookingToCancel(record);
+                      setCancelModalVisible(true);
+                    }}
+                  >
+                    Decline & Cancel
+                  </Button>
+                </>
+              ) : (
+                // Regular confirmation - just pay
+                <>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={() => {
+                      setBookingToConfirm(record);
+                      setConfirmModalVisible(true);
+                    }}
+                  >
+                    Confirm Payment
+                  </Button>
+                </>
+              )}
               <Button
                 size="small"
                 type="default"
@@ -304,7 +339,7 @@ const CustomerBookingsPage = () => {
       render: (status: string, record: any) => {
         // Display status based on three-stage workflow
         let displayStatus = status;
-        let color = 'blue';
+        let color = 'orange'; // Default to pending/orange
         
         // Stage 1: Therapist confirmed, waiting for business
         if (record.status === 'therapist_confirmed' && record.responseVisibleToBusinessOnly === true) {
@@ -315,6 +350,11 @@ const CustomerBookingsPage = () => {
         else if (record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'pending') {
           displayStatus = 'Ready for Payment';
           color = 'gold';
+        }
+        // Special case: Business has rescheduled - awaiting customer response
+        else if (record.status === 'rescheduled' && record.rescheduledBy && record.paymentStatus === 'pending') {
+          displayStatus = 'Rescheduled by Business';
+          color = 'purple';
         }
         // Stage 3: Partial payment made
         else if (record.status === 'confirmed' && record.paymentStatus === 'partial') {
@@ -332,14 +372,29 @@ const CustomerBookingsPage = () => {
           color = 'green';
         }
         // Other statuses
-        else if (status === 'cancelled') color = 'red';
-        else if (status === 'pending') color = 'orange';
-        else if (status === 'completed') color = 'gray';
-        else if (status === 'rescheduled') color = 'gold';
-
+        else if (status === 'cancelled') {
+          color = 'red';
+        } else if (status === 'completed') {
+          color = 'gray';
+        } else if (status === 'rescheduled') {
+          color = 'gold';
+        } else if (status === 'pending') {
+          color = 'orange';
+        }
+    
         return (
           <Tag color={color} style={{ textTransform: 'capitalize' }}>
             {displayStatus}
+            {record.status === 'confirmed' && record.responseVisibleToBusinessOnly === false && record.paymentStatus === 'pending' && (
+              <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.7 }}>
+                (Awaiting Payment)
+              </span>
+            )}
+            {record.status === 'rescheduled' && record.rescheduledBy && record.paymentStatus === 'pending' && (
+              <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.7 }}>
+                (Awaiting Your Response)
+              </span>
+            )}
           </Tag>
         );
       },
@@ -739,23 +794,39 @@ const CustomerBookingsPage = () => {
     // Stage 1: Therapist confirms booking (status: therapist_confirmed, responseVisibleToBusinessOnly: true)
     // Stage 2: Business confirms therapist's response (status: confirmed, responseVisibleToBusinessOnly: false)
     // Stage 3: Customer pays (paymentStatus: pending -> partial -> completed)
+    // Special case: Business has rescheduled (status: rescheduled, rescheduledBy exists, paymentStatus: pending)
     // Excluded: Bookings with 'paid' status and bookings with partial/completed payment (these go to confirmed tab)
+    
+    // DEBUG: Log if this is a rescheduled booking
+    if (booking.status === 'rescheduled' || booking.originalDate) {
+      console.log('DEBUG - Checking rescheduled booking:', {
+        id: booking.id,
+        status: booking.status,
+        paymentStatus: booking.paymentStatus,
+        responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly,
+        rescheduledBy: booking.rescheduledBy,
+        confirmedBy: booking.confirmedBy
+      });
+    }
     
     // IMMEDIATELY exclude bookings with 'paid' status
     if (booking.status === 'paid') {
       return false;
     }
     
-    // IMMEDIATELY exclude bookings with partial or completed payment
-    // These should appear in the Confirmed Bookings tab
+    // Exclude confirmed bookings with partial/completed payment UNLESS they are rescheduled
+    // Rescheduled bookings should appear in requests tab regardless of payment status
     if (booking.status === 'confirmed' && 
         (booking.paymentStatus === 'partial' || booking.paymentStatus === 'completed')) {
       return false;
     }
     
+    // Don't exclude rescheduled bookings based on payment status - they need customer response first
+    
     // Show in requests tab when:
     // 1. Therapist has confirmed the booking but business hasn't processed it yet
     // 2. Business has confirmed the booking and customer needs to pay (pending payment only)
+    // 3. Business/Therapist has rescheduled the booking and customer needs to respond (any payment status - even partial payment needs acceptance)
     const isTherapistConfirmedWaitingForBusiness = 
       booking.status === 'therapist_confirmed' && 
       booking.responseVisibleToBusinessOnly === true;
@@ -765,8 +836,45 @@ const CustomerBookingsPage = () => {
       booking.responseVisibleToBusinessOnly === false && 
       booking.paymentStatus === 'pending';
     
-    return isTherapistConfirmedWaitingForBusiness || 
-           isBusinessConfirmedWaitingForCustomerPayment;
+    const isBusinessRescheduledAwaitingCustomerResponse = 
+      (booking.status === 'rescheduled' || booking.originalDate || booking.originalTime) && 
+      booking.rescheduledBy && 
+      (!booking.confirmedBy || booking.confirmedBy === booking.customer?.id); // If not confirmed by customer themselves, show in requests
+    
+    // DEBUG: Check each condition individually
+    if (booking.status === 'rescheduled' || booking.originalDate) {
+      console.log('DEBUG - Individual conditions:', {
+        id: booking.id,
+        hasRescheduledStatus: booking.status === 'rescheduled',
+        hasOriginalDate: !!booking.originalDate,
+        hasOriginalTime: !!booking.originalTime,
+        hasRescheduledBy: !!booking.rescheduledBy,
+        rescheduledByValue: booking.rescheduledBy,
+        hasNoConfirmedBy: !booking.confirmedBy,
+        confirmedByValue: booking.confirmedBy,
+        customerId: booking.customer?.id,
+        customerField: booking.customer,
+        confirmedByMatchesCustomer: booking.confirmedBy === booking.customer?.id,
+        finalResult: isBusinessRescheduledAwaitingCustomerResponse
+      });
+    }
+    
+    const result = isTherapistConfirmedWaitingForBusiness || 
+           isBusinessConfirmedWaitingForCustomerPayment ||
+           isBusinessRescheduledAwaitingCustomerResponse;
+    
+    // DEBUG: Log why a rescheduled booking was included/excluded
+    if (booking.status === 'rescheduled' || booking.originalDate) {
+      console.log('DEBUG - Filter result:', {
+        id: booking.id,
+        isTherapistConfirmedWaitingForBusiness,
+        isBusinessConfirmedWaitingForCustomerPayment,
+        isBusinessRescheduledAwaitingCustomerResponse,
+        includedInRequests: result
+      });
+    }
+    
+    return result;
   });
   
   // Confirmed bookings: bookings that have partial or full payment completed

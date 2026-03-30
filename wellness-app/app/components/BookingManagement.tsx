@@ -81,6 +81,9 @@ interface Booking {
   businessReviewStatus?: 'pending' | 'approved' | 'rejected';
   advancePaid?: number;
   businessCancelReason?: string;
+  responseVisibleToBusinessOnly?: boolean; // Whether therapist responses should only be visible to business
+  rescheduledBy?: string; // ID of user who rescheduled
+  rescheduledAt?: Date; // When rescheduled
 }
 
 interface BookingManagementProps {
@@ -611,17 +614,23 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ businessId }) => 
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: Booking) => {
-        // Check if booking has already been processed with one of these actions
+        // Check if booking has already been processed by business
+        // therapist_confirmed and therapist_rejected require business action, so they are NOT "processed"
+        // rescheduled with responseVisibleToBusinessOnly=true means therapist rescheduled and business needs to act
         const isProcessed = 
           record.status === 'confirmed' || 
           record.status === 'cancelled' || 
-          record.status === 'rescheduled' ||
-          record.status === 'therapist_confirmed' ||
-          record.status === 'therapist_rejected';
+          record.status === 'rescheduled';
+        
+        // Special case: rescheduled bookings where therapist did the rescheduling (responseVisibleToBusinessOnly=true)
+        // These require business action to notify customer, so they are NOT "processed"
+        const isTherapistRescheduled = 
+          record.status === 'rescheduled' && 
+          (record as any).responseVisibleToBusinessOnly === true;
         
         return (
           <Space>
-            {isProcessed ? (
+            {isProcessed && !isTherapistRescheduled ? (
               // Only show View Details for processed bookings
               <Button 
                 type="link" 

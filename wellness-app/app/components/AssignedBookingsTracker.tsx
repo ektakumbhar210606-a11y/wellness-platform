@@ -178,6 +178,7 @@ interface AssignedBooking {
   confirmedAt?: Date;
   cancelledBy?: string;
   cancelledAt?: Date;
+  responseVisibleToBusinessOnly?: boolean; // Whether therapist responses should only be visible to business
   statusHistory: {
     status: string;
     timestamp: Date;
@@ -607,11 +608,12 @@ const AssignedBookingsTracker: React.FC = () => {
                 {/* Action Buttons */}
                 <div style={{ marginLeft: 24 }}>
                   <Space orientation="vertical">
-                    {/* Check if booking has already been processed */}
+                    {/* Check if booking has already been processed by business */}
+                    {/* therapist_confirmed and therapist_rejected require business action, so they are NOT "processed" */}
+                    {/* rescheduled with responseVisibleToBusinessOnly=true means therapist rescheduled and business needs to act */}
                     {booking.status === 'confirmed' || 
                      booking.status === 'cancelled' || 
-                     booking.status === 'therapist_confirmed' ||
-                     booking.status === 'therapist_rejected' ? (
+                     (booking.status === 'rescheduled' && booking.responseVisibleToBusinessOnly !== true) ? (
                       // Only show View Details for processed bookings
                       <Button 
                         size="small"

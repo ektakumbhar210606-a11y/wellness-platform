@@ -336,7 +336,11 @@ export async function GET(req: NextRequest) {
       originalDate: booking.originalDate ? new Date(booking.originalDate) : null,
       originalTime: booking.originalTime || null,
       // Flag to indicate if this booking has been rescheduled
-      hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime
+      hasBeenRescheduled: !!booking.originalDate || !!booking.originalTime,
+      // Include response visibility flag so frontend knows if business needs to act
+      responseVisibleToBusinessOnly: booking.responseVisibleToBusinessOnly || false,
+      rescheduledBy: booking.rescheduledBy,
+      rescheduledAt: booking.rescheduledAt
     }));
 
     return Response.json({
@@ -439,10 +443,12 @@ export async function PATCH(req: NextRequest) {
 
 
 
-    // Check if booking can be updated (only pending or therapist_confirmed bookings can be confirmed/cancelled)
-    if (booking.status !== 'pending' && booking.status !== 'therapist_confirmed') {
+    // Check if booking can be updated (only pending, therapist_confirmed, or rescheduled bookings with responseVisibleToBusinessOnly=true can be confirmed/cancelled)
+    if (booking.status !== 'pending' && 
+        booking.status !== 'therapist_confirmed' && 
+        !(booking.status === 'rescheduled' && booking.responseVisibleToBusinessOnly === true)) {
       return Response.json(
-        { success: false, error: 'Only pending or therapist confirmed bookings can be confirmed or cancelled' },
+        { success: false, error: 'Only pending, therapist confirmed, or therapist-rescheduled bookings can be confirmed or cancelled' },
         { status: 400 }
       );
     }
@@ -462,14 +468,15 @@ export async function PATCH(req: NextRequest) {
       updateData.cancelledAt = new Date();
     }
     
-    // Check if this is a business-assigned booking
-    if (booking.assignedByAdmin) {
-      // For business-assigned bookings, mark that therapist has responded
+    // Check if this is a business-assigned booking OR a therapist-rescheduled booking being processed by business
+    if (booking.assignedByAdmin && !(booking.status === 'rescheduled' && booking.responseVisibleToBusinessOnly === true)) {
+      // For business-assigned bookings (except therapist-rescheduled ones), mark that therapist has responded
       updateData.therapistResponded = true;
       // Set response visibility to business only initially
       updateData.responseVisibleToBusinessOnly = true;
     } else {
-      // For direct customer bookings, also mark as therapist responded since business is taking action
+      // For direct customer bookings OR when business is processing a therapist-rescheduled booking,
+      // mark as therapist responded since business is taking action
       // This ensures the booking remains visible in the requests tab for business reference
       updateData.therapistResponded = true;
       // Make response visible to customer immediately
