@@ -166,6 +166,9 @@ const CustomerBookingsPage = () => {
           color = 'red';
         } else if (status === 'completed') {
           color = 'gray';
+        } else if (status === 'rescheduled' && record.rescheduledBy) {
+          displayStatus = 'Rescheduled by Business (Awaiting Your Response)';
+          color = 'purple';
         } else if (status === 'rescheduled') {
           color = 'gold';
         } else if (status === 'pending') {
@@ -190,8 +193,9 @@ const CustomerBookingsPage = () => {
       render: (record: any) => (
         <Space size="small" wrap>
           {/* Show different actions based on business response type */}
-          {record.paymentStatus === 'pending' && (record.confirmedBy || record.cancelledBy || record.rescheduledBy || record.responseVisibleToBusinessOnly) ? (
-            // Business response awaiting payment
+          {(record.paymentStatus === 'pending' || record.paymentStatus === 'partial') && 
+           (record.confirmedBy || record.cancelledBy || record.rescheduledBy || record.responseVisibleToBusinessOnly) ? (
+            // Business response awaiting payment or acceptance
             <>
               {record.rescheduledBy ? (
                 // Business has rescheduled - show accept/decline actions
@@ -839,7 +843,7 @@ const CustomerBookingsPage = () => {
     const isBusinessRescheduledAwaitingCustomerResponse = 
       (booking.status === 'rescheduled' || booking.originalDate || booking.originalTime) && 
       booking.rescheduledBy && 
-      (!booking.confirmedBy || booking.confirmedBy === booking.customer?.id); // If not confirmed by customer themselves, show in requests
+      (!booking.confirmedBy || booking.confirmedBy !== booking.customer?.id); // Show if customer hasn't confirmed acceptance (confirmedBy doesn't match customer ID)
     
     // DEBUG: Check each condition individually
     if (booking.status === 'rescheduled' || booking.originalDate) {
@@ -850,10 +854,8 @@ const CustomerBookingsPage = () => {
         hasOriginalTime: !!booking.originalTime,
         hasRescheduledBy: !!booking.rescheduledBy,
         rescheduledByValue: booking.rescheduledBy,
-        hasNoConfirmedBy: !booking.confirmedBy,
-        confirmedByValue: booking.confirmedBy,
+        confirmedBy: booking.confirmedBy,
         customerId: booking.customer?.id,
-        customerField: booking.customer,
         confirmedByMatchesCustomer: booking.confirmedBy === booking.customer?.id,
         finalResult: isBusinessRescheduledAwaitingCustomerResponse
       });

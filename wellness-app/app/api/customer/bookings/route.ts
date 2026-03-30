@@ -213,6 +213,9 @@ export async function GET(request: NextRequest) {
       return {
         id: booking._id.toString(),
         displayId: formatBookingId(booking._id.toString()),
+        customer: {
+          id: booking.customer.toString()
+        },
         service: service ? {
           id: service._id.toString(),
           name: service.name,
